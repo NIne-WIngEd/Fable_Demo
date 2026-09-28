@@ -21,6 +21,12 @@ jobs:
         run: |
           python scripts/generate_longitudinal_fixture.py
           git diff --exit-code -- fixtures/longitudinal_v1.json
+      - name: Verify frozen evidence packets
+        env:
+          PYTHONPATH: alice-reference/src:src
+        run: |
+          python scripts/freeze_trials.py
+          git diff --exit-code -- fixtures/frozen_trials_v1.json
       - name: Run production-code integration tests
         env:
           PYTHONPATH: alice-reference/src:src

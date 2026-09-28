@@ -7,11 +7,36 @@ from fable_demo.evaluate import evaluate
 from fable_demo.context import prepare
 from fable_demo.events import Event
 from fable_demo.ledger_adapter import journal
+from fable_demo.trials import freeze
+from fable_demo.blind import pair
 
 FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "correction_v1.json"
 
 
 class DemoIntegrationTest(unittest.TestCase):
+    def test_frozen_packets_and_blind_pair_reject_mismatched_evidence(self):
+        frozen = freeze(FIXTURE.with_name("trials_v1.json"))
+        self.assertEqual(len(frozen["trials"]), 2)
+        self.assertEqual([len(item["packet"]["evidence"]) for item in frozen["trials"]], [2, 3])
+        self.assertEqual(frozen, json.loads(FIXTURE.with_name("frozen_trials_v1.json").read_text()))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "frozen.json"
+            manifest.write_text(json.dumps(frozen))
+            first = root / "first.json"
+            second = root / "second.json"
+            entries = [{"trial_id": item["trial_id"], "packet_sha256": item["packet_sha256"], "response": "A response to review"} for item in frozen["trials"]]
+            first.write_text(json.dumps(entries))
+            second.write_text(json.dumps(entries))
+            review, key = pair(manifest, first, second, seed="synthetic-blinding")
+            self.assertEqual(len(review["pairs"]), 2)
+            self.assertNotIn("first", json.dumps(review))
+            self.assertEqual(set(key), {item["trial_id"] for item in entries})
+            entries[0]["packet_sha256"] = "0" * 64
+            second.write_text(json.dumps(entries))
+            with self.assertRaisesRegex(ValueError, "hash mismatch"):
+                pair(manifest, first, second, seed="synthetic-blinding")
+
     def test_context_packet_carries_goal_decision_outcome_and_sources(self):
         fixture = FIXTURE.with_name("outcome_chain_v1.json")
         packet = prepare(fixture, at="2025-03-10T09:00:00Z", topic="work_style",

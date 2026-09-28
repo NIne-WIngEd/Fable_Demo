@@ -1,0 +1,96 @@
+{
+  "source_fixture": "outcome_chain_v1.json",
+  "trials": [
+    {
+      "trial_id": "evening_before_outcome",
+      "packet_sha256": "5657a689fc9a8424d9c209ba564810abd2531644d980704c941d831838a381be",
+      "packet": {
+        "alice_commit": "5f9b9ccb2628eb2a5512d8624b9a78bcc9c7fe38",
+        "question": "Should I keep a recurring evening meeting?",
+        "at": "2025-02-10T09:00:00Z",
+        "topic": "work_style",
+        "evidence": [
+          {
+            "memory_id": "29e3cc47-d44a-5eaf-8fb5-a6dd86864ec3",
+            "text": "I want to keep one uninterrupted evening each week for deep work.",
+            "recorded_at": "2025-01-01T10:00:00Z",
+            "category": "profile",
+            "knowledge_status": "rayan_statement",
+            "sources": [
+              "synthetic:week1"
+            ]
+          },
+          {
+            "memory_id": "afb6effc-81a8-50c0-893a-83febd8e7601",
+            "text": "I accepted a recurring evening meeting despite the deep work goal.",
+            "recorded_at": "2025-02-01T10:00:00Z",
+            "category": "episodic",
+            "knowledge_status": "rayan_statement",
+            "sources": [
+              "synthetic:week5"
+            ]
+          }
+        ],
+        "conflicts": [],
+        "ledger": {
+          "entry_count": 2,
+          "linked_outcomes": 0,
+          "integrity_verified": true,
+          "plaintext_stored": false
+        },
+        "status": "evidence only; no personality judgment or response"
+      }
+    },
+    {
+      "trial_id": "evening_after_outcome",
+      "packet_sha256": "16f68f2410f37788d775f6dcf3cb7904b15cbad71f2536ac31f0d73c868c5c92",
+      "packet": {
+        "alice_commit": "5f9b9ccb2628eb2a5512d8624b9a78bcc9c7fe38",
+        "question": "Should I accept another recurring evening meeting?",
+        "at": "2025-03-10T09:00:00Z",
+        "topic": "work_style",
+        "evidence": [
+          {
+            "memory_id": "29e3cc47-d44a-5eaf-8fb5-a6dd86864ec3",
+            "text": "I want to keep one uninterrupted evening each week for deep work.",
+            "recorded_at": "2025-01-01T10:00:00Z",
+            "category": "profile",
+            "knowledge_status": "rayan_statement",
+            "sources": [
+              "synthetic:week1"
+            ]
+          },
+          {
+            "memory_id": "afb6effc-81a8-50c0-893a-83febd8e7601",
+            "text": "I accepted a recurring evening meeting despite the deep work goal.",
+            "recorded_at": "2025-02-01T10:00:00Z",
+            "category": "episodic",
+            "knowledge_status": "rayan_statement",
+            "sources": [
+              "synthetic:week5"
+            ]
+          },
+          {
+            "memory_id": "9e11abb0-993d-5da9-b029-e234213801a6",
+            "text": "The recurring evening meeting displaced deep work on four consecutive weeks.",
+            "recorded_at": "2025-03-01T10:00:00Z",
+            "category": "episodic",
+            "knowledge_status": "rayan_statement",
+            "sources": [
+              "synthetic:week9"
+            ]
+          }
+        ],
+        "conflicts": [],
+        "ledger": {
+          "entry_count": 3,
+          "linked_outcomes": 1,
+          "integrity_verified": true,
+          "plaintext_stored": false
+        },
+        "status": "evidence only; no personality judgment or response"
+      }
+    }
+  ],
+  "note": "Every candidate receives exactly the same packet. No model output or behavioral score is included."
+}
