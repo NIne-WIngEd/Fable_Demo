@@ -1,6 +1,41 @@
 # Fable Demo
 
-One narrow test of Fable's personal foundation, built on the same A.L.I.C.E. memory and Experience Ledger code intended for the full product. This repository does **not** train a substitute personality model. That model is being developed separately and will connect here after it qualifies.
+A small, persistent Fable host built one component at a time from A.L.I.C.E.'s host-neutral kernel. The personality model is being built separately. The goal here is to make its surrounding experience and memory path real, then connect the model and measure one behavior.
+
+## Built now: the experience path
+
+`fable-runtime` can create an isolated host vault, locally seal an observation, capture it in A.L.I.C.E.'s content-addressed Raw Buffer, and append a linked metadata event to A.L.I.C.E.'s Experience Ledger. It reopens across processes, verifies both stores, and finishes a ledger append if a process stopped after raw capture. Host, assistant-self, and relationship observations are distinct. Corrections and outcomes point to a prior observation of the right kind.
+
+This is a working infrastructure slice, **not yet a conversational Fable**. The demo key currently lives in a permission-restricted file in the host vault; production Fable needs OS-backed key custody and a full retention/deletion lifecycle. The runtime is single-writer and does not claim cross-store atomic transactions. The Phase 2 ordinary Memory Core stores plaintext inside the private vault. **Use synthetic data only in this demo.**
+
+```bash
+git clone https://github.com/NIne-WIngEd/A.L.I.C.E.git
+git -C A.L.I.C.E checkout 5f9b9ccb2628eb2a5512d8624b9a78bcc9c7fe38
+git clone https://github.com/NIne-WIngEd/Fable_Demo.git
+python -m pip install -e Fable_Demo
+PYTHONPATH=A.L.I.C.E/src python -m fable_demo.runtime_cli init /tmp/my-fable-demo
+printf 'I prefer a written brief before a meeting.\n' | PYTHONPATH=A.L.I.C.E/src python -m fable_demo.runtime_cli record /tmp/my-fable-demo --kind statement --subject host
+PYTHONPATH=A.L.I.C.E/src python -m fable_demo.runtime_cli inspect /tmp/my-fable-demo
+```
+
+Use a vault path outside either repository. `history` shows metadata; `history --reveal` explicitly decrypts text.
+
+For a recorded host statement, copy its returned `logical_id` into `stage --id ID --key deep_work --category goal`. Staging creates a non-authoritative candidate. `confirm --candidate ID` promotes it only after A.L.I.C.E.'s deterministic assessment. `memory --key deep_work` reads the current confirmed claim. For a correction, record it with `--kind correction --relates-to ORIGINAL_LOGICAL_ID`, then run `correct --id CORRECTION_LOGICAL_ID --key deep_work --category goal`; confirm the candidate with `--target-memory ORIGINAL_MEMORY_ID`. This invokes A.L.I.C.E.'s transition-aware correction path and keeps the older record in history.
+
+`state --host-key deep_work` assembles the current host claims, separately labeled assistant-self and relationship observations, and linked decisions and outcomes. It is an evidence packet for the separately built personality model. It makes no judgment and does not claim those observations are learned self or relationship models.
+
+## Build sequence
+
+1. **Experience path — built:** host scope, local sealing, Raw Buffer, Experience Ledger, restart reconciliation.
+2. **Explicit host memory lane — built:** candidate staging, deterministic assessment, user confirmation, provenance-bound promotion, and transition-aware correction through A.L.I.C.E.'s released Memory Core. The learned Memory Formation Model and automatic extraction from arbitrary raw data are still to be built.
+3. **Current-state assembly — built as a rebuildable evidence view:** confirmed host claims remain separate from assistant-self and relationship observations; decisions and outcomes retain their links. Learned self/relationship state and full bitemporal claim authority are still to be built.
+4. **Personality model handoff — pending:** connect the separately qualified model's native judgment output. Only then run behavioral comparisons.
+
+A.L.I.C.E.'s Phase 2 SQLite Memory Core is the current released reference authority. Its broader destination considers an event fabric, claim authority, graph, vector, and workflow planes. This demo uses the actual implemented kernel stores for its first component. A passing test on a reference backend will not be presented as proof that every future backend or the complete Fable architecture works.
+
+## Earlier evaluation scaffolding
+
+The files below were prepared before the persistent runtime. They remain diagnostics and future trial material; they are not a finished demo or a YC performance result.
 
 ## The first claim
 
