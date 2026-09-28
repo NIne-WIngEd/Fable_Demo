@@ -1,0 +1,435 @@
+{
+  "description": "Synthetic 20-month, four-topic correction diagnostic. Generated labels come from the scenario plan, not from A.L.I.C.E. retrieval.",
+  "events": [
+    {
+      "id": "meeting_style-0",
+      "at": "2024-01-01T09:00:00Z",
+      "kind": "assertion",
+      "topic": "meeting_style",
+      "text": "I prefer video calls.",
+      "source": "synthetic:meeting_style:2024-01"
+    },
+    {
+      "id": "meeting_style-1",
+      "at": "2024-06-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "meeting_style",
+      "text": "Correction: I now prefer written briefs.",
+      "source": "synthetic:meeting_style:2024-06",
+      "supersedes": "meeting_style-0"
+    },
+    {
+      "id": "meeting_style-2",
+      "at": "2024-11-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "meeting_style",
+      "text": "Correction: I now prefer short calls.",
+      "source": "synthetic:meeting_style:2024-11",
+      "supersedes": "meeting_style-1"
+    },
+    {
+      "id": "meeting_style-3",
+      "at": "2025-04-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "meeting_style",
+      "text": "Correction: I now prefer written briefs.",
+      "source": "synthetic:meeting_style:2025-04",
+      "supersedes": "meeting_style-2"
+    },
+    {
+      "id": "meeting_style-4",
+      "at": "2025-09-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "meeting_style",
+      "text": "Correction: I now prefer async notes.",
+      "source": "synthetic:meeting_style:2025-09",
+      "supersedes": "meeting_style-3"
+    },
+    {
+      "id": "working_hours-0",
+      "at": "2024-01-01T09:00:00Z",
+      "kind": "assertion",
+      "topic": "working_hours",
+      "text": "I prefer early mornings.",
+      "source": "synthetic:working_hours:2024-01"
+    },
+    {
+      "id": "working_hours-1",
+      "at": "2024-06-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "working_hours",
+      "text": "Correction: I now prefer late evenings.",
+      "source": "synthetic:working_hours:2024-06",
+      "supersedes": "working_hours-0"
+    },
+    {
+      "id": "working_hours-2",
+      "at": "2024-11-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "working_hours",
+      "text": "Correction: I now prefer afternoons.",
+      "source": "synthetic:working_hours:2024-11",
+      "supersedes": "working_hours-1"
+    },
+    {
+      "id": "working_hours-3",
+      "at": "2025-04-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "working_hours",
+      "text": "Correction: I now prefer early mornings.",
+      "source": "synthetic:working_hours:2025-04",
+      "supersedes": "working_hours-2"
+    },
+    {
+      "id": "working_hours-4",
+      "at": "2025-09-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "working_hours",
+      "text": "Correction: I now prefer late evenings.",
+      "source": "synthetic:working_hours:2025-09",
+      "supersedes": "working_hours-3"
+    },
+    {
+      "id": "travel_style-0",
+      "at": "2024-01-01T09:00:00Z",
+      "kind": "assertion",
+      "topic": "travel_style",
+      "text": "I prefer quiet hotels.",
+      "source": "synthetic:travel_style:2024-01"
+    },
+    {
+      "id": "travel_style-1",
+      "at": "2024-06-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "travel_style",
+      "text": "Correction: I now prefer short trips.",
+      "source": "synthetic:travel_style:2024-06",
+      "supersedes": "travel_style-0"
+    },
+    {
+      "id": "travel_style-2",
+      "at": "2024-11-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "travel_style",
+      "text": "Correction: I now prefer overnight trains.",
+      "source": "synthetic:travel_style:2024-11",
+      "supersedes": "travel_style-1"
+    },
+    {
+      "id": "travel_style-3",
+      "at": "2025-04-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "travel_style",
+      "text": "Correction: I now prefer quiet hotels.",
+      "source": "synthetic:travel_style:2025-04",
+      "supersedes": "travel_style-2"
+    },
+    {
+      "id": "travel_style-4",
+      "at": "2025-09-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "travel_style",
+      "text": "Correction: I now prefer short trips.",
+      "source": "synthetic:travel_style:2025-09",
+      "supersedes": "travel_style-3"
+    },
+    {
+      "id": "learning_style-0",
+      "at": "2024-01-01T09:00:00Z",
+      "kind": "assertion",
+      "topic": "learning_style",
+      "text": "I prefer long lectures.",
+      "source": "synthetic:learning_style:2024-01"
+    },
+    {
+      "id": "learning_style-1",
+      "at": "2024-06-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "learning_style",
+      "text": "Correction: I now prefer small examples.",
+      "source": "synthetic:learning_style:2024-06",
+      "supersedes": "learning_style-0"
+    },
+    {
+      "id": "learning_style-2",
+      "at": "2024-11-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "learning_style",
+      "text": "Correction: I now prefer written exercises.",
+      "source": "synthetic:learning_style:2024-11",
+      "supersedes": "learning_style-1"
+    },
+    {
+      "id": "learning_style-3",
+      "at": "2025-04-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "learning_style",
+      "text": "Correction: I now prefer small examples.",
+      "source": "synthetic:learning_style:2025-04",
+      "supersedes": "learning_style-2"
+    },
+    {
+      "id": "learning_style-4",
+      "at": "2025-09-01T09:00:00Z",
+      "kind": "correction",
+      "topic": "learning_style",
+      "text": "Correction: I now prefer hands-on projects.",
+      "source": "synthetic:learning_style:2025-09",
+      "supersedes": "learning_style-3"
+    }
+  ],
+  "questions": [
+    {
+      "id": "ask-meeting_style-0",
+      "at": "2024-01-15T09:00:00Z",
+      "text": "For meeting style, do I still prefer video calls?",
+      "topic": "meeting_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "meeting_style-0"
+      ],
+      "forbidden_ids": []
+    },
+    {
+      "id": "ask-meeting_style-1",
+      "at": "2024-06-15T09:00:00Z",
+      "text": "For meeting style, do I still prefer video calls?",
+      "topic": "meeting_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "meeting_style-1"
+      ],
+      "forbidden_ids": [
+        "meeting_style-0"
+      ]
+    },
+    {
+      "id": "ask-meeting_style-2",
+      "at": "2024-11-15T09:00:00Z",
+      "text": "For meeting style, do I still prefer video calls?",
+      "topic": "meeting_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "meeting_style-2"
+      ],
+      "forbidden_ids": [
+        "meeting_style-1"
+      ]
+    },
+    {
+      "id": "ask-meeting_style-3",
+      "at": "2025-04-15T09:00:00Z",
+      "text": "For meeting style, do I still prefer video calls?",
+      "topic": "meeting_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "meeting_style-3"
+      ],
+      "forbidden_ids": [
+        "meeting_style-2"
+      ]
+    },
+    {
+      "id": "ask-meeting_style-4",
+      "at": "2025-09-15T09:00:00Z",
+      "text": "For meeting style, do I still prefer video calls?",
+      "topic": "meeting_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "meeting_style-4"
+      ],
+      "forbidden_ids": [
+        "meeting_style-3"
+      ]
+    },
+    {
+      "id": "ask-working_hours-0",
+      "at": "2024-01-15T09:00:00Z",
+      "text": "For working hours, do I still prefer early mornings?",
+      "topic": "working_hours",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "working_hours-0"
+      ],
+      "forbidden_ids": []
+    },
+    {
+      "id": "ask-working_hours-1",
+      "at": "2024-06-15T09:00:00Z",
+      "text": "For working hours, do I still prefer early mornings?",
+      "topic": "working_hours",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "working_hours-1"
+      ],
+      "forbidden_ids": [
+        "working_hours-0"
+      ]
+    },
+    {
+      "id": "ask-working_hours-2",
+      "at": "2024-11-15T09:00:00Z",
+      "text": "For working hours, do I still prefer early mornings?",
+      "topic": "working_hours",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "working_hours-2"
+      ],
+      "forbidden_ids": [
+        "working_hours-1"
+      ]
+    },
+    {
+      "id": "ask-working_hours-3",
+      "at": "2025-04-15T09:00:00Z",
+      "text": "For working hours, do I still prefer early mornings?",
+      "topic": "working_hours",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "working_hours-3"
+      ],
+      "forbidden_ids": [
+        "working_hours-2"
+      ]
+    },
+    {
+      "id": "ask-working_hours-4",
+      "at": "2025-09-15T09:00:00Z",
+      "text": "For working hours, do I still prefer early mornings?",
+      "topic": "working_hours",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "working_hours-4"
+      ],
+      "forbidden_ids": [
+        "working_hours-3"
+      ]
+    },
+    {
+      "id": "ask-travel_style-0",
+      "at": "2024-01-15T09:00:00Z",
+      "text": "For travel style, do I still prefer quiet hotels?",
+      "topic": "travel_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "travel_style-0"
+      ],
+      "forbidden_ids": []
+    },
+    {
+      "id": "ask-travel_style-1",
+      "at": "2024-06-15T09:00:00Z",
+      "text": "For travel style, do I still prefer quiet hotels?",
+      "topic": "travel_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "travel_style-1"
+      ],
+      "forbidden_ids": [
+        "travel_style-0"
+      ]
+    },
+    {
+      "id": "ask-travel_style-2",
+      "at": "2024-11-15T09:00:00Z",
+      "text": "For travel style, do I still prefer quiet hotels?",
+      "topic": "travel_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "travel_style-2"
+      ],
+      "forbidden_ids": [
+        "travel_style-1"
+      ]
+    },
+    {
+      "id": "ask-travel_style-3",
+      "at": "2025-04-15T09:00:00Z",
+      "text": "For travel style, do I still prefer quiet hotels?",
+      "topic": "travel_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "travel_style-3"
+      ],
+      "forbidden_ids": [
+        "travel_style-2"
+      ]
+    },
+    {
+      "id": "ask-travel_style-4",
+      "at": "2025-09-15T09:00:00Z",
+      "text": "For travel style, do I still prefer quiet hotels?",
+      "topic": "travel_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "travel_style-4"
+      ],
+      "forbidden_ids": [
+        "travel_style-3"
+      ]
+    },
+    {
+      "id": "ask-learning_style-0",
+      "at": "2024-01-15T09:00:00Z",
+      "text": "For learning style, do I still prefer long lectures?",
+      "topic": "learning_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "learning_style-0"
+      ],
+      "forbidden_ids": []
+    },
+    {
+      "id": "ask-learning_style-1",
+      "at": "2024-06-15T09:00:00Z",
+      "text": "For learning style, do I still prefer long lectures?",
+      "topic": "learning_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "learning_style-1"
+      ],
+      "forbidden_ids": [
+        "learning_style-0"
+      ]
+    },
+    {
+      "id": "ask-learning_style-2",
+      "at": "2024-11-15T09:00:00Z",
+      "text": "For learning style, do I still prefer long lectures?",
+      "topic": "learning_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "learning_style-2"
+      ],
+      "forbidden_ids": [
+        "learning_style-1"
+      ]
+    },
+    {
+      "id": "ask-learning_style-3",
+      "at": "2025-04-15T09:00:00Z",
+      "text": "For learning style, do I still prefer long lectures?",
+      "topic": "learning_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "learning_style-3"
+      ],
+      "forbidden_ids": [
+        "learning_style-2"
+      ]
+    },
+    {
+      "id": "ask-learning_style-4",
+      "at": "2025-09-15T09:00:00Z",
+      "text": "For learning style, do I still prefer long lectures?",
+      "topic": "learning_style",
+      "retrieval_query": "prefer",
+      "expected_ids": [
+        "learning_style-4"
+      ],
+      "forbidden_ids": [
+        "learning_style-3"
+      ]
+    }
+  ]
+}

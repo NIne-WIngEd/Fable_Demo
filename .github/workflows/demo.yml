@@ -1,0 +1,27 @@
+name: Demo evidence path
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: NIne-WIngEd/A.L.I.C.E
+          ref: 5f9b9ccb2628eb2a5512d8624b9a78bcc9c7fe38
+          path: alice-reference
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen fixture
+        run: |
+          python scripts/generate_longitudinal_fixture.py
+          git diff --exit-code -- fixtures/longitudinal_v1.json
+      - name: Run production-code integration tests
+        env:
+          PYTHONPATH: alice-reference/src:src
+        run: python -m unittest discover -s tests -v

@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import tempfile
 
-from .alice_adapter import ALICE_COMMIT, ingest, memory_id, retrieve
+from .alice_adapter import ALICE_COMMIT, ingest, memory_id, resolve_known_key, retrieve
 from .events import Event, Question, utc
 from .ledger_adapter import journal
 
@@ -42,6 +42,12 @@ def evaluate(fixture: Path, limit: int = 1) -> dict:
     questions = [Question(**{**item, "expected_ids": tuple(item["expected_ids"]), "forbidden_ids": tuple(item.get("forbidden_ids", []))}) for item in data["questions"]]
     if len({event.id for event in events}) != len(events) or len({question.id for question in questions}) != len(questions):
         raise ValueError("fixture ids must be unique")
+    known = {event.id for event in events}
+    for question in questions:
+        if not question.expected_ids or not set(question.expected_ids) <= known or not set(question.forbidden_ids) <= known:
+            raise ValueError("expected and forbidden evidence must exist in the fixture")
+        if set(question.expected_ids) & set(question.forbidden_ids):
+            raise ValueError("evidence cannot be both expected and forbidden")
     if any(utc(question.at) < max(utc(event.at) for event in events if event.id in question.expected_ids) for question in questions):
         raise ValueError("expected evidence is in the future")
 
@@ -58,12 +64,18 @@ def evaluate(fixture: Path, limit: int = 1) -> dict:
             with open_memory_store(case_vault) as connection:
                 ingest(connection, visible)
                 actual = retrieve(connection, case_vault, question, limit)
+                temporal = resolve_known_key(connection, question, limit)
             baseline = raw_baseline(visible, question, limit)
             recent = recent_baseline(visible, question, limit)
             expected = {memory_id(item) for item in question.expected_ids}
             forbidden = {memory_id(item) for item in question.forbidden_ids}
             def score(ids: list[str]) -> dict:
                 return {"expected_recalled": bool(expected & set(ids)), "forbidden_recalled": bool(forbidden & set(ids)), "evidence_ids": ids}
-            cases.append({"question": question.id, "alice_memory": score(actual), "raw_history": score(baseline), "recent_history": score(recent)})
-    return {"alice_commit": ALICE_COMMIT, "fixture": fixture.name, "evidence_limit": limit, "ledger": ledger, "cases": cases,
-            "note": "This measures retrieval of current evidence, not personality, autonomous learning, or conversational quality."}
+            cases.append({"question": question.id, "alice_search": score(actual), "alice_temporal": score(temporal),
+                          "raw_history": score(baseline), "recent_history": score(recent)})
+    summary = {arm: {"expected_recalled": sum(case[arm]["expected_recalled"] for case in cases),
+                     "forbidden_recalled": sum(case[arm]["forbidden_recalled"] for case in cases)}
+               for arm in ("alice_search", "alice_temporal", "raw_history", "recent_history")}
+    return {"alice_commit": ALICE_COMMIT, "fixture": fixture.name, "evidence_limit": limit, "case_count": len(cases),
+            "summary": summary, "ledger": ledger, "cases": cases,
+            "note": "Temporal resolution is given the correct topic key; the test does not measure how Fable would find that key. Search has a separate candidate-budget limit. No personality or judgment is measured."}

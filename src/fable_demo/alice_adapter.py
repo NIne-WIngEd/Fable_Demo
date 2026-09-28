@@ -72,3 +72,11 @@ def retrieve(connection, vault: Path, question: Question, limit: int) -> list[st
         authorization=MemoryRetrievalAuthorization(actor="fable-demo-eval", allowed=True, purpose="synthetic evaluation"),
     )
     return [result.memory_id for result in response.results]
+
+
+def resolve_known_key(connection, question: Question, limit: int) -> list[str]:
+    """Use A.L.I.C.E.'s authoritative temporal resolver when a key is known."""
+    from alice_memory.temporal import resolve_memory_at
+
+    resolution = resolve_memory_at(connection, memory_key=f"demo.{question.topic}", at=question.at)
+    return [record.memory_id for record in resolution.memories[-limit:]]

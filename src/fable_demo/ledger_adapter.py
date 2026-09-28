@@ -19,6 +19,7 @@ def journal(events: list[Event], path: Path) -> dict:
 
     scope = ProductHostScope.create(product_id="friday", host_instance_id="synthetic-demo", schema_version="1.0.0", encryption_domain="synthetic-demo")
     by_fixture_id: dict[str, str] = {}
+    linked_outcomes = 0
     with open_experience_ledger(path, scope=scope, created_at="2025-01-01T00:00:00Z") as ledger:
         for item in sorted(events, key=lambda e: (e.at, e.id)):
             item.validate()
@@ -40,5 +41,13 @@ def journal(events: list[Event], path: Path) -> dict:
             )
             ledger.append_event(envelope, committed_at=item.at)
             by_fixture_id[item.id] = envelope.event_id
+            if item.kind == "outcome":
+                stored = ledger.load_event(envelope.event_id)
+                if stored.outcome_reference_ids != (by_fixture_id[item.decision_id],):
+                    raise ValueError("outcome lost its decision reference")
+                linked_outcomes += 1
         report = ledger.verify_integrity()
-        return {"entry_count": report.entry_count, "integrity_verified": True, "plaintext_stored": False}
+    payload = path.read_bytes()
+    return {"entry_count": report.entry_count, "linked_outcomes": linked_outcomes,
+            "integrity_verified": True,
+            "plaintext_stored": any(item.text.encode() in payload for item in events)}
