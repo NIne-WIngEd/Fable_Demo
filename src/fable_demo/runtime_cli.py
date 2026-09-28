@@ -10,12 +10,13 @@ import sys
 from .runtime import FableRuntime
 from .memory_lane import MemoryLane
 from .state import assemble_current
+from .formation_context import assemble_formation_context
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Fable demo host runtime")
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("init", "record", "inspect", "history", "stage", "correct", "confirm", "memory", "state"):
+    for name in ("init", "record", "inspect", "history", "stage", "correct", "confirm", "memory", "memory-history", "state", "formation-context"):
         command = sub.add_parser(name)
         command.add_argument("vault", type=Path)
         if name == "record":
@@ -34,10 +35,13 @@ def main() -> None:
         if name == "confirm":
             command.add_argument("--candidate", required=True)
             command.add_argument("--target-memory", help="Existing memory ID for a linked correction")
-        if name == "memory":
+        if name in {"memory", "memory-history"}:
             command.add_argument("--key", required=True)
         if name == "state":
             command.add_argument("--host-key", action="append", default=[], help="One confirmed host key to include")
+        if name == "formation-context":
+            command.add_argument("--id", dest="logical_id", required=True, help="Source observation ID")
+            command.add_argument("--host-key", action="append", default=[], help="Explicit current host key to include")
     args = parser.parse_args()
     if args.command == "init":
         runtime = FableRuntime.initialize(args.vault)
@@ -64,8 +68,13 @@ def main() -> None:
             result = MemoryLane(runtime).confirm(args.candidate, target_memory_id=args.target_memory)
         elif args.command == "memory":
             result = MemoryLane(runtime).current(key=args.key)
-        else:
+        elif args.command == "memory-history":
+            result = MemoryLane(runtime).history(key=args.key)
+        elif args.command == "state":
             result = assemble_current(runtime, host_keys=tuple(args.host_key))
+        else:
+            result = assemble_formation_context(runtime, logical_id=args.logical_id,
+                                                host_keys=tuple(args.host_key))
     print(json.dumps(result, indent=2))
 
 

@@ -19,13 +19,18 @@ class MemoryLaneTest(unittest.TestCase):
                                  relates_to=old["logical_id"], occurred_at="2025-02-01T10:00:00Z")
             staged = lane.stage_host_correction(logical_id=new["logical_id"], key="meetings")
             self.assertEqual(staged["assessment"], "review_required")
-            with self.assertRaises(Exception):
+            with self.assertRaisesRegex(ValueError, "requires its target memory"):
                 lane.confirm(staged["candidate_id"])
+            with self.assertRaisesRegex(ValueError, "only a linked host correction"):
+                lane.confirm(first["candidate_id"], target_memory_id=memory_id)
             changed = lane.confirm(staged["candidate_id"], target_memory_id=memory_id)
             self.assertEqual(changed["replaced_memory_id"], memory_id)
             current = lane.current(key="meetings")
             self.assertEqual([item["text"] for item in current], ["I prefer written briefs."])
             self.assertEqual(current[0]["source_event_ids"], [new["event_id"]])
+            history = lane.history(key="meetings")
+            self.assertEqual([item["validity_state"] for item in history], ["historical", "current"])
+            self.assertEqual([item["text"] for item in history], ["I prefer video calls.", "I prefer written briefs."])
 
     def test_explicit_statement_remains_candidate_until_confirmation(self):
         with tempfile.TemporaryDirectory() as directory:

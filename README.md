@@ -22,14 +22,17 @@ Use a vault path outside either repository. `history` shows metadata; `history -
 
 For a recorded host statement, copy its returned `logical_id` into `stage --id ID --key deep_work --category goal`. Staging creates a non-authoritative candidate. `confirm --candidate ID` promotes it only after A.L.I.C.E.'s deterministic assessment. `memory --key deep_work` reads the current confirmed claim. For a correction, record it with `--kind correction --relates-to ORIGINAL_LOGICAL_ID`, then run `correct --id CORRECTION_LOGICAL_ID --key deep_work --category goal`; confirm the candidate with `--target-memory ORIGINAL_MEMORY_ID`. This invokes A.L.I.C.E.'s transition-aware correction path and keeps the older record in history.
 
-`state --host-key deep_work` assembles the current host claims, separately labeled assistant-self and relationship observations, and linked decisions and outcomes. It is an evidence packet for the separately built personality model. It makes no judgment and does not claim those observations are learned self or relationship models.
+`memory-history --key deep_work` shows current and superseded versions with source links. `state --host-key deep_work` assembles current host claims and their correction history, separately labeled assistant-self and relationship observations, and linked decisions and outcomes. It is an evidence packet for the separately built personality model. It makes no judgment and does not claim those observations are learned self or relationship models.
+
+`formation-context --id OBSERVATION_ID --host-key deep_work` assembles a bounded packet for the future Memory Formation Model: the source observation, its direct parent when linked, and only the current host claims explicitly selected by the caller. It carries event and raw-reference IDs and a packet fingerprint. It does not extract or promote a claim. This packet describes current state at assembly time, not an as-of historical replay.
 
 ## Build sequence
 
 1. **Experience path — built:** host scope, local sealing, Raw Buffer, Experience Ledger, restart reconciliation.
 2. **Explicit host memory lane — built:** candidate staging, deterministic assessment, user confirmation, provenance-bound promotion, and transition-aware correction through A.L.I.C.E.'s released Memory Core. The learned Memory Formation Model and automatic extraction from arbitrary raw data are still to be built.
 3. **Current-state assembly — built as a rebuildable evidence view:** confirmed host claims remain separate from assistant-self and relationship observations; decisions and outcomes retain their links. Learned self/relationship state and full bitemporal claim authority are still to be built.
-4. **Personality model handoff — pending:** connect the separately qualified model's native judgment output. Only then run behavioral comparisons.
+4. **Formation context — built as an input contract:** one sourced event, its direct parent, and explicitly selected current claims. Learned candidate extraction and adaptive context planning remain pending.
+5. **Personality model handoff — pending:** connect the separately qualified model's native judgment output. Only then run behavioral comparisons.
 
 A.L.I.C.E.'s Phase 2 SQLite Memory Core is the current released reference authority. Its broader destination considers an event fabric, claim authority, graph, vector, and workflow planes. This demo uses the actual implemented kernel stores for its first component. A passing test on a reference backend will not be presented as proof that every future backend or the complete Fable architecture works.
 

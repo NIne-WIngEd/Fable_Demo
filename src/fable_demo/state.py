@@ -20,6 +20,7 @@ def assemble_current(runtime: FableRuntime, *, host_keys: tuple[str, ...]) -> di
     audit = runtime.inspect()
     lane = MemoryLane(runtime)
     host = {key: lane.current(key=key) for key in host_keys}
+    host_history = {key: lane.history(key=key) for key in host_keys}
     events = runtime.history()
     decisions = {event.logical_id: event for event in events if event.kind == "decision"}
     outcomes = [{"logical_id": event.logical_id, "decision_id": event.relates_to,
@@ -35,6 +36,7 @@ def assemble_current(runtime: FableRuntime, *, host_keys: tuple[str, ...]) -> di
         "host_instance_id": runtime.scope.host_instance_id,
         "ledger_head": audit["ledger_head"],
         "host_confirmed_claims": host,
+        "host_claim_history": host_history,
         "assistant_self_observations": observed["assistant_self"],
         "relationship_observations": observed["relationship"],
         "decisions": [{"logical_id": item.logical_id, "text": item.text, "occurred_at": item.occurred_at}

@@ -92,17 +92,26 @@ class MemoryLane:
         from .runtime import _utc_now
 
         with open_memory_store(self.runtime.vault) as connection:
+            candidate = load_memory_candidate(connection, candidate_id=candidate_id)
+            if candidate.origin != "explicit_user" or not candidate.memory_key or not candidate.memory_key.startswith("demo.host."):
+                raise ValueError("only a staged explicit host candidate can use this confirmation path")
+            sources = connection.execute("SELECT source_ref FROM memory_candidate_sources WHERE candidate_id = ?",
+                                         (candidate_id,)).fetchall()
+            if len(sources) != 1:
+                raise ValueError("host candidate requires exactly one source event")
+            with self.runtime._stores() as (_raw, ledger):
+                self.runtime._append_missing(_raw, ledger)
+                event = ledger.load_event(str(sources[0]["source_ref"]))
+                if event.scope != self.runtime.scope:
+                    raise ValueError("candidate source belongs to another host")
+            if target_memory_id is None and event.event_type != "host-statement":
+                raise ValueError("a host correction requires its target memory")
+            if target_memory_id is not None and event.event_type != "host-correction":
+                raise ValueError("only a linked host correction can replace a memory")
             if target_memory_id is not None:
-                candidate = load_memory_candidate(connection, candidate_id=candidate_id)
                 target = load_memory(connection, memory_id=target_memory_id)
                 if target.memory_key != candidate.memory_key:
                     raise ValueError("correction target has a different memory key")
-                source = connection.execute("SELECT source_ref FROM memory_candidate_sources WHERE candidate_id = ?",
-                                            (candidate_id,)).fetchone()
-                if source is None:
-                    raise ValueError("candidate is missing its source event")
-                with self.runtime._stores() as (_raw, ledger):
-                    event = ledger.load_event(str(source["source_ref"]))
                 if event.event_type != "host-correction" or len(event.parent_event_ids) != 1:
                     raise ValueError("candidate is not a linked host correction")
                 if event.parent_event_ids[0] not in {item.source_ref for item in list_memory_sources(connection, memory_id=target_memory_id)}:
@@ -137,3 +146,22 @@ class MemoryLane:
                      "text": load_memory_content(connection, memory_id=item.memory_id, authorization=auth),
                      "source_event_ids": [source.source_ref for source in list_memory_sources(connection, memory_id=item.memory_id)]}
                     for item in state.memories]
+
+    def history(self, *, key: str) -> list[dict]:
+        """Inspect provenance-linked current and superseded versions for one key."""
+        from alice_memory.provenance import list_memory_sources
+        from alice_memory.service import MemoryContentAccessAuthorization, load_memory_content
+        from alice_memory.store import open_memory_store
+        from alice_memory.temporal import list_memory_history
+
+        if not _KEY.fullmatch(key):
+            raise ValueError("invalid memory key")
+        with open_memory_store(self.runtime.vault) as connection:
+            records = list_memory_history(connection, memory_key=f"demo.host.{key}")
+            auth = MemoryContentAccessAuthorization(actor="fable-demo-host", allowed=True,
+                                                     reason="local demo history inspection")
+            return [{"memory_id": item.memory_id, "validity_state": item.validity_state,
+                     "recorded_at": item.recorded_at,
+                     "text": load_memory_content(connection, memory_id=item.memory_id, authorization=auth),
+                     "source_event_ids": [source.source_ref for source in list_memory_sources(connection, memory_id=item.memory_id)]}
+                    for item in records]
