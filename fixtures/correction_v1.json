@@ -1,0 +1,15 @@
+{
+  "description": "Synthetic corrections in a person's own stated preferences. No personal data.",
+  "events": [
+    {"id":"e1","at":"2025-01-01T10:00:00Z","kind":"assertion","topic":"meeting_style","text":"I prefer video meetings for detailed project discussions.","source":"synthetic:day1"},
+    {"id":"e2","at":"2025-02-01T10:00:00Z","kind":"assertion","topic":"working_hours","text":"I prefer working early in the morning before messages arrive.","source":"synthetic:day2"},
+    {"id":"e3","at":"2025-03-01T10:00:00Z","kind":"correction","topic":"meeting_style","text":"Correction: I now prefer a written brief first.","source":"synthetic:day3","supersedes":"e1"},
+    {"id":"e4","at":"2025-04-01T10:00:00Z","kind":"assertion","topic":"travel_style","text":"When I travel for work I prefer quiet hotels near the venue.","source":"synthetic:day4"},
+    {"id":"e5","at":"2025-05-01T10:00:00Z","kind":"correction","topic":"working_hours","text":"Correction: I prefer late evening now.","source":"synthetic:day5","supersedes":"e2"}
+  ],
+  "questions": [
+    {"id":"q_before","at":"2025-02-10T12:00:00Z","text":"What meeting style do I prefer for detailed project discussions?","topic":"meeting_style","retrieval_query":"prefer","expected_ids":["e1"],"forbidden_ids":["e3"]},
+    {"id":"q_after","at":"2025-03-10T12:00:00Z","text":"What meeting style do I prefer for detailed project discussions?","topic":"meeting_style","retrieval_query":"prefer","expected_ids":["e3"],"forbidden_ids":["e1"]},
+    {"id":"q_work","at":"2025-05-10T12:00:00Z","text":"When do I prefer working, morning or evening?","topic":"working_hours","retrieval_query":"prefer","expected_ids":["e5"],"forbidden_ids":["e2"]}
+  ]
+}
