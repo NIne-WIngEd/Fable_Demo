@@ -4,6 +4,7 @@ import tempfile
 import unittest
 
 from fable_demo.evaluate import evaluate
+from fable_demo.context import prepare
 from fable_demo.events import Event
 from fable_demo.ledger_adapter import journal
 
@@ -11,6 +12,19 @@ FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "correction_v1.json
 
 
 class DemoIntegrationTest(unittest.TestCase):
+    def test_context_packet_carries_goal_decision_outcome_and_sources(self):
+        fixture = FIXTURE.with_name("outcome_chain_v1.json")
+        packet = prepare(fixture, at="2025-03-10T09:00:00Z", topic="work_style",
+                         question="Should I accept another recurring evening meeting?")
+        self.assertEqual(len(packet["evidence"]), 3)
+        self.assertEqual([item["category"] for item in packet["evidence"]], ["profile", "episodic", "episodic"])
+        self.assertTrue(all(item["sources"] for item in packet["evidence"]))
+        self.assertEqual(packet["ledger"]["linked_outcomes"], 1)
+        self.assertFalse(packet["ledger"]["plaintext_stored"])
+        early = prepare(fixture, at="2025-02-10T09:00:00Z", topic="work_style", question="Should I accept a meeting?")
+        self.assertEqual(len(early["evidence"]), 2)
+        self.assertEqual(early["ledger"]["linked_outcomes"], 0)
+
     def test_production_ledger_links_outcome_to_prior_decision(self):
         fixture = FIXTURE.with_name("outcome_chain_v1.json")
         data = json.loads(fixture.read_text())

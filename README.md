@@ -20,6 +20,7 @@ git -C A.L.I.C.E checkout 5f9b9ccb2628eb2a5512d8624b9a78bcc9c7fe38
 git clone https://github.com/NIne-WIngEd/Fable_Demo.git
 PYTHONPATH=A.L.I.C.E/src:Fable_Demo/src python -m fable_demo.cli Fable_Demo/fixtures/correction_v1.json
 PYTHONPATH=A.L.I.C.E/src:Fable_Demo/src python -m fable_demo.cli Fable_Demo/fixtures/longitudinal_v1.json
+PYTHONPATH=A.L.I.C.E/src:Fable_Demo/src python -m fable_demo.cli Fable_Demo/fixtures/outcome_chain_v1.json --at 2025-03-10T09:00:00Z --topic work_style --question "Should I accept another recurring evening meeting?"
 PYTHONPATH=A.L.I.C.E/src:Fable_Demo/src python -m unittest discover -s Fable_Demo/tests -v
 ```
 
@@ -30,6 +31,8 @@ All live stores are created in a temporary directory outside either repository. 
 The initial three-case fixture passes on A.L.I.C.E.'s temporal resolver and lexical search. Raw lexical overlap misses two corrections, while the simple most-recent comparator also passes all three. **This is not evidence that Fable beats a strong memory baseline.** It establishes a reproducible, production-aligned path for the next experiment.
 
 The separate `outcome_chain_v1.json` fixture exercises the real Experience Ledger's decision-to-outcome references and integrity check. It does **not** claim that an outcome has changed Fable's judgment. That still requires the qualified personality model and a tested learning path.
+
+The `--at`, `--topic`, and `--question` form prepares a bounded evidence packet. It retrieves current source-linked memories through A.L.I.C.E.'s temporal resolver and authorized content service, including the goal, earlier decision, and observed outcome in the synthetic example. The packet makes no recommendation. The caller supplies the topic key; discovering that key from an open-ended conversation is still unresolved.
 
 `longitudinal_v1.json` freezes 20 questions over four synthetic topics and 20 months. Its generator is in `scripts/generate_longitudinal_fixture.py`. With the topic key supplied, the authoritative temporal resolver finds all 20 current memories. The existing lexical search misses 6 because it ranks a small global candidate set before filtering old or other-topic records. The simple recency comparator finds all 20. This is a retrieval gap to address in A.L.I.C.E.'s serving path, not evidence of an end-to-end advantage. Generated scenarios are also too templated to serve as independent product evidence.
 

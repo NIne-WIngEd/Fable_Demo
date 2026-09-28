@@ -27,7 +27,7 @@ def _request(event: Event):
         memory_id=memory_id(event.id),
         content=event.text,
         memory_key=f"demo.{event.topic}",
-        category="profile",
+        category="profile" if event.kind in {"assertion", "correction"} else "episodic",
         knowledge_status="rayan_statement",
         confidence=1.0,
         data_classification="PRIVATE",
@@ -56,8 +56,8 @@ def ingest(connection, events: list[Event]) -> None:
             create_memory(connection, request=_request(event), authorization=authorization, created_at=event.at)
         elif event.kind == "correction":
             correct_memory(connection, memory_id=memory_id(event.supersedes), replacement=_request(event), authorization=authorization, corrected_at=event.at)
-        else:
-            raise ValueError(f"this first memory experiment cannot ingest {event.kind!r}; outcomes belong to the later ledger experiment")
+        elif event.kind in {"decision", "outcome"}:
+            create_memory(connection, request=_request(event), authorization=authorization, created_at=event.at)
 
 
 def retrieve(connection, vault: Path, question: Question, limit: int) -> list[str]:
