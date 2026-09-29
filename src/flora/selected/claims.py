@@ -14,6 +14,7 @@ import json
 from typing import Any
 
 from cognitive_kernel.canonical import require_identifier
+from cognitive_kernel.adjudication_contracts import ClaimEvidenceRelation
 from cognitive_kernel.claim_contracts import (
     ClaimIdentity,
     ClaimVersion,
@@ -24,6 +25,7 @@ from cognitive_kernel.contracts import ProductHostScope
 _IDENTITIES = "fable_claim_identities"
 _VERSIONS = "fable_claim_versions"
 _CURRENT = "fable_current_claims"
+_EVIDENCE = "fable_claim_evidence_relations"
 
 
 def _timestamp(value: str) -> datetime:
@@ -114,8 +116,12 @@ class XTDBClaimAuthority:
         table: str,
         row_id: str,
         valid_time: datetime | None = None,
+        all_valid: bool = False,
     ) -> dict[str, object] | None:
-        if valid_time is None:
+        if all_valid:
+            sql = f"SELECT * FROM {table} FOR VALID_TIME ALL WHERE _id = %s"
+            cursor = self.connection.execute(sql, (row_id,))
+        elif valid_time is None:
             sql = f"SELECT * FROM {table} WHERE _id = %s"
             cursor = self.connection.execute(sql, (row_id,))
         else:
@@ -130,6 +136,26 @@ class XTDBClaimAuthority:
         if len(values) != 1:
             raise ValueError("claim authority returned more than one current row")
         return values[0]
+
+    def _insert_immutable(
+        self,
+        *,
+        table: str,
+        row_id: str,
+        columns: dict[str, object],
+        valid_from: datetime,
+        valid_to: datetime | None,
+    ) -> None:
+        # XTDB INSERT is an upsert. Assert absence inside the same DML
+        # transaction so a racing writer cannot replace an immutable record.
+        with self.connection.transaction():
+            self.connection.execute(
+                f"ASSERT NOT EXISTS (SELECT 1 FROM {table} "
+                "FOR VALID_TIME ALL WHERE _id = %s::text)",
+                (row_id,),
+            )
+            self._insert(table=table, columns=columns,
+                         valid_from=valid_from, valid_to=valid_to)
 
     def _insert(
         self,
@@ -157,13 +183,14 @@ class XTDBClaimAuthority:
     def put_identity(self, identity: ClaimIdentity) -> None:
         self._assert_envelope(identity)
         row_id = self._row_id(identity.claim_id)
-        prior = self._fetch_record(table=_IDENTITIES, row_id=row_id)
+        prior = self._fetch_record(table=_IDENTITIES, row_id=row_id, all_valid=True)
         if prior is not None:
             if str(prior["identity_sha256"]) != identity.identity_sha256:
                 raise ValueError("claim identity is immutable")
             return
-        self._insert(
+        self._insert_immutable(
             table=_IDENTITIES,
+            row_id=row_id,
             columns={
                 "_id": row_id,
                 "scope_digest": self.scope_digest,
@@ -183,13 +210,14 @@ class XTDBClaimAuthority:
     def put_version(self, version: ClaimVersion) -> None:
         self._assert_envelope(version)
         row_id = self._row_id(version.claim_version_id)
-        prior = self._fetch_record(table=_VERSIONS, row_id=row_id)
+        prior = self._fetch_record(table=_VERSIONS, row_id=row_id, all_valid=True)
         if prior is not None:
             if str(prior["version_sha256"]) != version.version_sha256:
                 raise ValueError("claim version identifier was reused")
             return
-        self._insert(
+        self._insert_immutable(
             table=_VERSIONS,
+            row_id=row_id,
             columns={
                 "_id": row_id,
                 "scope_digest": self.scope_digest,
@@ -208,6 +236,40 @@ class XTDBClaimAuthority:
                 else _timestamp(version.envelope.valid_to)
             ),
         )
+
+    def put_evidence_relation(self, relation: ClaimEvidenceRelation) -> None:
+        self._assert_envelope(relation)
+        row_id = self._row_id(relation.relation_id)
+        prior = self._fetch_record(table=_EVIDENCE, row_id=row_id, all_valid=True)
+        if prior is not None:
+            if str(prior["relation_sha256"]) != relation.relation_sha256:
+                raise ValueError("evidence relation identifier was reused")
+            return
+        self._insert_immutable(
+            table=_EVIDENCE,
+            row_id=row_id,
+            columns={
+                "_id": row_id,
+                "scope_digest": self.scope_digest,
+                "relation_id": relation.relation_id,
+                "evidence_record_id": relation.evidence_record_id,
+                "target_record_id": relation.target_record_id,
+                "target_record_type": relation.target_record_type,
+                "relation_type": relation.relation_type,
+                "relation_sha256": relation.relation_sha256,
+                "record_json": _record_json(relation.metadata_record()),
+            },
+            valid_from=_timestamp(relation.envelope.valid_from),
+            valid_to=(None if relation.envelope.valid_to is None
+                      else _timestamp(relation.envelope.valid_to)),
+        )
+
+    def load_evidence_relation(self, relation_id: str) -> dict[str, object]:
+        row = self._fetch_record(table=_EVIDENCE, row_id=self._row_id(relation_id),
+                                 all_valid=True)
+        if row is None:
+            raise KeyError(relation_id)
+        return json.loads(str(row["record_json"]))
 
     def put_current(self, projection: CurrentClaimProjection) -> None:
         self._assert_envelope(projection)

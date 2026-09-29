@@ -3,7 +3,7 @@ import tempfile
 import unittest
 
 from cognitive_kernel.contracts import ProductHostScope
-from fable_demo.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
+from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 
 
 def _scope(host: str) -> ProductHostScope:

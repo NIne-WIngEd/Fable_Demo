@@ -4,7 +4,7 @@ import unittest
 
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
-from fable_demo.selected.experience import KurrentExperienceLog, decode_event, encode_event, event_uuid, stream_name
+from flora.selected.experience import KurrentExperienceLog, decode_event, encode_event, event_uuid, stream_name
 
 
 def event_for(host: str) -> ExperienceEvent:

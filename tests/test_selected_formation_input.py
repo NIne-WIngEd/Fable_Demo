@@ -4,8 +4,8 @@ import unittest
 
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
-from fable_demo.selected.formation_input import formation_input
-from fable_demo.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
+from flora.selected.formation_input import formation_input
+from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 
 
 class SelectedFormationInputTest(unittest.TestCase):

@@ -1,6 +1,6 @@
 # Selected-backend integration handoff — 2026-09-28
 
-This note is the takeover point after provisioning the first Docker-capable successor-fabric environment for Fable Demo.
+This note is the takeover point after provisioning the first Docker-capable successor-fabric environment for Flora.
 
 ## Authority boundary
 
@@ -96,4 +96,4 @@ PYTHONPATH=alice-reference/src:src python scripts/backend_restart_probe.py verif
 docker compose -f compose.integration.yml down -v
 ```
 
-For CI, `.github/workflows/demo.yml` is the authoritative repeatable receipt.
+For CI, `.github/workflows/flora.yml` is the authoritative repeatable receipt.

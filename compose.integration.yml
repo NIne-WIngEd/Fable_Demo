@@ -1,3 +1,5 @@
+name: flora
+
 services:
   kurrentdb:
     image: docker.kurrent.io/kurrent-latest/kurrentdb:26.1.1

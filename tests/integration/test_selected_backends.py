@@ -7,6 +7,7 @@ import psycopg
 from kurrentdbclient import KurrentDBClient
 from kurrentdbclient.exceptions import WrongCurrentVersionError
 
+from cognitive_kernel.adjudication_contracts import ClaimEvidenceRelation
 from cognitive_kernel.claim_contracts import (
     CanonicalTaggedValue,
     ClaimIdentity,
@@ -16,8 +17,8 @@ from cognitive_kernel.claim_contracts import (
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
 from cognitive_kernel.memory_contracts import MemoryUnitEnvelope
-from fable_demo.selected.claims import XTDBClaimAuthority
-from fable_demo.selected.experience import KurrentExperienceLog
+from flora.selected.claims import XTDBClaimAuthority
+from flora.selected.experience import KurrentExperienceLog
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -170,6 +171,29 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
             )
             authority.put_identity(identity)
 
+            first_relation = ClaimEvidenceRelation.create(
+                envelope=_envelope(
+                    scope=scope, authority_namespace_id=namespace,
+                    record_id="relation-integration-v1",
+                    record_type="claim_evidence_relation",
+                    authority_role="claim_authority",
+                    created_at="2026-09-01T00:00:00Z",
+                    source_records=("evidence-one", "claim-integration-v1"),
+                ),
+                relation_id="relation-integration-v1",
+                evidence_record_id="evidence-one",
+                target_record_id="claim-integration-v1",
+                target_record_type="claim_version",
+                relation_type="support", source_class="experience",
+                source_authority_class="owner_attested",
+                extractor_component_id="flora-integration",
+                extractor_version="v1", confidence=0.99,
+            )
+            authority.put_evidence_relation(first_relation)
+            authority.put_evidence_relation(first_relation)
+            self.assertEqual(authority.load_evidence_relation(first_relation.relation_id),
+                             first_relation.metadata_record())
+
             first_version = ClaimVersion.create(
                 envelope=_envelope(
                     scope=scope,
@@ -178,7 +202,7 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     record_type="claim_version",
                     authority_role="claim_authority",
                     created_at="2026-09-01T00:00:00Z",
-                    source_records=("claim-integration", "evidence-one"),
+                    source_records=("claim-integration", "evidence-one", first_relation.relation_id),
                 ),
                 claim_version_id="claim-integration-v1",
                 claim_id="claim-integration",
@@ -189,7 +213,7 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 authority_class="owner_attested",
                 confidence=0.99,
                 adjudication_state="accepted",
-                evidence_relation_ids=(),
+                evidence_relation_ids=(first_relation.relation_id,),
                 request_digest="c" * 64,
             )
             first_projection = CurrentClaimProjection.create(
@@ -226,6 +250,26 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 "claim-integration-v1",
             )
 
+            second_relation = ClaimEvidenceRelation.create(
+                envelope=_envelope(
+                    scope=scope, authority_namespace_id=namespace,
+                    record_id="relation-integration-v2",
+                    record_type="claim_evidence_relation",
+                    authority_role="claim_authority",
+                    created_at="2026-09-15T00:00:00Z",
+                    source_records=("evidence-two", "claim-integration-v2"),
+                ),
+                relation_id="relation-integration-v2",
+                evidence_record_id="evidence-two",
+                target_record_id="claim-integration-v2",
+                target_record_type="claim_version",
+                relation_type="correction", source_class="experience",
+                source_authority_class="owner_correction",
+                extractor_component_id="flora-integration",
+                extractor_version="v1", confidence=1.0,
+            )
+            authority.put_evidence_relation(second_relation)
+
             second_version = ClaimVersion.create(
                 envelope=_envelope(
                     scope=scope,
@@ -234,7 +278,7 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     record_type="claim_version",
                     authority_role="claim_authority",
                     created_at="2026-09-15T00:00:00Z",
-                    source_records=("claim-integration", "evidence-two"),
+                    source_records=("claim-integration", "evidence-two", second_relation.relation_id),
                     supersedes=("claim-integration-v1",),
                     logical_clock=2,
                 ),
@@ -247,7 +291,7 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 authority_class="owner_correction",
                 confidence=1.0,
                 adjudication_state="revised",
-                evidence_relation_ids=(),
+                evidence_relation_ids=(second_relation.relation_id,),
                 correction_of=("claim-integration-v1",),
                 request_digest="d" * 64,
             )
@@ -312,6 +356,8 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     "claim-integration",
                     as_of=datetime(2026, 9, 20, tzinfo=timezone.utc),
                 )
+            with self.assertRaises(KeyError):
+                other.load_evidence_relation(first_relation.relation_id)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Fable Demo
+# Flora
 
 An experiment for one Fable claim: after a host corrects a relevant belief or preference and a decision has an outcome, does Fable's later **native judgment** change for the right reason, while keeping its evidence trail? The experiment will compare that behavior with a strong general model plus memory, using the same available history and response budget. Then a small builder must reproduce the capability for another isolated host.
 
@@ -8,7 +8,7 @@ An experiment for one Fable claim: after a host corrects a relevant belief or pr
 
 The active path follows the A.L.I.C.E. Stage G–J successor design. The old Phase 2 runtime is void as an implementation basis for this demo. It was removed from `main`; the historical work remains in [commit `aad9ad4`](https://github.com/NIne-WIngEd/Fable_Demo/tree/aad9ad46bd0def74755728ed967d5a003f66e93b). Passing tests there never qualified this experiment.
 
-The [alignment and build map](docs/DEMO_ALIGNMENT.md) names the selected planes, what can be built independently, and the evidence required. For the portions exercised by the claim, we use the same logical contracts **and physical engines** chosen for the full system. We will not substitute a convenient local database and count its result as proof for XTDB, KurrentDB, Qdrant, or any other selected engine.
+The [alignment and build map](docs/FLORA_ALIGNMENT.md) names the selected planes, what can be built independently, and the evidence required. For the portions exercised by the claim, we use the same logical contracts **and physical engines** chosen for the full system. We will not substitute a convenient local database and count its result as proof for XTDB, KurrentDB, Qdrant, or any other selected engine.
 
 ## What is implemented here
 

@@ -11,8 +11,8 @@ from kurrentdbclient import KurrentDBClient
 
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
-from fable_demo.selected.claims import configure_xtdb_connection
-from fable_demo.selected.experience import KurrentExperienceLog
+from flora.selected.claims import configure_xtdb_connection
+from flora.selected.experience import KurrentExperienceLog
 
 MARKER = "selected-backend-persistence-v1"
 PROBE_ID = "fable-selected-backend-restart-probe"
