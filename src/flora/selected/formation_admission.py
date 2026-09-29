@@ -349,7 +349,7 @@ class XTDBFormationClaimAdmission:
             raise ValueError("invalid Claim namespace sequence counter")
         sequence = last + 1
         stored = _rows(authority.connection.execute(
-            f"SELECT MAX(store_sequence) AS maximum FROM {_VERSIONS} FOR VALID_TIME ALL "
+            f"SELECT MAX(CAST(store_sequence AS BIGINT)) AS maximum FROM {_VERSIONS} FOR VALID_TIME ALL "
             "WHERE scope_digest = %s::text", (authority.scope_digest,)))
         if len(stored) != 1 or "maximum" not in stored[0]:
             raise ValueError("Claim namespace sequence inventory is unavailable")

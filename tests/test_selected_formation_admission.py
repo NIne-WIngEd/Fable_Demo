@@ -229,7 +229,7 @@ class _AdmissionSQLCalls:
         else:
             row = self.rows.get((table, parameters[0]))
             found = [row] if row is not None else []
-        if sql.startswith("SELECT MAX(store_sequence)"):
+        if sql.startswith("SELECT MAX("):
             return _Cursor([{"maximum": max((row["store_sequence"] for row in found), default=None)}])
         if sql.startswith("ASSERT NOT"):
             if found:
