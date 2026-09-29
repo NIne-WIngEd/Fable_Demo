@@ -72,6 +72,14 @@ class ComparisonCustodyContractTest(unittest.TestCase):
             with self.subTest(kind=kind), self.assertRaises(PermissionError):
                 store.read(run_id="run", artifact_id=kind, permissions=None, purpose=purpose)
 
+    def test_assessment_closure_grant_cannot_open_labeled_ancestor_artifacts(self):
+        store = object.__new__(XTDBComparisonCustody)
+        for kind in ("plan", "run", "context", "history", "question", "output", "rejected_output", "blind_pack"):
+            store.metadata = lambda run, artifact_id, kind=kind: ComparisonArtifact({"kind": kind})
+            with self.subTest(kind=kind), self.assertRaisesRegex(PermissionError, "source-closure"):
+                store.read(run_id="run", artifact_id=kind, permissions=None,
+                           purpose="comparison_assessment:collection")
+
 
 if __name__ == "__main__":
     unittest.main()

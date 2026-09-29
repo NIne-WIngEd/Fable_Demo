@@ -262,6 +262,9 @@ class XTDBComparisonCustody:
         artifact = self.metadata(run_id, artifact_id)
         if artifact is not None and artifact.record["kind"] == "blind_key":
             raise PermissionError("blind identity key requires sealed assessment release")
+        if (artifact is not None and purpose.startswith("comparison_assessment:")
+                and artifact.record["kind"] not in {"assessment_spec", "assessment_rating", "assessment_seal"}):
+            raise PermissionError("assessment source-closure authority cannot open labeled run artifacts")
         return self._read_authorized(run_id=run_id, artifact_id=artifact_id,
                                      permissions=permissions, purpose=purpose)
 

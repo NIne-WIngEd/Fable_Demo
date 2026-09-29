@@ -9,7 +9,9 @@ import ladybug
 
 from cognitive_kernel.contracts import ProductHostScope
 from flora.selected.graph_recollection import LadybugEvidenceGraph
-from flora.selected.source_native import CurrentEvidencePacket, VerifiedSource
+from flora.selected.source_native import (
+    CurrentEvidencePacket, CurrentSourceManifest, SourceManifestItem, VerifiedSource,
+)
 
 
 class _Authority:
@@ -54,8 +56,12 @@ class SelectedGraphTest(unittest.TestCase):
                                                     b"synthetic"),))
             first = _Authority(host)
             second = _Authority(other)
+            manifest = CurrentSourceManifest("c1", "v1", "p1",
+                (SourceManifestItem("e1", "r1", "a" * 64),))
             with patch("flora.selected.graph_recollection.read_current_sources",
-                       return_value=source):
+                       return_value=source), patch(
+                    "flora.selected.graph_recollection.read_current_source_manifest",
+                    return_value=manifest):
                 graph.project_current(claim_id="c1", authority=first,
                                       log=_Scoped(host), objects=_Scoped(host),
                                       references={})
