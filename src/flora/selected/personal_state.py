@@ -107,16 +107,29 @@ class XTDBPersonalStateCandidates:
             raise ValueError("personal-state registry returned ambiguous row")
         return rows[0] if rows else None
 
+    def _check_episode_sources(
+        self, *, source_episode_ids: tuple[str, ...], source_records: tuple[str, ...],
+        claims: XTDBClaimAuthority, log: KurrentExperienceLog,
+        objects: EncryptedObjectPlane, references: Mapping[str, RawObjectReference],
+    ) -> None:
+        """Fail closed unless a governed subclass supplies accepted episode custody."""
+        if source_episode_ids:
+            raise ValueError("episode lineage requires governed accepted episode authority")
+
     def _check_sources(
         self, *, source_claim_version_ids: tuple[str, ...],
         source_evidence_ids: tuple[str, ...], source_records: tuple[str, ...],
+        source_episode_ids: tuple[str, ...] = (),
         claims: XTDBClaimAuthority, log: KurrentExperienceLog,
         objects: EncryptedObjectPlane,
         references: Mapping[str, RawObjectReference],
     ) -> None:
+        self._check_episode_sources(source_episode_ids=source_episode_ids,
+            source_records=source_records, claims=claims, log=log,
+            objects=objects, references=references)
         if not (self.scope == claims.scope == log.scope == objects.scope):
             raise ValueError("personal-state sources cross host scope")
-        if not set(source_claim_version_ids + source_evidence_ids).issubset(source_records):
+        if not set(source_claim_version_ids + source_evidence_ids + source_episode_ids).issubset(source_records):
             raise ValueError("personal-state envelope omits source lineage")
         replayed = {event.event_id: event for event in log.replay()}
         for version_id in source_claim_version_ids:
@@ -154,9 +167,11 @@ class XTDBPersonalStateCandidates:
             raise ValueError("owner state belongs to a different host")
         if version.projection_state not in {"candidate", "shadow"}:
             raise ValueError("candidate registry cannot activate personal state")
-        if version.source_episode_ids:
-            raise ValueError("episode lineage awaits the selected episode plane")
-        if (not version.source_claim_version_ids and not version.source_evidence_ids):
+        self._check_episode_sources(source_episode_ids=version.source_episode_ids,
+            source_records=version.envelope.source_records, claims=claims,
+            log=log, objects=objects, references=references)
+        if (not version.source_claim_version_ids and not version.source_evidence_ids
+                and not version.source_episode_ids):
             raise ValueError("personal state needs implemented source lineage")
         if (content.scope != self.scope
                 or version.content_digest != content.plaintext_sha256
@@ -164,6 +179,7 @@ class XTDBPersonalStateCandidates:
                 or hashlib.sha256(objects.get(content)).hexdigest() != version.content_digest):
             raise ValueError("personal-state content differs from encrypted raw object")
         self._check_sources(
+            source_episode_ids=version.source_episode_ids,
             source_claim_version_ids=version.source_claim_version_ids,
             source_evidence_ids=version.source_evidence_ids,
             source_records=version.envelope.source_records,
@@ -278,9 +294,8 @@ class XTDBPersonalStateCandidates:
                 or record["envelope"]["authority_namespace_id"]
                 != self.authority_namespace_id):
             raise ValueError("personal-state candidate record differs from its head")
-        if record["source_episode_ids"]:
-            raise ValueError("episode lineage awaits the selected episode plane")
         self._check_sources(
+            source_episode_ids=tuple(record["source_episode_ids"]),
             source_claim_version_ids=tuple(record["source_claim_version_ids"]),
             source_evidence_ids=tuple(record["source_evidence_ids"]),
             source_records=tuple(record["envelope"]["source_records"]),

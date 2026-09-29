@@ -17,7 +17,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cognitive_kernel.canonical import canonical_sha256, require_identifier, require_sha256
 
 from .comparison_run import (
-    ArmResult, ArmStopped, ExecutionRequest, MeasuredUsage, PreparationRequest,
+    ArmExecutionFailure, ArmResult, ArmStopped, ExecutionRequest, MeasuredUsage, PreparationRequest,
 )
 from .selected.context import LocalContext
 
@@ -332,8 +332,23 @@ class GeneralMemoryArmAdapter:
                 or response.authorization_marker != transfer_markers[-1]):
             raise ValueError("transport lacks its actual transfer-boundary authorization binding")
         self.exchange_verifier.verify(request=dispatch, response=response)
-        authorize()  # Refuse result acceptance if authority changed during generation.
-        if self.client.configuration != configuration.provider:
-            raise ValueError("provider configuration changed during dispatch")
-        return self.recorder.record(request=request, provider_request=dispatch, response=response,
-                                    token_count=count, authorization_marker=response.authorization_marker)
+        # Only an authenticated observation can supply metering for a rejected
+        # result. Subsequent permission or recording failures cannot undo a call.
+        observed_usage = MeasuredUsage(configuration.provider.feature_engine_id, count.tokens,
+            response.input_tokens, response.output_tokens, 1, response.cost_microunits, response.currency)
+        observed_usage.validate()
+        try:
+            authorize()  # Refuse acceptance if authority changed during generation.
+            if self.client.configuration != configuration.provider:
+                raise ValueError("provider configuration changed during dispatch")
+            return self.recorder.record(request=request, provider_request=dispatch, response=response,
+                                        token_count=count, authorization_marker=response.authorization_marker)
+        except ArmExecutionFailure as failure:
+            raise ArmExecutionFailure(failure.status, observed_usage) from None
+        except ArmStopped as stop:
+            raise ArmStopped(stop.status, observed_usage) from None
+        except ValueError:
+            raise ArmExecutionFailure("invalid_result", observed_usage) from None
+        except Exception:
+            # Retain metering without returning private exception text or output.
+            raise ArmExecutionFailure("failed", observed_usage) from None

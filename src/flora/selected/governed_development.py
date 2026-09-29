@@ -6,14 +6,13 @@ for ``personal_judgment``; formation permission alone grants no use here.
 Rollback restores bytes, not meaning: it creates a new immutable candidate from
 an actually activated older version and requires another explicit activation.
 
-No model is trained, inferred, or replaced by this module. Episode acceptance
-and episode-derived personal state remain unsupported. Source-use denial is a
+No model is trained, inferred, or replaced by this module. Episode-derived
+state requires the optional governed accepted-episode authority. Source-use denial is a
 read/use barrier, not erasure or model unlearning.
 """
 from __future__ import annotations
 
 from datetime import datetime
-import hashlib
 import json
 from typing import Any, Mapping
 
@@ -25,14 +24,15 @@ from cognitive_kernel.projection_contracts import ProjectionVersion
 from .claims import XTDBClaimAuthority, _dml_placeholder, _record_json
 from .experience import KurrentExperienceLog
 from .formation_policy import XTDBFormationPermissionPolicy
-from .formation_registry import RegisteredEncryptedFormationCustody, XTDBFormationSourceRegistry
+from .formation_registry import XTDBFormationSourceRegistry
 from .object_store import EncryptedObjectPlane, RawObjectReference
 from .outcome_revision import register_outcome_revision
 from .personal_state import (
     StateApprovalVerifier, VerifiedStateCandidate, XTDBPersonalStateCandidates,
     _ACTIVE, _HEADS, _VERSIONS,
 )
-from .source_native import _require_available, read_current_sources
+from .development_sources import RegisteredDevelopmentSourceGuard
+from .governed_episodes import XTDBGovernedEpisodes
 
 _HISTORY = "flora_personal_state_activation_receipts"
 _ROLLBACKS = "flora_personal_state_rollback_candidates"
@@ -69,7 +69,8 @@ class XTDBGovernedPersonalDevelopment(XTDBPersonalStateCandidates):
     """
     def __init__(self, *, scope: ProductHostScope, authority_namespace_id: str,
                  connection: Any, registry: XTDBFormationSourceRegistry,
-                 policy: XTDBFormationPermissionPolicy):
+                 policy: XTDBFormationPermissionPolicy,
+                 episodes: XTDBGovernedEpisodes | None = None):
         super().__init__(scope=scope, authority_namespace_id=authority_namespace_id,
                          connection=connection)
         if (registry.scope != scope or policy.scope != scope
@@ -77,96 +78,51 @@ class XTDBGovernedPersonalDevelopment(XTDBPersonalStateCandidates):
                 or policy.authority_namespace_id != self.authority_namespace_id
                 or policy.registry is not registry):
             raise ValueError("personal development crosses source-use authority")
-        self.registry, self.policy = registry, policy
+        if episodes is not None and (not isinstance(episodes, XTDBGovernedEpisodes)
+                or episodes.scope != scope or episodes.authority_namespace_id != self.authority_namespace_id
+                or episodes.registry is not registry or episodes.policy is not policy):
+            raise ValueError("personal development crosses accepted episode authority")
+        self.registry, self.policy, self.episodes = registry, policy, episodes
+
+    def _check_episode_sources(self, *, source_episode_ids: tuple[str, ...],
+                               source_records: tuple[str, ...], claims: XTDBClaimAuthority,
+                               log: KurrentExperienceLog, objects: EncryptedObjectPlane,
+                               references: Mapping[str, RawObjectReference]) -> None:
+        if not set(source_episode_ids).issubset(source_records):
+            raise ValueError("personal development omits accepted episode lineage")
+        if source_episode_ids and self.episodes is None:
+            raise ValueError("episode lineage requires governed accepted episode authority")
+        for episode_id in source_episode_ids:
+            self.episodes.read_accepted(episode_id, claims=claims, log=log,
+                                       objects=objects, references=references)
 
     def _check_sources(self, *, source_claim_version_ids: tuple[str, ...],
                        source_evidence_ids: tuple[str, ...], source_records: tuple[str, ...],
+                       source_episode_ids: tuple[str, ...] = (),
                        claims: XTDBClaimAuthority, log: KurrentExperienceLog,
                        objects: EncryptedObjectPlane,
                        references: Mapping[str, RawObjectReference]) -> None:
-        if (not self.scope == claims.scope == log.scope == objects.scope
-                or claims.authority_namespace_id != self.authority_namespace_id):
-            raise ValueError("personal development sources cross host or authority")
-        declared = set(source_claim_version_ids + source_evidence_ids)
-        if not declared.issubset(source_records):
-            raise ValueError("personal development omits source lineage")
-        # Every additional source record must also be an authorized original.
-        # Candidate/episode identifiers cannot silently become source authority.
-        original_ids = set(source_evidence_ids) | (set(source_records) - set(source_claim_version_ids))
-        claim_versions = {}
-        for version_id in source_claim_version_ids:
-            version = claims.load_version(version_id)
-            if (version["envelope"]["scope"] != self.scope.metadata_record()
-                    or version["envelope"]["authority_namespace_id"] != self.authority_namespace_id):
-                raise ValueError("personal development claim crosses source authority")
-            present = claims.load_current(version["claim_id"])
-            _require_available(present, version["claim_id"])
-            if present["validity_state"] != "current":
-                raise ValueError("personal development claim is not currently valid")
-            if present["current_claim_version_id"] != version_id:
-                raise ValueError("personal development cites a superseded claim")
-            claim_versions[version_id] = version
-            for relation_id in version["evidence_relation_ids"]:
-                relation = claims.load_evidence_relation(relation_id)
-                if (relation["target_record_type"] != "claim_version"
-                        or relation["target_record_id"] != version_id
-                        or relation["evidence_record_id"] not in version["envelope"]["source_records"]):
-                    raise ValueError("personal development claim lacks exact evidence binding")
-                original_ids.add(str(relation["evidence_record_id"]))
-        replayed = {event.event_id: event for event in log.replay()}
-        closure = {}
-        pending = list(original_ids)
-        while pending:
-            event_id = pending.pop()
-            if event_id in closure:
-                continue
-            source = self.registry.lookup(event_id)
-            event = replayed.get(event_id)
-            if (source is None or event is None or event.payload_reference is None
-                    or source.evidence.scope != self.scope
-                    or source.evidence.authority_namespace_id != self.authority_namespace_id
-                    or source.object_ref != event.payload_reference
-                    or source.evidence.content_digest != event.content_digest
-                    or source.evidence.parent_refs != event.parent_event_ids):
-                raise ValueError("personal development lacks registered original evidence")
-            if self.policy.permits(source, _PURPOSE) is not True:
-                raise ValueError("personal judgment source use is not currently permitted")
-            closure[event_id] = source
-            pending.extend(source.evidence.parent_refs)
-        # Recover original references from durable XTDB custody rather than a
-        # caller-authored map. Permission precedes all original plaintext I/O.
-        custody = RegisteredEncryptedFormationCustody(registry=self.registry, objects=objects)
-        authorized_references = {}
-        for event_id, source in closure.items():
-            raw = self.registry.raw_reference(source.object_ref)
-            if (raw is None or raw.scope != self.scope or raw.object_id != source.object_ref
-                    or hashlib.sha256(custody.read(self.scope, source.object_ref)).hexdigest()
-                    != source.evidence.content_digest):
-                raise ValueError("personal development original content differs from registered evidence")
-            authorized_references[source.object_ref] = raw
-        for version_id, version in claim_versions.items():
-            packet = read_current_sources(
-                claim_id=version["claim_id"], authority=claims, log=log,
-                objects=objects, references=authorized_references)
-            if packet.claim_version_id != version_id:
-                raise ValueError("personal development cites a superseded claim")
-        # No successful materialization is allowed to outrun a current denial.
-        for event_id, source in closure.items():
-            if (self.registry.lookup(event_id) != source
-                    or self.policy.permits(source, _PURPOSE) is not True):
-                raise ValueError("personal judgment source authority changed during read")
+        self._check_episode_sources(source_episode_ids=source_episode_ids,
+            source_records=source_records, claims=claims, log=log,
+            objects=objects, references=references)
+        RegisteredDevelopmentSourceGuard(self.scope, self.authority_namespace_id,
+            self.registry, self.policy).check(
+                source_claim_version_ids=source_claim_version_ids,
+                source_evidence_ids=source_evidence_ids, source_records=source_records,
+                derived_record_ids=source_episode_ids,
+                claims=claims, log=log, objects=objects, references=references)
 
     def put_candidate(self, version: ProjectionVersion, **kwargs: Any) -> None:
         """Check current source use before opening supplied derived state bytes."""
         version.validate()
-        if version.source_episode_ids:
-            raise ValueError("episode lineage awaits the selected episode plane")
         source_inputs = {key: kwargs[key] for key in ("claims", "log", "objects", "references")}
-        self._check_sources(source_claim_version_ids=version.source_claim_version_ids,
+        self._check_sources(source_episode_ids=version.source_episode_ids,
+                            source_claim_version_ids=version.source_claim_version_ids,
                             source_evidence_ids=version.source_evidence_ids,
                             source_records=version.envelope.source_records, **source_inputs)
         super().put_candidate(version, **kwargs)
-        self._check_sources(source_claim_version_ids=version.source_claim_version_ids,
+        self._check_sources(source_episode_ids=version.source_episode_ids,
+                            source_claim_version_ids=version.source_claim_version_ids,
                             source_evidence_ids=version.source_evidence_ids,
                             source_records=version.envelope.source_records, **source_inputs)
 
@@ -241,6 +197,7 @@ class XTDBGovernedPersonalDevelopment(XTDBPersonalStateCandidates):
             if history["projection_sha256"] != target.projection_sha256:
                 raise ValueError("rollback target differs from its activation receipt")
         self._check_sources(
+            source_episode_ids=version.source_episode_ids,
             source_claim_version_ids=version.source_claim_version_ids,
             source_evidence_ids=version.source_evidence_ids,
             source_records=version.envelope.source_records,
@@ -265,7 +222,8 @@ class XTDBGovernedPersonalDevelopment(XTDBPersonalStateCandidates):
             binding = self._immutable(_ROLLBACKS, self._rollback_key(version.version_id))
             if binding is None or binding["expected_active_version_id"] != expected_active_version_id:
                 raise ValueError("rollback activation changes its bound active predecessor")
-        self._check_sources(source_claim_version_ids=version.source_claim_version_ids,
+        self._check_sources(source_episode_ids=version.source_episode_ids,
+                            source_claim_version_ids=version.source_claim_version_ids,
                             source_evidence_ids=version.source_evidence_ids,
                             source_records=version.envelope.source_records, **inputs)
         head_id = self._head_id(subject_type, subject_id, projection_id)
@@ -326,7 +284,8 @@ class XTDBGovernedPersonalDevelopment(XTDBPersonalStateCandidates):
                 + ", ".join(_dml_placeholder(value) for value in columns.values()) + ")",
                 tuple(columns.values()))
             self._insert_receipt(_HISTORY, history_key, receipt)
-        self._check_sources(source_claim_version_ids=version.source_claim_version_ids,
+        self._check_sources(source_episode_ids=version.source_episode_ids,
+                            source_claim_version_ids=version.source_claim_version_ids,
                             source_evidence_ids=version.source_evidence_ids,
                             source_records=version.envelope.source_records, **inputs)
         return VerifiedStateCandidate(candidate.record, candidate.content, event.event_id)
@@ -340,7 +299,8 @@ class XTDBGovernedPersonalDevelopment(XTDBPersonalStateCandidates):
         if (receipt["projection_sha256"] != version.projection_sha256
                 or receipt["approval_event_id"] != result.approval_event_id):
             raise ValueError("active personal state differs from its governed activation receipt")
-        self._check_sources(source_claim_version_ids=version.source_claim_version_ids,
+        self._check_sources(source_episode_ids=version.source_episode_ids,
+                            source_claim_version_ids=version.source_claim_version_ids,
                             source_evidence_ids=version.source_evidence_ids,
                             source_records=version.envelope.source_records,
                             claims=kwargs["claims"], log=kwargs["log"], objects=kwargs["objects"],
@@ -353,7 +313,8 @@ class XTDBGovernedPersonalDevelopment(XTDBPersonalStateCandidates):
         """Gate a supplied outcome-linked proposal without deriving new state."""
         version = kwargs["version"]
         version.validate()
-        self._check_sources(source_claim_version_ids=version.source_claim_version_ids,
+        self._check_sources(source_episode_ids=version.source_episode_ids,
+                            source_claim_version_ids=version.source_claim_version_ids,
                             source_evidence_ids=version.source_evidence_ids,
                             source_records=version.envelope.source_records,
                             claims=kwargs["claims"], log=kwargs["log"], objects=kwargs["objects"],

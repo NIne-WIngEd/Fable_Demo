@@ -12,6 +12,7 @@ It creates no model, selector, semantic judge, ACFP shape, or IDP shape.
 | Original evidence | Actual Kurrent event, exact registered raw digest and role, parent closure, current permission, membership in the frozen phase history |
 | Claim | Exact current accepted version, evidence relations, current projection and value/content hashes |
 | Personal state | Exact active subject-bound version, governed activation receipt, independent owner approval, registered permitted approval, and current Claim/source closure |
+| Accepted episode | Exact current accepted upstream episode/candidate publication, qualified formation plus independent semantic admission, private summary/narrative digests, original closure and registered acceptance control |
 | Internal approval | Typed separately; never accepted as shared original evidence |
 | Model roles | Current registered MFM and personality artifacts, host/interface/generation and exact checkpoint bytes |
 | Phase snapshot | Each actual artifact qualifier independently verifies the exact phase, frozen history, run plan, current state lineage and private training/updater exclusions |
@@ -61,16 +62,24 @@ request digest, receipt digest, private training/source snapshot digest, and an
 explicit `allowed_for_phase=True`. This bridge defines the verification boundary,
 not a universal receipt format or a new producer training schema.
 
-Current supported contexts contain Claims and approved personal state. An
-accepted episode route must use the separate governed episode publication and
-original closure; an unregistered episode candidate cannot satisfy this bridge.
+Current supported contexts contain Claims and approved personal state, including
+state derived from actual governed accepted episodes. Episode candidates are not
+accepted narratives. `read_accepted` reauthenticates the actual external formation
+and semantic admission, exact private candidate custody and current publication.
+The lineage binds each accepted episode and keeps its registered publication
+request in `InternalEvidenceBinding`, matching the context’s typed
+`control_event_ids`. Every original episode parent stays in the frozen phase
+history; control metadata and private narrative bytes never enter baseline
+history. The phase qualifier must cover this exact accepted/private state snapshot
+too. Missing publication or revoked semantic/source authority fails closed.
 
 ## Validation boundary
 
-Seven deterministic test methods cover parent closure, before/after exclusion,
+Eleven deterministic test methods cover parent closure, before/after exclusion,
 current content and value mutations, denied/missing/wrong/signed phase receipts,
-internal approvals, concurrent phase-history permission/checkpoint changes, and exact native
+internal approvals/accepted episode controls and candidate rejection, concurrent phase-history permission/checkpoint changes, and exact native
 result recovery. The SQL recorder is mechanics evidence only. The selected
-integration case separately exercises real Kurrent/XTDB custody and recreation
-with fictional producer outputs/receipts. Passing it qualifies the bridge's
+integration cases separately exercise real Kurrent/XTDB custody and recreation
+with Claim-state and accepted-episode native contexts and fictional producer
+outputs/receipts. Passing them qualifies the bridge's
 backend wiring, not MFM, personality, or the FloRA behavioral claim.

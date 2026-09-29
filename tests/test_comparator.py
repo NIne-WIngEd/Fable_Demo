@@ -1,5 +1,6 @@
 """Synthetic source-selection/provider-contract regressions, not benchmark evidence."""
 from dataclasses import replace
+import json
 from types import SimpleNamespace
 import unittest
 
@@ -11,7 +12,7 @@ from flora.comparator import (
     Ed25519TransportObservationVerifier, GeneralMemoryArmAdapter, ProviderRequest,
     provider_payload, sha,
 )
-from flora.comparison_run import ArmStopped, ExecutionRequest, PreparationRequest
+from flora.comparison_run import ArmExecutionFailure, ArmStopped, ExecutionRequest, PreparationRequest
 from flora.selected.comparator_memory import (
     QdrantOriginalMemory, ancestors, lexical_ranking, source_windows, verify_window_context,
 )
@@ -68,6 +69,29 @@ class ComparatorContractsTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(ValueError, "actual original"):
             verify_window_context(changed, self.preparation.history, self.config)
 
+    def test_window_bounds_cannot_exceed_actual_bytes_or_change_frozen_segmentation(self):
+        from flora.comparator import encoded
+        source = self.preparation.history.sources[0]
+        window = self.context.plan.windows[0]
+        for start, end, expected in ((0, len(source.plaintext) + 5000, "byte bounds"),
+                                     (1, len(source.plaintext), "configured source windows")):
+            with self.subTest(start=start, end=end):
+                fragment = source.plaintext[start:end]
+                forged = replace(window, start_byte=start, end_byte=end, content_sha256=sha(fragment))
+                content = json.loads(self.context.items[0].content)
+                content.update(start_byte=start, end_byte=end, source_excerpt=fragment.decode())
+                changed = replace(self.context,
+                    plan=replace(self.context.plan, windows=(forged,) + self.context.plan.windows[1:]),
+                    items=(replace(self.context.items[0], content=encoded(content)),) + self.context.items[1:])
+                with self.assertRaisesRegex(ValueError, expected):
+                    verify_window_context(changed, self.preparation.history, self.config)
+
+    def test_original_only_comparator_refuses_native_internal_control_events(self):
+        changed = replace(self.context, items=(replace(self.context.items[0],
+            control_event_ids=("internal-native-control",)),) + self.context.items[1:])
+        with self.assertRaisesRegex(ValueError, "actual original"):
+            verify_window_context(changed, self.preparation.history, self.config)
+
     def test_lexical_route_finds_exact_terms_and_wire_budget_includes_envelope(self):
         ranked = lexical_ranking(b"concise", self.windows)
         self.assertEqual(self.windows[ranked[0]][0].event_id, self.preparation.history.sources[-1].event.event_id)
@@ -96,7 +120,8 @@ class ComparatorContractsTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             self.verifier.verify(request=request, response=replace(response, returned_model_id="different-model"))
 
-    def adapter(self, *, call_transfer=True, revoke_after=False, counter=None):
+    def adapter(self, *, call_transfer=True, revoke_after=False, counter=None,
+                recorder_error=False, invalid_proof=False):
         state = {"allowed": True, "calls": 0}
         key, config = self.key, self.config
         class Disclosure:
@@ -110,6 +135,8 @@ class ComparatorContractsTest(unittest.IsolatedAsyncioTestCase):
             async def generate(self, request, *, authorize_transfer):
                 marker = authorize_transfer() if call_transfer else "d" * 64
                 response = signed_response(request, marker, key)
+                if invalid_proof:
+                    response = replace(response, proof=b"invalid-proof")
                 if revoke_after:
                     state["allowed"] = False
                 return response
@@ -117,6 +144,8 @@ class ComparatorContractsTest(unittest.IsolatedAsyncioTestCase):
             called = False
             def record(self, **kwargs):
                 self.called = True
+                if recorder_error:
+                    raise recorder_error("fictional private recorder details")
                 return "fixture-recorded-contract"
         recorder = Recorder()
         memory = SimpleNamespace(configuration=config)
@@ -137,8 +166,29 @@ class ComparatorContractsTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_revocation_during_inference_blocks_recorded_acceptance(self):
         adapter, _, recorder = self.adapter(revoke_after=True)
-        with self.assertRaises(ArmStopped):
+        with self.assertRaises(ArmStopped) as stopped:
             await adapter.execute(self.execution)
+        self.assertEqual(stopped.exception.status, "refused")
+        self.assertEqual(stopped.exception.usage.feature_calls, 1)
+        self.assertEqual(stopped.exception.usage.output_tokens, 9)
+        self.assertGreater(stopped.exception.usage.input_tokens, 0)
+        self.assertGreater(stopped.exception.usage.context_tokens, 0)
+        self.assertIsNone(stopped.exception.usage.cost_microunits)
+        self.assertFalse(recorder.called)
+
+    async def test_only_verified_metering_survives_post_inference_record_failure(self):
+        for failure, status in ((ValueError, "invalid_result"), (RuntimeError, "failed")):
+            with self.subTest(failure=failure):
+                adapter, _, recorder = self.adapter(recorder_error=failure)
+                with self.assertRaises(ArmExecutionFailure) as stopped:
+                    await adapter.execute(self.execution)
+                self.assertEqual(str(stopped.exception), status)
+                self.assertEqual(stopped.exception.usage.feature_calls, 1)
+                self.assertTrue(recorder.called)
+        adapter, _, recorder = self.adapter(revoke_after=True, invalid_proof=True)
+        with self.assertRaises(InvalidSignature) as invalid:
+            await adapter.execute(self.execution)
+        self.assertFalse(hasattr(invalid.exception, "usage"))
         self.assertFalse(recorder.called)
 
     async def test_actual_request_budget_and_frozen_arm_checked_before_call(self):

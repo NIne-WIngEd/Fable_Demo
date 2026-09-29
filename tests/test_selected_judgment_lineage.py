@@ -5,6 +5,7 @@ calls are recorded; actual selected-fabric qualification is separate.
 """
 import base64
 from dataclasses import replace
+from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
@@ -19,11 +20,12 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cognitive_kernel.canonical import canonical_json_bytes
 from cognitive_kernel.contracts import ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
-from cognitive_kernel.projection_contracts import ProjectionVersion
+from cognitive_kernel.projection_contracts import EpisodeRecord, ProjectionVersion
 from flora.comparison_run import HistorySnapshot, SourceMaterial
 from flora.selected.context import ContextPlan, StateRoute
 from flora.selected.experiment_runtime import RuntimeBlocked, SuppliedStateActivation
 from flora.selected.formation_context import register_experience_source
+from flora.selected.governed_episodes import EpisodeAcceptanceRequest, XTDBGovernedEpisodes, record_episode_acceptance_request
 from flora.selected.judgment_lineage import NativeJudgmentLineageVerifier, VerifiedPhaseArtifactSnapshot
 from flora.selected.owner_authorization import Ed25519OwnerActionVerifier, OwnerActionProof, owner_action_message
 from flora.selected.personal_state import activation_request
@@ -85,15 +87,29 @@ class FrozenHistoryAuthority:
 class _StateSQLCalls(_semantic_fixture._AdmissionSQLCalls):
     """Record the additional governed-state CAS shape, never an engine."""
     def execute(self, sql, parameters):
-        if sql.startswith("ASSERT EXISTS") and "AND version_id =" in sql:
+        if sql.startswith("ASSERT EXISTS") and ("AND version_id =" in sql or "AND episode_id =" in sql):
             self.calls.append((sql, parameters))
             table = re.search(r"FROM (\w+)", sql).group(1)
             row = self.rows.get((table, parameters[0]))
-            if (row is None or row["version_id"] != parameters[1]
+            column = "version_id" if "AND version_id =" in sql else "episode_id"
+            if (row is None or row[column] != parameters[1]
                     or (len(parameters) == 3 and row["approval_event_id"] != parameters[2])):
                 raise ValueError("synthetic state CAS failed")
             return _semantic_fixture._Cursor([])
         return super().execute(sql, parameters)
+
+
+class SuppliedEpisodeAdmissionFixture:
+    """Exact independent fixture allow-list, not MFM inference or a judge."""
+    def __init__(self):
+        self.qualified, self.adjudicated = set(), set()
+
+    def qualified_formation(self, candidate, artifact, formation_receipt_ref):
+        return (candidate.episode_sha256, artifact.artifact_id, formation_receipt_ref) in self.qualified
+
+    def authenticated_adjudication(self, request, candidate, artifact, event):
+        return (request.request_sha256, candidate.episode_sha256, artifact.artifact_id,
+                event.event_sha256) in self.adjudicated
 
 
 class SelectedJudgmentLineageTest(unittest.TestCase):
@@ -134,15 +150,18 @@ class SelectedJudgmentLineageTest(unittest.TestCase):
         return (verifier or self.verifier).context_lineage(case_id="case-one", phase=phase,
             history=self.histories[("case-one", phase)], context=context or self.runtime._context(self.plan))
 
-    def _activate_state(self):
+    def _activate_state(self, episode_id=None):
         f = self.fixture
         raw = f.objects.put(b"fictional private host-state; not learned")
         at, version_id = "2026-09-29T14:00:00Z", "lineage-owner-v1"
+        sources = (self.accepted.claim_version_id,) if episode_id is None else (episode_id,)
         envelope = _semantic_fixture.fixture_envelope(f.scope, f.namespace, version_id, "projection_version",
-            "registered_projection", (self.accepted.claim_version_id,), at=at, digest=raw.plaintext_sha256)
+            "registered_projection", sources, at=at, digest=raw.plaintext_sha256)
         version = ProjectionVersion.create(envelope=envelope, projection_id="lineage-owner-state", version_id=version_id,
             projection_type="owner_model", subject_type="owner", subject_id=f.scope.host_instance_id,
-            modalities=("symbolic",), generation=1, source_claim_version_ids=(self.accepted.claim_version_id,),
+            modalities=("symbolic",), generation=1,
+            source_claim_version_ids=(self.accepted.claim_version_id,) if episode_id is None else (),
+            source_episode_ids=() if episode_id is None else (episode_id,),
             valid_from=at, valid_to=None, produced_at=at, projection_state="candidate",
             responsible_component="fictional-supplied-state", model_id=None, model_version=None,
             content_digest=raw.plaintext_sha256, supersedes_version_id=None)
@@ -172,6 +191,51 @@ class SelectedJudgmentLineageTest(unittest.TestCase):
         self.plan = replace(self.plan, state_routes=(StateRoute("owner", f.scope.host_instance_id, version.projection_id),))
         return approval
 
+    def _episode(self, *, accept=True):
+        f = self.fixture
+        self.episode_verifier = SuppliedEpisodeAdmissionFixture()
+        episodes = XTDBGovernedEpisodes(scope=f.scope, authority_namespace_id=f.namespace,
+            connection=f.connection, registry=f.registry, policy=f.source_policy,
+            custody=f.private, verifier=self.episode_verifier)
+        f.state.episodes = episodes
+        summary, content = f.objects.put(b"fictional episode summary"), f.objects.put(b"fictional episode content")
+        envelope = _semantic_fixture.fixture_envelope(f.scope, f.namespace, "lineage-episode", "episode",
+            "registered_projection", (self.original_events[1].event_id,), at="2026-09-29T13:00:00Z",
+            digest=content.plaintext_sha256)
+        candidate = EpisodeRecord.create(envelope=envelope, episode_id="lineage-episode",
+            episode_kind="life_event", episode_state="candidate", member_evidence_ids=(self.original_events[1].event_id,),
+            participant_ids=(f.scope.host_instance_id,), valid_from="2026-09-29T13:00:00Z", valid_to=None,
+            formed_at="2026-09-29T13:00:00Z", formation_component_id="fictional-qualified-mfm",
+            formation_version="fixture-only", summary_content_digest=summary.plaintext_sha256,
+            full_content_digest=content.plaintext_sha256, confidence=None, generation=1)
+        artifact = f.private.record(artifact_id="lineage-episode-artifact", kind="episode",
+            contract=candidate.metadata_record(), attachments=(("summary", summary), ("content", content)),
+            parent_event_ids=(self.original_events[1].event_id,), log=f.log, objects=f.objects,
+            occurred_at="2026-09-29T13:10:00Z", expected_revision=len(f.log.replay())-1)
+        inputs = dict(claims=f.authority, log=f.log, objects=f.objects, references=f.references)
+        episodes.put_candidate(candidate, thread_id="lineage-episode-thread", summary=summary,
+                               content=content, **inputs)
+        if not accept:
+            return candidate, None
+        request = EpisodeAcceptanceRequest.create(scope=f.scope, authority_namespace_id=f.namespace,
+            request_id="lineage-episode-adjudication", thread_id="lineage-episode-thread",
+            candidate_episode_id=candidate.episode_id, candidate_episode_sha256=candidate.episode_sha256,
+            candidate_artifact_id=artifact.artifact_id, candidate_artifact_sha256=artifact.record_sha256,
+            formation_receipt_ref="fictional-episode-formation-receipt", adjudication_ref="fictional-episode-review",
+            adjudication_policy_sha256="b"*64, expected_previous_episode_id=None,
+            expected_previous_episode_sha256=None, adjudicated_at="2026-09-29T13:30:00Z")
+        recorded = record_episode_acceptance_request(request=request,
+            parent_event_ids=(self.original_events[1].event_id,), log=f.log, objects=f.objects,
+            expected_revision=len(f.log.replay())-1)
+        f.log.entries[-1] = replace(f.log.entries[-1], recorded_at=datetime(2026,9,29,14,tzinfo=timezone.utc))
+        register_experience_source(event_id=recorded.event.event_id, raw=recorded.raw, registry=f.registry,
+            log=f.log, objects=f.objects, role="derived_inference", modality="structured")
+        self.episode_verifier.qualified.add((candidate.episode_sha256, artifact.artifact_id, request.formation_receipt_ref))
+        self.episode_verifier.adjudicated.add((request.request_sha256, candidate.episode_sha256,
+                                              artifact.artifact_id, recorded.event.event_sha256))
+        episodes.accept(request=request, request_event_id=recorded.event.event_id, **inputs)
+        return candidate, recorded.event
+
     def test_exact_original_closure_phase_snapshots_and_current_claim_hashes(self):
         lineage = self._lineage()
         self.assertEqual(lineage.original_event_ids, tuple(sorted(event.event_id for event in self.original_events)))
@@ -190,6 +254,26 @@ class SelectedJudgmentLineageTest(unittest.TestCase):
                         replace(context.items[0], claim_value={"invented": "other claim"})):
             with self.assertRaisesRegex(ValueError, "content/value/current authority"):
                 self._lineage(context=replace(context, items=(changed,)))
+
+    def test_comparison_and_provider_audit_are_never_shared_original_history(self):
+        original_history = self.histories[("case-one", "after")]
+        for event_type in ("comparison_artifact", "provider_attempt_artifact"):
+            raw = self.fixture.objects.put(("fictional internal " + event_type).encode())
+            event = ExperienceEvent.create(event_type=event_type, scope=self.fixture.scope,
+                occurred_at="2026-09-29T12:00:00Z", content_digest=raw.plaintext_sha256,
+                payload_reference=raw.object_id, retention_class="ordinary_experience", storage_tier="raw_buffer",
+                provenance=ProvenanceReference.create(provenance_type="generated_reconstruction",
+                    source_reference_ids=(raw.object_id,), derivation_activity_id="fixture-internal-audit",
+                    responsible_component="fixture-audit"))
+            self.fixture.log.append(event, expected_revision=len(self.fixture.log.replay())-1)
+            register_experience_source(event_id=event.event_id, raw=raw, registry=self.fixture.registry,
+                log=self.fixture.log, objects=self.fixture.objects, role="generated_reconstruction", modality="structured")
+            self.histories[("case-one", "after")] = replace(original_history,
+                sources=original_history.sources + (SourceMaterial(event, self.fixture.objects.get(raw)),))
+            # Even a mistakenly frozen, currently purpose-permitted history
+            # cannot turn control/audit content into original user evidence.
+            with self.assertRaisesRegex(ValueError, "internal approvals/execution"):
+                self._lineage()
 
     def test_missing_actual_phase_adapter_and_wrong_phase_receipts_fail_closed(self):
         binding = self.fixture.bindings["personality_judgment"]
@@ -240,6 +324,41 @@ class SelectedJudgmentLineageTest(unittest.TestCase):
         self.qualifier.callback = lambda: setattr(authority, "allowed", False)
         with self.assertRaisesRegex(PermissionError, "phase history authority changed"):
             self._lineage(verifier=verifier)
+
+    def test_accepted_episode_control_and_private_narrative_are_typed_without_original_promotion(self):
+        candidate, control = self._episode()
+        approval = self._activate_state(candidate.episode_id)
+        context = self.runtime._context(self.plan)
+        self.assertEqual(context.items[1].control_event_ids, (control.event_id,))
+        lineage = self._lineage(context=context)
+        self.assertEqual(lineage.personal_state[0].source_episode_ids, (candidate.episode_id,))
+        self.assertEqual({item.record_type for item in lineage.internal}, {"state_activation_approval", "episode_acceptance"})
+        self.assertEqual({item.event_id for item in lineage.internal}, {approval.event_id, control.event_id})
+        self.assertEqual(lineage.episodes[0].candidate_episode_sha256, candidate.episode_sha256)
+        self.assertNotIn(control.event_id, lineage.original_event_ids)
+        self.assertEqual(set(lineage.original_event_ids), {item.event_id for item in self.original_events})
+        changed = replace(context.items[1], control_event_ids=())
+        with self.assertRaisesRegex(ValueError, "content/value/current authority"):
+            self._lineage(context=replace(context, items=(context.items[0], changed)))
+        self.episode_verifier.adjudicated.clear()
+        with self.assertRaisesRegex(ValueError, "qualified formation and independent"):
+            self._lineage(context=context)
+
+    def test_episode_candidate_cannot_influence_state_before_independent_publication(self):
+        candidate, _ = self._episode(accept=False)
+        with self.assertRaisesRegex(ValueError, "no governed accepted publication"):
+            self._activate_state(candidate.episode_id)
+
+    def test_episode_only_context_still_requires_phase_originals_and_current_semantic_authority(self):
+        candidate, _ = self._episode()
+        self._activate_state(candidate.episode_id)
+        self.plan = replace(self.plan, exact_claim_ids=())
+        context = self.runtime._context(self.plan)
+        with self.assertRaisesRegex(ValueError, "exceeds frozen phase"):
+            self._lineage(phase="before", context=context)
+        self.qualifier.callback = self.episode_verifier.adjudicated.clear
+        with self.assertRaisesRegex(ValueError, "qualified formation and independent"):
+            self._lineage(context=context)
 
     def test_native_result_requires_actual_invocation_exact_task_output_and_current_plan(self):
         judgment = self.runtime.judge(plan=self.plan, task=b"fixture common question", invocation_id="native-lineage-call")

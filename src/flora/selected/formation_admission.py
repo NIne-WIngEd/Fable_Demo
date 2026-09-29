@@ -28,19 +28,18 @@ from cognitive_kernel.memory_contracts import MemoryUnitEnvelope
 from .authority_binding import bind_claim_source
 from .claims import (
     XTDBClaimAuthority, _CURRENT, _EVIDENCE, _HEAD, _IDENTITIES, _VERSIONS,
-    _record_json, _rows, _timestamp,
+    _record_json, _timestamp,
 )
+from .claim_controller import XTDBClaimSequenceController, _COUNTER
 from .experience import KurrentExperienceLog
 from .formation_candidates import RecoveredFormationCandidate, XTDBFormationProposalCandidates
 from .object_store import EncryptedObjectPlane
 
-_COUNTER = "flora_claim_admission_namespace_counters"
 _SLOTS = "flora_claim_admission_property_slots"
 _CANDIDATES = "flora_admitted_claim_candidates"
 _ADJUDICATIONS = "flora_claim_adjudications"
 _CONFLICTS = "flora_claim_conflict_records"
 _RECEIPTS = "flora_claim_admission_receipts"
-_CONTROLLER = "flora-governed-claim-admission-v1"
 
 
 @dataclass(frozen=True)
@@ -338,25 +337,9 @@ class XTDBFormationClaimAdmission:
             return receipt
 
         authority = self.authority
-        counter_row = self._row(_COUNTER, "admission-namespace-counter")
-        counter = None if counter_row is None else self._read_record(
-            counter_row, identifier="admission-namespace-counter")
-        if counter is not None and (counter.get("schema") != "flora-claim-sequence-v1"
-                                    or counter.get("controller_id") != _CONTROLLER):
-            raise ValueError("Claim namespace has a different sequence controller")
-        last = 0 if counter is None else counter["last_store_sequence"]
-        if isinstance(last, bool) or not isinstance(last, int) or last < 0:
-            raise ValueError("invalid Claim namespace sequence counter")
-        sequence = last + 1
-        stored = _rows(authority.connection.execute(
-            f"SELECT MAX(CAST(store_sequence AS BIGINT)) AS maximum FROM {_VERSIONS} FOR VALID_TIME ALL "
-            "WHERE scope_digest = %s::text", (authority.scope_digest,)))
-        if len(stored) != 1 or "maximum" not in stored[0]:
-            raise ValueError("Claim namespace sequence inventory is unavailable")
-        maximum = stored[0]["maximum"]
-        if maximum is not None and (isinstance(maximum, bool) or not isinstance(maximum, int)
-                                    or maximum < 1 or maximum > last):
-            raise ValueError("Claim namespace contains an untracked store sequence")
+        controller = XTDBClaimSequenceController(authority)
+        allocation = controller.prepare()
+        sequence = allocation.sequence
         claim_id = candidate.identity.claim_id
         current = authority._fetch_record(table=_HEAD, row_id=authority._row_id(claim_id))
         identity = self._row(_IDENTITIES, claim_id)
@@ -465,22 +448,7 @@ class XTDBFormationClaimAdmission:
         with connection.transaction():
             # No nested put_* transactions/SAVEPOINTs: all writes roll back as
             # one native XTDB DML transaction if any assertion or insert fails.
-            counter_key = authority._row_id("admission-namespace-counter")
-            if counter is None:
-                connection.execute(
-                    f"ASSERT NOT EXISTS (SELECT 1 FROM {_COUNTER} FOR VALID_TIME ALL WHERE _id = %s::text)",
-                    (counter_key,))
-                connection.execute(
-                    f"ASSERT NOT EXISTS (SELECT 1 FROM {_VERSIONS} FOR VALID_TIME ALL "
-                    "WHERE scope_digest = %s::text)", (authority.scope_digest,))
-            else:
-                connection.execute(
-                    f"ASSERT EXISTS (SELECT 1 FROM {_COUNTER} WHERE _id = %s::text AND record_sha256 = %s::text)",
-                    (counter_key, counter["record_sha256"]))
-                connection.execute(
-                    f"ASSERT NOT EXISTS (SELECT 1 FROM {_VERSIONS} FOR VALID_TIME ALL "
-                    "WHERE scope_digest = %s::text AND store_sequence >= %s::bigint)",
-                    (authority.scope_digest, sequence))
+            controller.assert_allocation(allocation)
             if expected_previous is None:
                 connection.execute(f"ASSERT NOT EXISTS (SELECT 1 FROM {_HEAD} WHERE _id = %s::text)",
                                    (authority._row_id(claim_id),))
@@ -544,10 +512,7 @@ class XTDBFormationClaimAdmission:
                               valid_to=None if projection.envelope.valid_to is None else _timestamp(projection.envelope.valid_to))
             authority._insert(table=_HEAD, columns=columns,
                               valid_from=_timestamp(projection.envelope.valid_from), valid_to=None)
-            self._insert_record(_COUNTER, "admission-namespace-counter",
-                                {"schema": "flora-claim-sequence-v1", "controller_id": _CONTROLLER,
-                                 "last_store_sequence": sequence},
-                                at, immutable=False)
+            controller.write_allocation(allocation, at=at)
             if slot is None:
                 self._insert_record(_SLOTS, slot_key, {"schema": "flora-claim-property-v1", "claim_id": claim_id}, at)
             self._insert_record(_RECEIPTS, receipt_key, {

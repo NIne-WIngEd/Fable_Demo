@@ -38,8 +38,8 @@ The source planes are not one cross-plane transaction. A permission change racin
 
 ## Remaining dependencies and limits
 
-- Accepted `EpisodeRecord` lineage is still unsupported for personal-state authority. An episode candidate cannot promote itself into accepted state. The existing episode-candidate plane remains available for candidate custody.
+- Optional accepted `EpisodeRecord` lineage now requires the actual governed authority described in [Governed episode acceptance](GOVERNED_EPISODE_ACCEPTANCE.md). An episode candidate cannot promote itself into accepted state. Real formation and independently authenticated semantic admission remain external dependencies.
 - The actual MFM must produce and qualify state proposals; the actual personality model must consume qualified state and produce native judgment. A stored or activated fixture is not evidence of either capability.
-- Production owner enrollment, key custody, durable proof lookup and policy selection remain external to this wrapper. The signed integration fixture supplies an enrolled key and explicit proof mapping; it does not implement enrollment.
-- Callers currently supply private state/approval object references. The durable registered-original source plane is used for original source authority; complete process/service-restart custody of every derived private artifact needs the surrounding runtime's durable reference wiring.
+- Production owner enrollment, encryption/key custody and policy selection remain external. [Private artifact custody](PERSONAL_ARTIFACT_CUSTODY.md) supplies selected durable proof lookup against a separately enrolled key; it does not enroll an owner.
+- [Private artifact custody](PERSONAL_ARTIFACT_CUSTODY.md) now provides exact event-bound state/approval/rollback references and durable owner proofs. Consumers must wire those resolvers; arbitrary private dictionaries do not provide restart guarantees.
 - Numerical behavior thresholds, automatic approval policy and the full consumer update/unlearning workflow are separate qualification work.

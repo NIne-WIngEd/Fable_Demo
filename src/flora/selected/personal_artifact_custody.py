@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import hashlib
 import json
-from typing import Any
+from typing import Any, Callable
 
 from cognitive_kernel.canonical import canonical_json_bytes, canonical_sha256, normalize_timestamp, require_identifier
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
@@ -45,6 +45,21 @@ class RecoveredPersonalArtifact:
     event: ExperienceEvent
     references: tuple[tuple[str, RawObjectReference], ...]
     content: tuple[tuple[str, bytes], ...] = field(repr=False)
+
+
+class _SourceAuthorizedObjectReads:
+    """Delegate ciphertext metadata; gate every triggered plaintext read."""
+    def __init__(self, objects: EncryptedObjectPlane, source_authorizer: Callable[[], bool]):
+        self.objects, self.source_authorizer = objects, source_authorizer
+    def __getattr__(self, name):
+        return getattr(self.objects, name)
+    def get(self, reference):
+        if self.source_authorizer() is not True:
+            raise PermissionError("private artifact source use is not permitted before raw read")
+        plaintext = self.objects.get(reference)
+        if self.source_authorizer() is not True:
+            raise PermissionError("private artifact source permission changed during raw read")
+        return plaintext
 
 
 class XTDBPersonalArtifactCustody:
@@ -371,8 +386,19 @@ class XTDBPersonalArtifactCustody:
         return RawObjectReference(self.scope, raw["object_id"], raw["plaintext_sha256"], raw["size"])
 
     def read(self, artifact_id: str, *, log: KurrentExperienceLog,
-             objects: EncryptedObjectPlane) -> RecoveredPersonalArtifact:
+             objects: EncryptedObjectPlane,
+             source_authorizer: Callable[[], bool] | None = None) -> RecoveredPersonalArtifact:
+        """Recover exact bytes; governed consumers provide a current use gate.
+
+        This primitive grants no use by default. Its caller owns that policy.
+        An optional gate runs immediately before/after every plaintext read,
+        including attachment/contract validation reads inside this method.
+        """
         self._scope(log, objects)
+        if source_authorizer is not None:
+            if not callable(source_authorizer):
+                raise TypeError("private artifact source authorizer must be callable")
+            objects = _SourceAuthorizedObjectReads(objects, source_authorizer)
         index = self._artifact(artifact_id)
         if index is None:
             raise KeyError(artifact_id)

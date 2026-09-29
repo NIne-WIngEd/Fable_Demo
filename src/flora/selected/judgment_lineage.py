@@ -62,9 +62,28 @@ class PersonalStateLineageBinding:
     activation_receipt_sha256: str
     source_claim_version_ids: tuple[str, ...]
     source_evidence_ids: tuple[str, ...]
+    source_episode_ids: tuple[str, ...]
     approval_event_id: str
     approval_event_sha256: str
     approval_registration_sha256: str
+
+
+@dataclass(frozen=True)
+class AcceptedEpisodeLineageBinding:
+    episode_id: str
+    episode_sha256: str
+    candidate_episode_sha256: str
+    publication_receipt_sha256: str
+    publication_record_sha256: str
+    acceptance_request_sha256: str
+    candidate_artifact_sha256: str
+    summary_content_sha256: str
+    full_content_sha256: str
+    member_claim_version_ids: tuple[str, ...]
+    original_event_ids: tuple[str, ...]
+    acceptance_event_id: str
+    acceptance_event_sha256: str
+    acceptance_registration_sha256: str
 
 
 @dataclass(frozen=True)
@@ -159,6 +178,7 @@ class JudgmentContextLineage:
     claims: tuple[ClaimLineageBinding, ...]
     personal_state: tuple[PersonalStateLineageBinding, ...]
     artifacts: tuple[RuntimeWiringManifest, ...]
+    episodes: tuple[AcceptedEpisodeLineageBinding, ...] = ()
     phase_snapshots: tuple[VerifiedPhaseArtifactSnapshot, ...] = ()
 
     def record(self, *, include_phase_snapshots: bool = True) -> dict[str, object]:
@@ -168,6 +188,7 @@ class JudgmentContextLineage:
             "context_receipt_sha256": self.context_receipt_sha256, "context_item_hashes": self.context_item_hashes,
             "originals": [vars(item) for item in self.originals], "internal": [vars(item) for item in self.internal],
             "claims": [vars(item) for item in self.claims], "personal_state": [vars(item) for item in self.personal_state],
+            "episodes": [vars(item) for item in self.episodes],
             "artifacts": [_artifact_record(item) for item in self.artifacts]}
         if include_phase_snapshots:
             record["phase_snapshots"] = [vars(item) for item in self.phase_snapshots]
@@ -195,6 +216,8 @@ _INTERNAL_EVENT_TYPES = frozenset({
     "state_activation_approval", "private_personal_artifact", "formation_permission_action",
     "formation_context_delivery", "context_delivery", "qualified_model_input", "qualified_model_output",
     "qualified_model_attempt_failure", "decision",
+    "episode_acceptance",
+    "comparison_artifact", "provider_attempt_artifact",
 })
 
 
@@ -248,11 +271,13 @@ class NativeJudgmentLineageVerifier:
         expected = context.receipt_record()
         if runtime._context(context.plan).receipt_record() != expected:
             raise ValueError("native context content/value/current authority differs from prepared input")
-        claims, states, internal = {}, {}, {}
+        claims, states, internal, accepted_episodes = {}, {}, {}, {}
         source_roots = set()
         events = {event.event_id: event for event in runtime.log.replay()}
         for item in context.items:
             if item.kind == "claim":
+                if item.control_event_ids:
+                    raise ValueError("Claim context cannot introduce internal episode controls")
                 claim = self._claim(item.record_id, item.version_id)
                 if item.projection_sha256 != claim.current_projection_sha256:
                     raise ValueError("native context Claim projection digest differs")
@@ -273,8 +298,39 @@ class NativeJudgmentLineageVerifier:
                         or hashlib.sha256(item.content).hexdigest() != state["content_digest"]
                         or active.content != item.content or active.approval_event_id != item.approval_event_id):
                     raise ValueError("native context differs from exact active personal state")
-                if state["source_episode_ids"]:
-                    raise ValueError("episode-derived comparison lineage awaits accepted episode wiring")
+                episode_controls = set()
+                for episode_id in state["source_episode_ids"]:
+                    episodes = runtime.state.episodes
+                    if episodes is None:
+                        raise ValueError("episode-derived comparison lacks governed accepted episode authority")
+                    episode_lineage = episodes.current_lineage(episode_id, claims=runtime.claims, log=runtime.log)
+                    episode, publication, request, source_ids, published = episode_lineage
+                    accepted = episodes.read_accepted(episode_id, claims=runtime.claims, log=runtime.log,
+                        objects=runtime.objects, references=runtime.references)
+                    control = events.get(publication.acceptance_event_id)
+                    registered_control = runtime.sources.lookup(publication.acceptance_event_id)
+                    if (accepted.record != episode.metadata_record() or accepted.publication != publication
+                            or episodes.current_lineage(episode_id, claims=runtime.claims, log=runtime.log) != episode_lineage
+                            or control is None or registered_control is None or control.event_type != "episode_acceptance"
+                            or registered_control.object_ref != control.payload_reference
+                            or registered_control.evidence.content_digest != control.content_digest
+                            or runtime.context_policy.allow_event(control.event_id, "personal_judgment") is not True):
+                        raise ValueError("episode-derived comparison lost exact accepted publication/control authority")
+                    episode_controls.add(control.event_id)
+                    original_ids = tuple(sorted(set(source_ids) - {control.event_id}))
+                    accepted_episodes[episode_id] = AcceptedEpisodeLineageBinding(episode_id, episode.episode_sha256,
+                        publication.candidate_sha256, publication.receipt_sha256, published["record_sha256"],
+                        request.request_sha256, request.candidate_artifact_sha256, episode.summary_content_digest,
+                        episode.full_content_digest, episode.member_claim_version_ids, original_ids,
+                        control.event_id, control.event_sha256, registered_control.registration_sha256)
+                    internal[control.event_id] = InternalEvidenceBinding("episode_acceptance", control.event_id,
+                        control.event_sha256, control.content_digest, registered_control.registration_sha256, item.version_id)
+                    source_roots.update(original_ids)
+                    for version_id in episode.member_claim_version_ids:
+                        record = runtime.claims.load_version(version_id)
+                        claims[version_id] = self._claim(record["claim_id"], version_id)
+                if set(item.control_event_ids) != episode_controls:
+                    raise ValueError("native state control IDs differ from accepted episode publications")
                 receipt = runtime.state._history(route.projection_id, item.version_id)
                 approval = events.get(active.approval_event_id)
                 registration = runtime.sources.lookup(active.approval_event_id)
@@ -288,7 +344,7 @@ class NativeJudgmentLineageVerifier:
                 states[item.version_id] = PersonalStateLineageBinding(route.subject_type, route.subject_id,
                     route.projection_id, item.version_id, state["projection_sha256"], state["content_digest"],
                     receipt["record_sha256"], tuple(state["source_claim_version_ids"]),
-                    tuple(state["source_evidence_ids"]), approval.event_id, approval.event_sha256,
+                    tuple(state["source_evidence_ids"]), tuple(state["source_episode_ids"]), approval.event_id, approval.event_sha256,
                     registration.registration_sha256)
                 internal[approval.event_id] = InternalEvidenceBinding("state_activation_approval", approval.event_id,
                     approval.event_sha256, approval.content_digest, registration.registration_sha256, item.version_id)
@@ -300,7 +356,7 @@ class NativeJudgmentLineageVerifier:
                 source_roots.update(state["source_evidence_ids"])
                 # Additional source records cannot quietly influence state.
                 source_roots.update(set(state["envelope"]["source_records"])
-                                    - set(state["source_claim_version_ids"]))
+                                    - set(state["source_claim_version_ids"]) - set(state["source_episode_ids"]))
                 # Approvals are audit records, but an approval's actual source
                 # parents must still be part of this phase's shared originals.
                 source_roots.update(registration.evidence.parent_refs)
@@ -308,7 +364,8 @@ class NativeJudgmentLineageVerifier:
                 raise ValueError("unsupported native context item lineage")
             source_roots.update(item.source_event_ids)
         delivered_originals = {event_id for item in context.items for event_id in item.source_event_ids}
-        if (delivered_originals.intersection(internal)
+        delivered_controls = {event_id for item in context.items for event_id in item.control_event_ids}
+        if (delivered_originals.intersection(internal) or not delivered_controls.issubset(internal)
                 or set(context.source_event_ids) != delivered_originals | set(internal)):
             raise ValueError("native context contains undeclared or mislabeled source/approval IDs")
         originals, pending = {}, list(source_roots)
@@ -333,7 +390,8 @@ class NativeJudgmentLineageVerifier:
         lineage = JudgmentContextLineage(runtime.scope, runtime.authority_namespace_id, case_id, phase, history_digest,
             expected["receipt_sha256"], item_hashes, tuple(originals[key] for key in sorted(originals)),
             tuple(internal[key] for key in sorted(internal)), tuple(claims[key] for key in sorted(claims)),
-            tuple(states[key] for key in sorted(states)), artifacts)
+            tuple(states[key] for key in sorted(states)), artifacts,
+            episodes=tuple(accepted_episodes[key] for key in sorted(accepted_episodes)))
         snapshots = []
         for artifact in artifacts:
             qualifier = runtime.bindings[artifact.role].qualification_verifier

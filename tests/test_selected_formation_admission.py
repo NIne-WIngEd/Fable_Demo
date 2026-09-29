@@ -224,13 +224,15 @@ class _AdmissionSQLCalls:
         if "WHERE scope_digest =" in sql:
             found = [row for (name, _), row in self.rows.items()
                      if name == table and row["scope_digest"] == parameters[0]]
-            if "AND store_sequence >=" in sql:
-                found = [row for row in found if row["store_sequence"] >= parameters[1]]
+            sequence_filter = re.search(r"AND (store_sequence|source_position) >=", sql)
+            if sequence_filter:
+                found = [row for row in found if row[sequence_filter.group(1)] >= parameters[1]]
         else:
             row = self.rows.get((table, parameters[0]))
             found = [row] if row is not None else []
         if sql.startswith("SELECT MAX("):
-            return _Cursor([{"maximum": max((row["store_sequence"] for row in found), default=None)}])
+            column = re.search(r"MAX\(CAST\((\w+) AS", sql).group(1)
+            return _Cursor([{"maximum": max((row[column] for row in found), default=None)}])
         if sql.startswith("ASSERT NOT"):
             if found:
                 raise ValueError("synthetic immutable/CAS absence assertion failed")

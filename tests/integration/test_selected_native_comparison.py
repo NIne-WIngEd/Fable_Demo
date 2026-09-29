@@ -153,9 +153,15 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
         self.assertIsNotNone(custody.metadata("native-run", "run"))
         # A fresh denial blocks replay acceptance, not just subsequent inference.
         f._judgment_permission(f.registry.lookup(original.event_id), "revoke")
+        private_reads = []
+        def forbidden_private_read(event_id):
+            private_reads.append(event_id)
+            raise AssertionError("revoked native phase opened private decision bytes")
+        custody.load_recorded = forbidden_private_read
         with self.assertRaises((ValueError, PermissionError)):
             custody.save_run(run_id="native-run", run=run, occurred_at=f.fabric._time(),
                              execution_records=executions, evidence_policy=policy)
+        self.assertEqual(private_reads, [])
 
 
 if __name__ == "__main__":

@@ -395,20 +395,19 @@ class XTDBComparisonCustody:
                 if attempt.status == "success":
                     if attempt.decision_event_id is None:
                         raise ValueError("successful output lacks its recorded decision")
-                    recorded = self.load_recorded(attempt.decision_event_id)
-                    material = json.loads(self.raw_custody.read(self.scope, recorded.raw.object_id))
-                    if (material.get("schema") != "flora-decision-v1"
-                            or base64.b64decode(material["verdict_base64"], validate=True) != attempt.output
-                            or recorded.event.event_type != "decision"
-                            or material.get("model_artifact_sha256") != run.plan.arm_bindings[attempt.arm].model_artifact_sha256
-                            or recorded.event.provenance.model_id != run.plan.arm_bindings[attempt.arm].model_artifact_sha256
-                            or recorded.event.provenance.responsible_component != run.plan.arm_bindings[attempt.arm].producer_component):
-                        raise ValueError("run output differs from canonical recorded verdict")
-                    consumed = tuple(material["consumed_event_ids"])
-                    if not consumed or consumed != recorded.event.parent_event_ids:
-                        raise ValueError("recorded verdict source lineage changed")
-                    first = self.load_recorded(consumed[0])
-                    native_output = first.event.event_type == "qualified_model_output"
+                    # Classify canonical parent metadata before opening any
+                    # private decision/output. Revoked native phase authority
+                    # must fail here, not after those bytes were decrypted.
+                    canonical = {event.event_id: event for event in self.log.replay()}
+                    decision_hint = canonical.get(attempt.decision_event_id)
+                    if (decision_hint is None or decision_hint.scope != self.scope
+                            or decision_hint.event_type != "decision" or not decision_hint.parent_event_ids):
+                        raise ValueError("successful output lacks canonical decision metadata")
+                    consumed = decision_hint.parent_event_ids
+                    first = canonical.get(consumed[0])
+                    if first is None or first.scope != self.scope:
+                        raise ValueError("successful verdict lacks canonical parent metadata")
+                    native_output = first.event_type == "qualified_model_output"
                     offset = 1 if native_output else 0
                     if len(consumed) <= offset:
                         raise ValueError("successful verdict omits its context delivery")
@@ -435,18 +434,32 @@ class XTDBComparisonCustody:
                                 or request.authorized_event_ids != attempt.authorized_event_ids
                                 or request.authorized_history_sha256 != attempt.authorized_history_sha256
                                 or _digest(_context_bytes(request.context)) != attempt.context_sha256
-                                or result.output != attempt.output or result.decision != recorded
+                                or result.output != attempt.output or result.decision.event != decision_hint
                                 or result.delivery.event.event_id != delivery_id or result.usage != attempt.usage):
                             raise ValueError("native execution record differs from the frozen successful attempt")
                         history = evidence_policy.native_lineage.history_for(attempt.case_id, attempt.phase)
                         _authorize_context(policy=evidence_policy, case_id=attempt.case_id, phase=attempt.phase,
                             history=history, context=request.context, arm=attempt.arm)
-                        _validate_result(result, request, evidence_policy, arm=attempt.arm)
                     context_artifact = self.metadata(run_id, f"context:{delivery_id}")
                     if (context_artifact is None
                             or context_artifact.record["content_sha256"] != attempt.context_sha256
                             or tuple(context_artifact.record["metadata"]["source_event_ids"]) != context_sources):
                         raise ValueError("successful run lacks its exact durable input context")
+                    recorded = self.load_recorded(attempt.decision_event_id)
+                    material = json.loads(self.raw_custody.read(self.scope, recorded.raw.object_id))
+                    if (material.get("schema") != "flora-decision-v1"
+                            or base64.b64decode(material["verdict_base64"], validate=True) != attempt.output
+                            or recorded.event != decision_hint or material.get("consumed_event_ids") != list(consumed)
+                            or material.get("model_artifact_sha256") != run.plan.arm_bindings[attempt.arm].model_artifact_sha256
+                            or recorded.event.provenance.model_id != run.plan.arm_bindings[attempt.arm].model_artifact_sha256
+                            or recorded.event.provenance.responsible_component != run.plan.arm_bindings[attempt.arm].producer_component):
+                        raise ValueError("run output differs from canonical recorded verdict")
+                    if native_required:
+                        if result.decision != recorded:
+                            raise ValueError("native execution record differs from canonical private custody")
+                        _authorize_context(policy=evidence_policy, case_id=attempt.case_id, phase=attempt.phase,
+                            history=history, context=request.context, arm=attempt.arm)
+                        _validate_result(result, request, evidence_policy, arm=attempt.arm)
                     context_source = self.registry.lookup(context_artifact.event_id)
                     context_material = self.raw_custody.read(self.scope, context_source.object_ref)
                     if len(context_material) > run.plan.context_byte_budget:

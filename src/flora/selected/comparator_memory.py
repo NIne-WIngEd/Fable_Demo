@@ -312,10 +312,16 @@ def verify_window_context(context: LocalContext, history: HistorySnapshot,
             or len(context.items) != len(context.plan.windows)):
         raise ValueError("comparator context changed its frozen original history or configuration")
     by_id = {source.event.event_id: source for source in history.sources}
+    allowed_windows = {window for window, _ in source_windows(history, configuration)}
     for window, item in zip(context.plan.windows, context.items):
+        window.record()
         source = by_id.get(window.event_id)
         if source is None or source.event.event_sha256 != window.event_sha256:
             raise ValueError("comparator window does not have exact original provenance")
+        if window.end_byte > len(source.plaintext):
+            raise ValueError("comparator window exceeds actual original byte bounds")
+        if window not in allowed_windows:
+            raise ValueError("comparator window is outside the frozen configured source windows")
         fragment = source.plaintext[window.start_byte:window.end_byte]
         expected = encoded({"source_event_id": window.event_id, "event_type": source.event.event_type,
             "occurred_at": source.event.occurred_at, "provenance_type": source.event.provenance.provenance_type,
@@ -324,7 +330,8 @@ def verify_window_context(context: LocalContext, history: HistorySnapshot,
         if (sha(fragment) != window.content_sha256 or item.kind != "comparator_original_window"
                 or item.record_id != window.event_id or item.version_id != window.event_sha256
                 or item.source_event_ids != (window.event_id,) or item.content != expected
-                or item.claim_value is not None or item.approval_event_id is not None):
+                or item.claim_value is not None or item.approval_event_id is not None
+                or item.control_event_ids):
             raise ValueError("comparator excerpt changed the actual original bytes")
     if not all(set(ancestors(history, source)).issubset(context.source_event_ids) for source in context.source_event_ids):
         raise ValueError("comparator selected evidence lacks correction/outcome ancestor closure")

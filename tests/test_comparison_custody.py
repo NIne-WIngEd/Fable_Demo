@@ -10,7 +10,7 @@ from flora.comparison_run import ArmBinding, PairedRunPlan
 from flora.evaluation_protocol import ARMS, EvaluationCase, EvaluationProtocol
 from flora.selected.comparison_custody import (
     ComparisonArtifact, XTDBComparisonCustody, _plan_from_record, _plan_record,
-    evaluation_purpose,
+    evaluation_purpose, SelectedRunEvidencePolicy,
 )
 
 
@@ -79,6 +79,46 @@ class ComparisonCustodyContractTest(unittest.TestCase):
             with self.subTest(kind=kind), self.assertRaisesRegex(PermissionError, "source-closure"):
                 store.read(run_id="run", artifact_id=kind, permissions=None,
                            purpose="comparison_assessment:collection")
+
+
+class NativeCustodyReadOrderTest(unittest.IsolatedAsyncioTestCase):
+    async def test_revoked_phase_fails_before_private_decision_or_output_read(self):
+        import test_comparison_run as fixtures
+        f = fixtures.PairedComparisonContractTest()
+        await f.asyncSetUp()
+        self.addCleanup(f.doCleanups)
+        run = await f.run_fixture()
+        request = f.adapters["flora_full"].requests[0]
+        result = await f.adapters["flora_full"].execute(request)
+        _, log = f.policy.recorded[result.decision.event.event_id]
+        store = object.__new__(XTDBComparisonCustody)
+        store.scope, store.log = f.scope, log
+        def metadata(run_id, artifact_id):
+            if artifact_id == "plan":
+                return ComparisonArtifact({"event_id": "fixture-plan-event", "metadata": {"plan_sha256": run.plan.digest()}})
+            if artifact_id.startswith("history:"):
+                _, case_id, phase = artifact_id.split(":")
+                history = f.histories[(case_id, phase)]
+                return ComparisonArtifact({"metadata": {"history_sha256": history.digest(),
+                    "source_event_ids": list(history.event_ids)}})
+            if artifact_id.startswith("question:"):
+                return ComparisonArtifact({"content_sha256": fixtures.digest(request.question)})
+            raise AssertionError("revoked phase progressed into private context lookup")
+        store.metadata = metadata
+        reads = []
+        def forbidden_read(event_id):
+            reads.append(event_id)
+            raise AssertionError("revoked phase opened private output")
+        store.load_recorded = forbidden_read
+        policy = object.__new__(SelectedRunEvidencePolicy)
+        policy.custody, policy.run_id, policy.requires_native_result = store, "run", True
+        policy.native_lineage = SimpleNamespace(history_for=lambda case, phase: f.histories[(case, phase)])
+        policy.authorize_history = lambda **fields: False
+        with self.assertRaises(PermissionError):
+            store.save_run(run_id="run", run=run, occurred_at="2026-09-29T15:00:00Z",
+                execution_records={(request.case_id, request.phase, "flora_full"): (request, result)},
+                evidence_policy=policy)
+        self.assertEqual(reads, [])
 
 
 if __name__ == "__main__":

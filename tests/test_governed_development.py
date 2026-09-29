@@ -436,7 +436,7 @@ class GovernedDevelopmentContractTest(unittest.TestCase):
             return original_get(raw)
         self.claims.load_current, self.objects.get = advance_head, track_open
         first, content = self.version(1, claim_ids=("race-claim-v1",))
-        with self.assertRaisesRegex(ValueError, "raw object reference is absent"):
+        with self.assertRaisesRegex(PermissionError, "not permitted before raw read"):
             self.put(first, content)
         self.assertNotIn(self.source_two.payload_reference, opened)
 
