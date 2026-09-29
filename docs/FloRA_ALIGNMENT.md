@@ -4,6 +4,8 @@ This repo qualifies one causal personal-memory claim within the full-scale succe
 
 The [frozen FloRA experiment goal](EXPERIMENT_GOAL.md) controls what counts as a behavioral or builder result.
 
+The [2026-09-29 readiness re-audit](READINESS_REAUDIT_2026-09-29.md) supersedes the previous conclusion that only personality and MFM remain. The independent lanes below are not complete. It also records a newer MFM interface and conflicting engine choices in Fable Sleight's execution profile; this map follows the A.L.I.C.E. successor selected by the owner, rather than claiming all product documents already agree.
+
 Sources reviewed: A.L.I.C.E. `main@8ea804aa` `docs/ALICE_PHASE2_REPLACEMENT_AND_FABLE_V1_EXECUTION_PLAN_2026-09-27.md`, `docs/STAGE_G_MEMORY_FABRIC_CANDIDATE_QUALIFICATION_MATRIX.md`, `docs/PHASE2_TO_KERNEL_MEMORY_MIGRATION_PLAN.md`, `docs/FRIDAY_ROADMAP.md`, `docs/FRIDAY_ARCHITECTURE.md`, `docs/FABLE_PERSONAL_DEVELOPMENT_ARCHITECTURE.md`; MFM branch `research/mfm-foundation-20260923@00583fb2` `src/cognitive_kernel/formation_contracts.py`.
 
 ## Full-scale path for the claim

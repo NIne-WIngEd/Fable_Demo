@@ -38,15 +38,28 @@ def read_current_sources(
     references: Mapping[str, RawObjectReference],
     as_of: datetime | None = None,
 ) -> CurrentEvidencePacket:
-    """Fail closed if a claimed source is absent, changed, or cross-host."""
+    """Read exact evidence without allowing history to override quarantine.
+
+    An explicit valid-time snapshot can retrieve current or historical claims
+    at that snapshot. It never grants permission to use a claim whose present
+    authority is pending deletion, deleted, conflicted, or unaccepted. Ordinary
+    current use additionally requires ``validity_state == "current"``.
+    """
     if authority.scope != log.scope or log.scope != objects.scope:
         raise ValueError("source readers must share one host scope")
-    projection = authority.load_current(claim_id, as_of=as_of)
-    if (projection["claim_id"] != claim_id
-            or projection["deletion_state"] != "active"
-            or projection["conflict_state"] != "none"
-            or projection["adjudication_state"] not in {"accepted", "revised"}):
-        raise ValueError("claim is not an active, resolved current source")
+    if as_of is not None and (
+        not isinstance(as_of, datetime)
+        or as_of.tzinfo is None or as_of.utcoffset() is None
+    ):
+        raise ValueError("source valid-time snapshot must be timezone-aware")
+    present = authority.load_current(claim_id)
+    _require_available(present, claim_id)
+    projection = (present if as_of is None else
+                  authority.load_current(claim_id, as_of=as_of))
+    _require_available(projection, claim_id)
+    allowed_validity = {"current"} if as_of is None else {"current", "historical"}
+    if projection["validity_state"] not in allowed_validity:
+        raise ValueError("claim validity does not permit this source read")
     version = authority.load_version(projection["current_claim_version_id"])
     if (version["claim_id"] != claim_id
             or version["adjudication_state"] != projection["adjudication_state"]):
@@ -73,5 +86,19 @@ def read_current_sources(
                                       plaintext))
     if not sources:
         raise ValueError("current claim has no exact source evidence")
+    # The source reads are not a cross-plane transaction. Recheck the use
+    # barrier after materialization so an intervening quarantine is rejected.
+    latest = authority.load_current(claim_id)
+    _require_available(latest, claim_id)
+    if as_of is None and latest != projection:
+        raise ValueError("claim head changed during current source read")
     return CurrentEvidencePacket(claim_id, version["claim_version_id"],
                                  projection["projection_id"], tuple(sources))
+
+
+def _require_available(projection: dict[str, object], claim_id: str) -> None:
+    if (projection["claim_id"] != claim_id
+            or projection["deletion_state"] != "active"
+            or projection["conflict_state"] != "none"
+            or projection["adjudication_state"] not in {"accepted", "revised"}):
+        raise ValueError("claim is not an active, resolved current source")

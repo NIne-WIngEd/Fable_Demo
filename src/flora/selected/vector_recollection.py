@@ -79,7 +79,9 @@ class QdrantClaimProjection:
                          claim_id: str) -> tuple[str, str, set[str]] | None:
         try:
             current = authority.load_current(claim_id)
-            if (current["deletion_state"] != "active"
+            if (current["claim_id"] != claim_id
+                    or current["validity_state"] != "current"
+                    or current["deletion_state"] != "active"
                     or current["conflict_state"] != "none"
                     or current["adjudication_state"] not in {"accepted", "revised"}):
                 return None

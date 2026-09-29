@@ -43,7 +43,7 @@ from flora.selected.formation_gate import assess_formation
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 from flora.selected.source_native import read_current_sources
 from flora.selected.edge_ingress import EdgePacket, JetStreamEdgeIngress
-from flora.selected.decision_outcome import record_decision, record_outcome_observation
+from flora.selected.decision_outcome import RecordedEvent, record_decision, record_outcome_observation
 from flora.selected.vector_recollection import QdrantClaimProjection
 from flora.selected.graph_recollection import LadybugEvidenceGraph
 from flora.selected.episodes import XTDBEpisodeCandidates
@@ -60,7 +60,7 @@ from flora.selected.personal_state import (
 )
 from flora.selected.outcome_revision import register_outcome_revision
 from flora.selected.context import (
-    ContextPlan, LocalContext, StateRoute, assemble_context,
+    ContextPlan, LocalContext, LocalContextItem, StateRoute, assemble_context,
     record_context_delivery, record_contextual_decision,
 )
 from flora.selected.revocation import quarantine_claim, revocation_request
@@ -173,21 +173,97 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                         modalities={item: "text" for item in before_ids},
                         objects=objects, authority_namespace_id="pilot-formation")
                     self.assertEqual(len(packet.experience_refs), len(before_ids))
-                    after = apply_intervention(
-                        path=pilot_path, checkpoint=before,
-                        log=log, objects=objects)
-                    self.assertNotEqual(before.history_sha256,
-                                        after.history_sha256)
-                    replayed = log.replay()
-                    self.assertEqual([event.event_id for event in replayed[:-1]],
-                                     list(before_ids))
-                    self.assertEqual(len(after.event_by_source_id), len(before_ids) + 1)
-                    self.assertEqual(replayed[-1].provenance.provenance_type,
-                                     "generated_reconstruction")
+                    if case_id == "pilot-commute-outcome":
+                        with self.assertRaisesRegex(ValueError, "recorded before decision"):
+                            apply_intervention(
+                                path=pilot_path, checkpoint=before,
+                                log=log, objects=objects)
+                        self.assertEqual(len(log.replay()), len(before_ids))
+
+                    # Supply a synthetic receipt to exercise its ledger/payload
+                    # contract. This test does not qualify claim formation,
+                    # context relevance, a producer, or learned judgment.
+                    context = LocalContext(
+                        ContextPlan(request_id=f"{case_id}-before",
+                                    purpose="pilot-before",
+                                    exact_claim_ids=("synthetic-delivered-claim",)),
+                        (LocalContextItem(
+                            kind="claim", record_id="synthetic-delivered-claim",
+                            version_id="synthetic-delivered-version",
+                            source_event_ids=before_ids,
+                            content=b"synthetic supplied context"),), True)
+                    receipt_material = json.dumps(
+                        context.receipt_record(), sort_keys=True,
+                        separators=(",", ":"), allow_nan=False).encode()
+                    receipt_raw = objects.put(receipt_material)
+                    receipt_event = ExperienceEvent.create(
+                        event_type="context_delivery", scope=scope,
+                        occurred_at="2026-08-26T10:00:00Z",
+                        content_digest=receipt_raw.plaintext_sha256,
+                        provenance=ProvenanceReference.create(
+                            provenance_type="derived_inference",
+                            source_reference_ids=before_ids,
+                            derivation_activity_id="synthetic-pilot-context",
+                            responsible_component="synthetic-test"),
+                        retention_class="ordinary_experience",
+                        storage_tier="raw_buffer", parent_event_ids=before_ids,
+                        payload_reference=receipt_raw.object_id)
+                    log.append(receipt_event, expected_revision=len(before_ids) - 1)
+                    delivery = RecordedEvent(receipt_event, receipt_raw)
+                    refs = dict(before.references)
+                    refs[receipt_raw.object_id] = receipt_raw
+                    decision = record_decision(
+                        log=log, objects=objects,
+                        verdict=b"synthetic before judgment; no trained model",
+                        consumed_event_ids=(receipt_event.event_id,) + before_ids,
+                        references=refs, model_artifact_sha256="d" * 64,
+                        occurred_at="2026-08-26T10:00:01Z",
+                        expected_revision=len(before_ids),
+                        producer_component="synthetic-test")
+                    before_records = (delivery, decision)
                     with self.assertRaisesRegex(ValueError, "exact before"):
                         apply_intervention(
                             path=pilot_path, checkpoint=before,
                             log=log, objects=objects)
+                    with self.assertRaisesRegex(ValueError, "exact before"):
+                        apply_intervention(
+                            path=pilot_path, checkpoint=before,
+                            log=log, objects=objects,
+                            before_records=(decision,))
+                    with self.assertRaisesRegex(ValueError, "selected decision"):
+                        apply_intervention(
+                            path=pilot_path, checkpoint=before,
+                            log=log, objects=objects, before_records=before_records,
+                            decision_event_id=receipt_event.event_id)
+                    after = apply_intervention(
+                        path=pilot_path, checkpoint=before,
+                        log=log, objects=objects, before_records=before_records,
+                        decision_event_id=decision.event.event_id)
+                    self.assertNotEqual(before.history_sha256,
+                                        after.history_sha256)
+                    replayed = log.replay()
+                    self.assertEqual([event.event_id for event in replayed[:-1]],
+                                     list(before_ids) + [receipt_event.event_id,
+                                                         decision.event.event_id])
+                    self.assertEqual(len(after.event_by_source_id), len(before_ids) + 1)
+                    self.assertEqual(replayed[-1].provenance.provenance_type,
+                                     "generated_reconstruction")
+                    self.assertEqual(after.references[decision.raw.object_id],
+                                     decision.raw)
+                    if case_id == "pilot-commute-outcome":
+                        self.assertEqual(replayed[-1].event_type, "outcome")
+                        self.assertEqual(replayed[-1].parent_event_ids,
+                                         (decision.event.event_id,))
+                        self.assertEqual(replayed[-1].provenance.source_reference_ids,
+                                         ("mira-outcome",))
+                        self.assertNotEqual(replayed[-1].provenance.responsible_component,
+                                            decision.event.provenance.responsible_component)
+                    with self.assertRaisesRegex(ValueError, "exact before"):
+                        apply_intervention(
+                            path=pilot_path, checkpoint=before,
+                            log=log, objects=objects,
+                            before_records=before_records,
+                            decision_event_id=decision.event.event_id)
                 finally:
                     client.close()
 

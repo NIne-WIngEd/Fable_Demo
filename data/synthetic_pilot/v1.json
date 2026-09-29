@@ -55,7 +55,7 @@
       "id": "mira-2026-before",
       "at": "2026-08-25T10:00:00Z",
       "kind": "owner_report",
-      "text": "A new six-month design fellowship would require moving. Mira has not recently confirmed whether her parents still need weekly help. She wants advice that considers both her ambition and their needs."
+      "text": "A new six-month design fellowship would require moving. Mira has not recently confirmed whether her parents still need weekly help. She wants advice that considers both her ambition and their needs. Separately, she is assessing another higher-paying teaching offer with a long commute and is considering a five-day commute trial before accepting. She plans to keep dated time and sleep logs if she tries it."
     },
     {
       "id": "mira-relevant-correction",
@@ -73,7 +73,7 @@
       "id": "mira-outcome",
       "at": "2026-09-01T12:00:00Z",
       "kind": "independent_outcome_report",
-      "text": "After the completed 2025 school term, Mira's time logs showed that the long commute consumed about twelve hours a week. She reported sleeping better during the later remote term and no longer wants a daily long commute solely for higher pay. The log does not prove that the commute was the only cause of her sleep trouble."
+      "text": "After the August 26 before-phase decision, Mira tried the new teaching offer's commute from August 27 through August 31. Her dated trial logs recorded about twelve hours commuting across those five days. She reported less sleep during the trial than during the preceding remote week and no longer wants a daily long commute solely for higher pay. The trial does not prove that commuting was the only cause of her sleep trouble, that she followed Fable's advice, or that the advice was correct."
     }
   ],
   "cases": [
@@ -168,7 +168,7 @@
       ],
       "prompt": "Should I take another higher-paying teaching job with a daily long commute?",
       "expected_relation": "material_change",
-      "rubric": "Before: uncertainty about whether the commute explains the sleep problem. After: take Mira's time logs and stated preference seriously, caution against repeating the commute solely for pay, and retain uncertainty about its causal effect on sleep."
+      "rubric": "Before: treat the new offer and any trial as prospective; uncertainty remains about the commute's costs and the old sleep problem. After: use the later five-day trial logs and Mira's changed preference, caution against a long commute solely for pay, and retain uncertainty about causality. Do not claim the trial predates the before decision, that she necessarily followed Fable's advice, or that an observed outcome proves the advice correct."
     }
   ]
 }
