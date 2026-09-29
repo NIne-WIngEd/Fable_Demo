@@ -48,6 +48,7 @@ from flora.selected.context import (
     ContextPlan, LocalContext, StateRoute, assemble_context,
     record_context_delivery, record_contextual_decision,
 )
+from flora.selected.revocation import quarantine_claim, revocation_request
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -1020,6 +1021,80 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     references=source_refs,
                     verifier=SyntheticApprovalVerifier(True)).content,
                     b"synthetic revised host state")
+
+                deletion_content = revocation_request(second_projection)
+                deletion_raw = objects.put(deletion_content)
+                source_refs[deletion_raw.object_id] = deletion_raw
+                deletion_event = ExperienceEvent.create(
+                    event_type="deletion_request", scope=scope,
+                    occurred_at="2026-09-22T00:00:00Z",
+                    content_digest=deletion_raw.plaintext_sha256,
+                    provenance=ProvenanceReference.create(
+                        provenance_type="derived_inference",
+                        source_reference_ids=(second_event.event_id,),
+                        derivation_activity_id="synthetic-deletion-request",
+                        responsible_component="synthetic-test"),
+                    retention_class="ordinary_experience",
+                    storage_tier="raw_buffer",
+                    parent_event_ids=(second_event.event_id,),
+                    payload_reference=deletion_raw.object_id)
+                state_log.append(deletion_event, expected_revision=5)
+
+                class SyntheticRevocationVerifier:
+                    def __init__(self, allowed: bool):
+                        self.allowed = allowed
+
+                    def authenticated_request(self, event, request):
+                        return (self.allowed and event == deletion_event
+                                and request["claim_id"] == "claim-integration")
+
+                quarantine_args = dict(
+                    prior=second_projection,
+                    request_event_id=deletion_event.event_id,
+                    authority=authority, log=state_log, objects=objects,
+                    references=source_refs, vector=vector_projection)
+                with self.assertRaisesRegex(ValueError, "independently authorized"):
+                    quarantine_claim(
+                        **quarantine_args,
+                        verifier=SyntheticRevocationVerifier(False))
+                quarantined = quarantine_claim(
+                    **quarantine_args,
+                    verifier=SyntheticRevocationVerifier(True))
+                self.assertEqual(quarantined.projection.deletion_state, "pending")
+                self.assertEqual(quarantined.removed_vector_points, 1)
+                self.assertEqual(quarantine_claim(
+                    **quarantine_args,
+                    verifier=SyntheticRevocationVerifier(True)
+                ).removed_vector_points, 0)
+                self.assertEqual(vector_projection.query_current(
+                    query_vector=(1.0, 0.0, 0.0, 0.0),
+                    authority=authority), ())
+                with self.assertRaisesRegex(ValueError, "not an active"):
+                    read_current_sources(
+                        claim_id="claim-integration", authority=authority,
+                        log=state_log, objects=objects,
+                        references=source_refs)
+                with self.assertRaisesRegex(ValueError, "not an active"):
+                    state_registry.read_active(
+                        subject_type="owner", subject_id=scope.host_instance_id,
+                        projection_id=first_owner.projection_id,
+                        claims=authority, log=state_log, objects=objects,
+                        references=source_refs,
+                        verifier=SyntheticApprovalVerifier(True))
+                with self.assertRaisesRegex(ValueError, "not an active"):
+                    record_contextual_decision(
+                        context=context, delivery=delivery,
+                        log=state_log, objects=objects,
+                        references=source_refs, claims=authority,
+                        state=state_registry,
+                        policy=SyntheticContextPolicy(True),
+                        approval_verifier=SyntheticApprovalVerifier(True),
+                        vector=vector_projection,
+                        verdict=b"should be rejected",
+                        model_artifact_sha256="c" * 64,
+                        occurred_at="2026-09-23T00:00:00Z",
+                        expected_revision=6,
+                        producer_component="synthetic-test")
             finally:
                 state_client.close()
             projection_ids = {
