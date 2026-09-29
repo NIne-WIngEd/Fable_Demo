@@ -13,11 +13,12 @@ The [alignment and build map](docs/DEMO_ALIGNMENT.md) names the selected planes,
 ## What is implemented here
 
 - `selected/object_store.py` starts the encrypted, content-addressed raw object plane. It keeps host-held keys out of stored objects, confines deduplication to the host and encryption domain, and verifies ciphertext on reads. The local placement implements an opaque object backend; S3-compatible placement, key custody, lifecycle deletion, and backend qualification are still open.
-- `selected/experience.py` maps A.L.I.C.E.'s metadata-only Experience envelope to a scoped KurrentDB stream with an expected revision, deterministic event ID, and verified replay. The real service has not been run yet.
+- `selected/experience.py` maps A.L.I.C.E.'s metadata-only Experience envelope to a scoped KurrentDB stream with expected-revision writes, deterministic event IDs, and verified replay. The Docker integration gate now exercises this against KurrentDB 26.1.1, including retry behavior, stale-revision rejection, replay, and persistence across a service restart.
+- `selected/claims.py` places validated A.L.I.C.E. claim identities, immutable claim versions, and current projections in XTDB v2. The Docker gate now exercises XTDB 2.1.0 valid-time correction reads, cross-host isolation, and restart persistence.
 - `selected/formation_input.py` binds a manifest to same-host Experience events and verified raw content for the separately developed MFM. It grants no claim authority and does not claim the input was an authenticated owner statement.
-- Synthetic component tests cover these boundaries. They are not a Fable capability test.
+- Synthetic component tests and real-backend integration tests cover these boundaries. They are infrastructure evidence, not a Fable capability or behavioral result.
 
-The running event fabric, claim authority, governed formation gate, episodes, graph, vector and source retrieval, Context Planner, personal-state projections, outcome revision, and workflow/recovery path are next. No model or behavioral score is being inferred from these contracts.
+The deterministic formation gate, complete conflict/deletion lineage, edge ingress, episodes, graph, vector and source retrieval, Context Planner, personal-state projections, outcome revision, and workflow/recovery path remain open. No model or behavioral score is being inferred from the backend result. See the [backend integration handoff](docs/BACKEND_INTEGRATION_HANDOFF.md) for the exact green boundary.
 
 ## Dependencies and evidence gates
 
@@ -33,4 +34,13 @@ The component checks run with Python 3.11+, `cryptography`, `kurrentdbclient~=1.
 PYTHONPATH=../ALICE/src:src python -m unittest discover -s tests -v
 ```
 
-Use synthetic data only. The selected backends and their integration tests require a provisioned development environment; they are not silently emulated by this test.
+Use synthetic data only. A repeatable Docker environment for the first selected backends now lives in `compose.integration.yml`. The GitHub Actions gate starts the real KurrentDB and XTDB services, runs the integration tests, restarts both services, verifies persistence, captures logs, and tears the stack down. For local use:
+
+```bash
+python -m pip install -e '.[backends]'
+docker compose -f compose.integration.yml up -d
+PYTHONPATH=../ALICE/src:src python -m unittest discover -s tests/integration -v
+docker compose -f compose.integration.yml down -v
+```
+
+The workflow pins the A.L.I.C.E. contract checkout used by this demo. Do not substitute Phase 2 or a convenience database for the selected path.

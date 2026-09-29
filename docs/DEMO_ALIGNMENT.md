@@ -34,8 +34,9 @@ The first four lanes do not require personality or MFM weights. A learned format
 ## Evidence discipline
 
 - Unit checks for contracts and encryption are component checks. They do not validate KurrentDB/XTDB behavior or the personal judgment claim.
-- Backend qualification requires the real selected services, plus restart, expected revision, idempotency, temporal read, conflict, projection replay, deletion and isolation cases.
+- The first real-backend gate is green for KurrentDB expected-revision/retry/replay and restart persistence, plus XTDB valid-time correction reads, host isolation and restart persistence. This is a basic integration gate, not complete backend qualification.
+- Full backend qualification still requires the remaining conflict, projection-rebuild, deletion/influence-removal, failure-injection, recovery and scale cases defined by the selected architecture.
 - The behavioral result requires qualified models, held-out longitudinal histories, a comparator with equal evidence and budget, and assessment of reasons and behavior. Synthetic results are labeled synthetic.
 - The builder result requires a second isolated host. A single hand-configured personality is not evidence of automatic building.
 
-Next external dependency: a repeatable local or remote development stack with KurrentDB, XTDB v2, NATS JetStream, Qdrant, LadybugDB and Temporal. Credentials and user data must stay out of the repository. Code for the interfaces can be authored before those services are available, but integration claims wait for them.
+Development environment status: `compose.integration.yml` and GitHub Actions now provide repeatable real KurrentDB 26.1.1 and XTDB 2.1.0 services with restart persistence checks. The next external service work is NATS JetStream, Qdrant, LadybugDB and Temporal as those lanes reach their selected contracts. Credentials and user data must stay out of the repository. Do not broaden the stack merely to make a demo look complete.
