@@ -28,6 +28,7 @@ from flora.selected.experience import KurrentExperienceLog
 from flora.selected.formation_input import formation_input_from_replay
 from flora.selected.formation_gate import assess_formation
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
+from flora.selected.source_native import read_current_sources
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -35,7 +36,8 @@ CONTENT_DIGEST = "b" * 64
 
 
 def _event(scope: ProductHostScope, *, suffix: str, occurred_at: str,
-           event_type: str = "observation", parent_event_ids: tuple[str, ...] = ()) -> ExperienceEvent:
+           event_type: str = "observation", parent_event_ids: tuple[str, ...] = (),
+           payload_reference: str | None = None) -> ExperienceEvent:
     payload = f"synthetic-{suffix}".encode()
     return ExperienceEvent.create(
         event_type=event_type,
@@ -44,13 +46,13 @@ def _event(scope: ProductHostScope, *, suffix: str, occurred_at: str,
         content_digest=hashlib.sha256(payload).hexdigest(),
         provenance=ProvenanceReference.create(
             provenance_type="derived_inference",
-            source_reference_ids=(f"raw-{suffix}",),
+            source_reference_ids=(payload_reference or f"raw-{suffix}",),
             derivation_activity_id="backend-integration",
             responsible_component="synthetic-test",
         ),
         retention_class="ordinary_experience",
         storage_tier="raw_buffer",
-        payload_reference=f"raw-{suffix}",
+        payload_reference=payload_reference or f"raw-{suffix}",
         parent_event_ids=parent_event_ids,
     )
 
@@ -255,11 +257,20 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 authority_namespace_id=namespace,
                 connection=connection,
             )
+            object_directory = tempfile.TemporaryDirectory()
+            self.addCleanup(object_directory.cleanup)
+            objects = EncryptedObjectPlane(
+                scope=scope, key=b"x" * 32,
+                backend=LocalObjectBackend(Path(object_directory.name) / "objects"))
+            raw_first = objects.put(b"synthetic-claim-source-one")
+            raw_second = objects.put(b"synthetic-claim-source-two")
             first_event = _event(scope, suffix="claim-source-one",
-                occurred_at="2026-09-01T00:00:00Z")
+                occurred_at="2026-09-01T00:00:00Z",
+                payload_reference=raw_first.object_id)
             second_event = _event(scope, suffix="claim-source-two",
                 occurred_at="2026-09-15T00:00:00Z", event_type="correction",
-                parent_event_ids=(first_event.event_id,))
+                parent_event_ids=(first_event.event_id,),
+                payload_reference=raw_second.object_id)
             event_client = KurrentDBClient(os.environ.get(
                 "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
             try:
@@ -484,6 +495,29 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 after_change["current_claim_version_id"],
                 "claim-integration-v2",
             )
+            source_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                source_log = KurrentExperienceLog(scope=scope, client=source_client)
+                refs = {raw_first.object_id: raw_first, raw_second.object_id: raw_second}
+                earlier_sources = read_current_sources(
+                    claim_id="claim-integration", authority=authority, log=source_log,
+                    objects=objects, references=refs,
+                    as_of=datetime(2026, 9, 10, tzinfo=timezone.utc))
+                later_sources = read_current_sources(
+                    claim_id="claim-integration", authority=authority, log=source_log,
+                    objects=objects, references=refs)
+                self.assertEqual(earlier_sources.sources[0].plaintext,
+                                 b"synthetic-claim-source-one")
+                self.assertEqual(later_sources.sources[0].plaintext,
+                                 b"synthetic-claim-source-two")
+                with self.assertRaisesRegex(ValueError, "reference is absent"):
+                    read_current_sources(
+                        claim_id="claim-integration", authority=authority,
+                        log=source_log, objects=objects,
+                        references={raw_first.object_id: raw_first})
+            finally:
+                source_client.close()
             projection_ids = {
                 row["projection_id"]
                 for row in authority.current_history("claim-integration")

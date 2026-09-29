@@ -307,6 +307,13 @@ class XTDBClaimAuthority:
             raise KeyError(relation_id)
         return json.loads(str(row["record_json"]))
 
+    def load_version(self, claim_version_id: str) -> dict[str, object]:
+        row = self._fetch_record(
+            table=_VERSIONS, row_id=self._row_id(claim_version_id), all_valid=True)
+        if row is None:
+            raise KeyError(claim_version_id)
+        return json.loads(str(row["record_json"]))
+
     def put_current(self, projection: CurrentClaimProjection, *,
                     expected_previous: CurrentClaimProjection | None = None) -> None:
         self._assert_envelope(projection)
