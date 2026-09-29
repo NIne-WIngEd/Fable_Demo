@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
+from datetime import datetime, timezone
 import hashlib
 import os
 from pathlib import Path
@@ -13,6 +15,8 @@ import time
 import psycopg
 import nats
 from kurrentdbclient import KurrentDBClient
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.canonical import normalize_timestamp
@@ -23,7 +27,14 @@ from flora.selected.experience import KurrentExperienceLog
 from flora.selected.edge_ingress import EdgePacket, JetStreamEdgeIngress
 from flora.selected.formation_context import prepare_selected_formation, register_experience_source
 from flora.selected.formation_registry import XTDBFormationSourceRegistry
+from flora.selected.formation_policy import (
+    FormationPermissionAction, XTDBFormationPermissionPolicy,
+    formation_permission_payload,
+)
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
+from flora.selected.owner_authorization import (
+    Ed25519OwnerActionVerifier, OwnerActionProof, owner_action_message,
+)
 
 MARKER = "selected-backend-persistence-v1"
 PROBE_ID = "flora-selected-backend-restart-probe"
@@ -102,7 +113,7 @@ def _formation_probe(*, write: bool = False) -> None:
                 payload_reference=raw.object_id)
             log.append(event, expected_revision=-1)
         committed = log.replay_committed()
-        if len(committed) != 1 or committed[0].recorded_at is None:
+        if len(committed) != (1 if write else 2) or committed[0].recorded_at is None:
             raise RuntimeError("registered formation probe lacks exact physical replay")
         entry = committed[0]
         with psycopg.connect(os.environ.get(
@@ -118,14 +129,51 @@ def _formation_probe(*, write: bool = False) -> None:
             if source is None or source.evidence.recorded_at != normalize_timestamp(
                     entry.recorded_at.isoformat(), "recorded_at"):
                 raise RuntimeError("registered source/availability metadata did not recover")
+            policy = XTDBFormationPermissionPolicy(
+                scope=scope, authority_namespace_id=FORMATION_NAMESPACE,
+                connection=connection, registry=registry)
+            if write:
+                action = FormationPermissionAction.create(
+                    scope=scope, authority_namespace_id=FORMATION_NAMESPACE,
+                    action_id="formation-restart-grant", source_ref_id=entry.event.event_id,
+                    source_registration_sha256=source.registration_sha256,
+                    purpose="memory_formation", decision="allow", generation=1,
+                    previous_action_sha256=None, authorization_ref="fictional-restart-owner-proof",
+                    authorized_at=datetime.now(timezone.utc).isoformat())
+                request_raw = objects.put(formation_permission_payload(action))
+                request = ExperienceEvent.create(
+                    event_type="formation_permission_action", scope=scope,
+                    occurred_at=action.authorized_at,
+                    content_digest=request_raw.plaintext_sha256,
+                    provenance=ProvenanceReference.create(
+                        provenance_type="derived_inference",
+                        source_reference_ids=(entry.event.event_id,),
+                        derivation_activity_id=action.action_id,
+                        responsible_component="synthetic-test"),
+                    retention_class="ordinary_experience", storage_tier="raw_buffer",
+                    parent_event_ids=(entry.event.event_id,), payload_reference=request_raw.object_id)
+                log.append(request, expected_revision=0)
+                register_experience_source(
+                    event_id=request.event_id, raw=request_raw, registry=registry,
+                    log=log, objects=objects, role="derived_inference", modality="structured")
+                private_key = Ed25519PrivateKey.generate()
+                proof = OwnerActionProof(
+                    "formation_permission", request.event_id, request.event_sha256,
+                    base64.b64encode(private_key.sign(
+                        owner_action_message(request, "formation_permission"))).decode("ascii"))
+                verifier = Ed25519OwnerActionVerifier(
+                    scope=scope, owner_public_key=private_key.public_key().public_bytes(
+                        Encoding.Raw, PublicFormat.Raw), proofs={request.event_id: proof})
+                policy.apply(action, request_event_id=request.event_id,
+                             log=log, objects=objects, references=registry, verifier=verifier)
             prepared = prepare_selected_formation(
                 request=FormationPlanningRequest(scope, FORMATION_NAMESPACE,
                                                  (entry.event.event_id,)),
                 registry=registry, objects=objects,
-                permits=lambda source, purpose: purpose == "memory_formation")
+                permits=policy.permits)
             if prepared.assembled.opened_content != ((entry.event.event_id, FORMATION_MARKER),):
                 raise RuntimeError("registered encrypted formation custody did not recover")
-            print("Registered formation source, physical time and encrypted custody recovered")
+            print("Registered formation source, physical time, signed permission and encrypted custody recovered")
     finally:
         client.close()
 

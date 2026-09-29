@@ -154,6 +154,8 @@ def record_selected_formation_delivery(
             raise ValueError("formation delivery source differs from canonical Experience")
         if event.occurred_at > delivery_time:
             raise ValueError("formation delivery precedes a source observation")
+        if ref.recorded_at is None or ref.recorded_at > delivery_time:
+            raise ValueError("formation delivery precedes physical source availability")
     prepared.revalidate()
     material = json.dumps(prepared.receipt_record(), sort_keys=True,
                           separators=(",", ":"), allow_nan=False).encode()

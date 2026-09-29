@@ -47,6 +47,11 @@ from flora.selected.formation_context import (
     prepare_selected_formation, register_experience_source,
     record_selected_formation_delivery,
 )
+from flora.selected.formation_policy import (
+    FormationPermissionAction, XTDBFormationPermissionPolicy,
+    formation_permission_payload,
+)
+from flora.selected.formation_candidates import XTDBFormationProposalCandidates
 from flora.selected.formation_gate import assess_formation
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 from flora.selected.source_native import read_current_sources
@@ -216,9 +221,66 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                         scope=scope, authority_namespace_id=namespace, connection=connection)
                     self.assertEqual(registry.lookup(events[1].event_id), sources[1])
                     self.assertEqual(registry.get(raws[0].object_id), raws[0])
-                    allowed = {event.event_id for event in events}
-                    permits = lambda source, purpose: (
-                        purpose == "memory_formation" and source.evidence.ref_id in allowed)
+                    policy = XTDBFormationPermissionPolicy(
+                        scope=scope, authority_namespace_id=namespace,
+                        connection=connection, registry=registry)
+                    self.assertFalse(policy.permits(sources[0], "memory_formation"))
+                    private_key = Ed25519PrivateKey.generate()
+                    proofs = {}
+                    verifier = Ed25519OwnerActionVerifier(
+                        scope=scope, owner_public_key=private_key.public_key().public_bytes(
+                            Encoding.Raw, PublicFormat.Raw), proofs=proofs)
+                    permission_counter = 0
+
+                    def apply_permission(source, *, decision="allow", previous=None):
+                        nonlocal permission_counter
+                        permission_counter += 1
+                        action = FormationPermissionAction.create(
+                            scope=scope, authority_namespace_id=namespace,
+                            action_id=f"fixture-permission-{permission_counter}",
+                            source_ref_id=source.evidence.ref_id,
+                            source_registration_sha256=source.registration_sha256,
+                            purpose="memory_formation", decision=decision,
+                            generation=1 if previous is None else previous[0].generation + 1,
+                            previous_action_sha256=None if previous is None else previous[0].action_sha256,
+                            authorization_ref=f"fixture-owner-proof-{permission_counter}",
+                            authorized_at=datetime.now(timezone.utc).isoformat())
+                        raw = objects.put(formation_permission_payload(action))
+                        parents = (source.evidence.ref_id,) + (
+                            () if previous is None else (previous[1].event_id,))
+                        event = ExperienceEvent.create(
+                            event_type="formation_permission_action", scope=scope,
+                            occurred_at=action.authorized_at, content_digest=raw.plaintext_sha256,
+                            provenance=ProvenanceReference.create(
+                                provenance_type="derived_inference",
+                                source_reference_ids=parents,
+                                derivation_activity_id=action.action_id,
+                                responsible_component="synthetic-test"),
+                            retention_class="ordinary_experience", storage_tier="raw_buffer",
+                            parent_event_ids=parents, payload_reference=raw.object_id)
+                        log.append(event, expected_revision=len(log.replay()) - 1)
+                        register_experience_source(
+                            event_id=event.event_id, raw=raw, registry=registry,
+                            log=log, objects=objects, role="derived_inference", modality="structured")
+                        proofs[event.event_id] = OwnerActionProof(
+                            "formation_permission", event.event_id, event.event_sha256,
+                            base64.b64encode(private_key.sign(
+                                owner_action_message(event, "formation_permission"))).decode("ascii"))
+                        if previous is None:
+                            wrong_verifier = Ed25519OwnerActionVerifier(
+                                scope=scope, owner_public_key=Ed25519PrivateKey.generate().public_key().public_bytes(
+                                    Encoding.Raw, PublicFormat.Raw), proofs=proofs)
+                            with self.assertRaisesRegex(ValueError, "independently authorized"):
+                                policy.apply(action, request_event_id=event.event_id,
+                                    log=log, objects=objects, references=registry,
+                                    verifier=wrong_verifier)
+                        policy.apply(action, request_event_id=event.event_id,
+                                     log=log, objects=objects, references=registry, verifier=verifier)
+                        return action, event
+
+                    first_grant = apply_permission(sources[0])
+                    apply_permission(sources[1])
+                    permits = policy.permits
                     request = FormationPlanningRequest(
                         scope, namespace, (events[1].event_id,))
                     prepared = prepare_selected_formation(
@@ -235,20 +297,70 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                             registry=registry, objects=objects, permits=permits)
                     delivered = record_selected_formation_delivery(
                         prepared=prepared, log=log, objects=objects,
-                        occurred_at="2026-09-29T12:00:00Z", expected_revision=1,
+                        occurred_at=datetime.now(timezone.utc).isoformat(), expected_revision=3,
                         request_id="registered-formation-delivery")
                     self.assertEqual(delivered.event.parent_event_ids,
                                      tuple(event.event_id for event in events))
                     material = json.loads(objects.get(delivered.raw))
                     self.assertEqual(material["receipt_sha256"], prepared.receipt.receipt_sha256)
                     self.assertNotIn("opened_content", material)
-                    allowed.remove(events[0].event_id)
+                    # Externally supplied output exercises persistence only.
+                    # This is not an MFM invocation or an accepted preference.
+                    proposal = FormationProposal(
+                        proposal_id="fixture-preference-proposal", kind="preference",
+                        domain="host", subject_ref=scope.host_instance_id,
+                        value_ref="fixture-proposed-value", evidence_refs=(events[1].event_id,))
+                    bundle = MemoryProposalBundle(
+                        scope=scope, authority_namespace_id=namespace,
+                        bundle_id="fixture-output-bundle",
+                        experience_refs=prepared.assembled.packet.experience_refs,
+                        context_digest=prepared.receipt.context_digest,
+                        model_artifact_digest="f" * 64,
+                        inference_run_id="synthetic-output-contract", proposals=(proposal,))
+
+                    class FixtureValueResolver:
+                        def resolve(self, requested_scope, requested_namespace, value_ref):
+                            if (requested_scope != scope or requested_namespace != namespace
+                                    or value_ref != "fixture-proposed-value"):
+                                return None
+                            return _text("fictional proposed value; not accepted memory")
+
+                    candidates = XTDBFormationProposalCandidates(
+                        scope=scope, authority_namespace_id=namespace, connection=connection)
+                    candidate_arguments = dict(
+                        prepared=prepared, delivery=delivered, bundle=bundle,
+                        log=log, objects=objects, expected_model_artifact_sha256="f" * 64,
+                        occurred_at=datetime.now(timezone.utc).isoformat(), expected_revision=4,
+                        value_resolver=FixtureValueResolver())
+                    submitted = candidates.record(**candidate_arguments)
+                    self.assertEqual(candidates.record(**candidate_arguments), submitted)
+                    self.assertEqual(len(log.replay()), 6)
+                    recovered = XTDBFormationProposalCandidates(
+                        scope=scope, authority_namespace_id=namespace, connection=connection).read_candidate(
+                        bundle.bundle_id, log=log, objects=objects, source_store=prepared.store)
+                    self.assertEqual(recovered.bundle, bundle)
+                    self.assertEqual(recovered.values[0][1],
+                                     _text("fictional proposed value; not accepted memory"))
+                    revoked = apply_permission(sources[0], decision="revoke", previous=first_grant)
+                    # Recreate the policy and retry the older grant. It must
+                    # remain a no-op and never revive a revoked parent source.
+                    recreated = XTDBFormationPermissionPolicy(
+                        scope=scope, authority_namespace_id=namespace,
+                        connection=connection, registry=registry)
+                    recreated.apply(first_grant[0], request_event_id=first_grant[1].event_id,
+                        log=log, objects=objects, references=registry, verifier=verifier)
+                    self.assertEqual(recreated.current_action(events[0].event_id,
+                        "memory_formation"), revoked[0])
+                    self.assertFalse(recreated.permits(sources[1], "memory_formation"))
+                    with self.assertRaisesRegex(CognitiveKernelContractError, "permission revoked"):
+                        candidates.read_candidate(bundle.bundle_id, log=log,
+                            objects=objects, source_store=prepared.store)
                     with self.assertRaisesRegex(CognitiveKernelContractError, "source changed"):
                         record_selected_formation_delivery(
                             prepared=prepared, log=log, objects=objects,
-                            occurred_at="2026-09-29T12:00:01Z", expected_revision=2,
+                            occurred_at=datetime.now(timezone.utc).isoformat(), expected_revision=6,
                             request_id="revoked-formation-delivery")
-                    self.assertEqual(len(log.replay()), 3)
+                    self.assertEqual(len(log.replay()), 7)
         finally:
             client.close()
 

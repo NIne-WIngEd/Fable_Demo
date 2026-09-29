@@ -9,12 +9,18 @@ from __future__ import annotations
 import base64
 import binascii
 from dataclasses import dataclass
-from typing import Mapping
+import hashlib
+from typing import Mapping, TYPE_CHECKING
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cognitive_kernel.canonical import canonical_json_bytes
 from cognitive_kernel.contracts import ProductHostScope
 from cognitive_kernel.experience import ExperienceEvent
+
+if TYPE_CHECKING:
+    from cognitive_kernel.formation_sources import RegisteredFormationSource
+    from .formation_policy import FormationPermissionAction
 
 
 @dataclass(frozen=True)
@@ -27,7 +33,7 @@ class OwnerActionProof:
 
 def owner_action_message(event: ExperienceEvent, action: str) -> bytes:
     event.validate()
-    if action not in {"state_activation", "claim_quarantine"}:
+    if action not in {"state_activation", "claim_quarantine", "formation_permission"}:
         raise ValueError("unknown owner action")
     return (f"FloRA-owner-action-v1\n{action}\n{event.scope.storage_scope()}\n"
             f"{event.event_sha256}\n").encode()
@@ -69,3 +75,30 @@ class Ed25519OwnerActionVerifier:
         return (event.event_type == "deletion_request"
                 and request.get("schema") == "flora-claim-quarantine-v1"
                 and self._verify(event, "claim_quarantine"))
+
+    def authorized_action(self, action: FormationPermissionAction,
+                          source: RegisteredFormationSource,
+                          event: ExperienceEvent) -> bool:
+        """Verify the enrolled owner's signature for one exact source-use action.
+
+        Policy.apply separately verifies real replay, encrypted bytes and CAS.
+        This method grants no enrollment, source registration, or store write.
+        """
+        try:
+            action.validate()
+            source.validate()
+            event.validate()
+        except ValueError:
+            return False
+        return (
+            action.scope == source.evidence.scope == event.scope == self.scope
+            and action.authority_namespace_id == source.evidence.authority_namespace_id
+            and action.source_ref_id == source.evidence.ref_id
+            and action.source_registration_sha256 == source.registration_sha256
+            and event.event_type == "formation_permission_action"
+            and event.occurred_at == action.authorized_at
+            and action.source_ref_id in event.parent_event_ids
+            and event.content_digest == hashlib.sha256(
+                canonical_json_bytes(action.metadata_record())).hexdigest()
+            and self._verify(event, "formation_permission")
+        )

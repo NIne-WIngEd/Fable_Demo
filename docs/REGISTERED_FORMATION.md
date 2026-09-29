@@ -23,6 +23,17 @@ The receipt means **bytes delivered to an input interface**. It does not mean mo
 
 ## Verification boundary
 
-Deterministic contract tests cover registration integrity, metadata/provenance escalation, host isolation, permission races and stale retrieval hits. A real selected-backend integration test covers physical Kurrent time, XTDB registration reconstruction, encrypted source reopening, original parent closure, historical cutoff and revoked delivery. The restart probe also recreates the registered input after restarting KurrentDB and XTDB. Current commit qualification is pending its GitHub Actions run.
+Deterministic contract tests cover registration integrity, metadata/provenance escalation, host isolation, permission races and stale retrieval hits. [Run 36623668349](https://github.com/NIne-WIngEd/FloRA/actions/runs/36623668349) passed the source/context commit `9b1f024`: physical Kurrent time, XTDB registration reconstruction, encrypted source reopening, original parent closure, historical cutoff and a current-policy delivery check. Its restart probe recreated the registered input after restarting KurrentDB and XTDB.
 
-The durable formation-use policy, proposal admission, accepted episode/state governance, qualified artifact registry, adaptive planning and complete influence invalidation remain independent follow-up work. Nothing here supplies a personality/MFM substitute or establishes the frozen experiment's behavioral claim.
+The next integration extends this path with durable signed source permissions and proposal output custody; its backend qualification is pending. Delivery now rejects a timestamp earlier than physical source availability.
+
+## Governed source use and proposal custody
+
+- `XTDBFormationPermissionPolicy` holds immutable allow/deny/revoke actions and a serialized current head for each original source and purpose. Registration itself grants no use.
+- Applying an action requires its exact encrypted request in canonical Kurrent Experience plus an independently verified authorization. Host-bound Ed25519 signatures use a separate `formation_permission` domain. Key enrollment and recovery remain external product work.
+- Current permission is checked across every registered parent, before and after custody reads. Missing decisions deny use. An old grant retry is a no-op after a later denial. This policy does not erase raw objects or invalidate every derivative or trained weight.
+- `XTDBFormationProposalCandidates` records an externally supplied `MemoryProposalBundle`, its delivery/input receipts and independently resolved canonical proposed values. It stores the private material encrypted and an immutable index in XTDB.
+- Original sources are reopened on submission and recovery. Scope, purpose, historical availability, actual delivery, proposed values and output artifact digest must match. Exact retry recovers a Kurrent append that preceded an interrupted XTDB registration.
+- Neither a stored proposal nor a pinned output hash is accepted memory or a qualified model. Semantic admission and the real MFM's output quality are separate boundaries.
+
+Proposal-to-Claim admission, accepted episode/state governance, qualified artifact registry, adaptive planning and complete influence invalidation remain follow-up work. Nothing here supplies a personality/MFM substitute or establishes the frozen experiment's behavioral claim.
