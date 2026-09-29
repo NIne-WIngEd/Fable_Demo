@@ -110,10 +110,14 @@ class RegisteredJudgmentContextPolicy:
                     or history["approval_event_sha256"] != head["approval_event_sha256"]
                     or history["projection_sha256"] != version.projection_sha256):
                 return False
-            # Episode closure will use its selected acceptance authority once
-            # integrated; an unsupported derived ID grants no implicit access.
-            if version.source_episode_ids:
-                return False
+            episode_lineages = {}
+            for episode_id in version.source_episode_ids:
+                if self.state.episodes is None:
+                    return False
+                lineage = self.state.episodes.current_lineage(episode_id, claims=self.claims, log=self.log)
+                if not all(self.allow_event(event_id, purpose) for event_id in lineage[3]):
+                    return False
+                episode_lineages[episode_id] = lineage
             claims = set(version.source_claim_version_ids)
             for version_id in claims:
                 claim = self.claims.load_version(version_id)
@@ -121,9 +125,12 @@ class RegisteredJudgmentContextPolicy:
                 if (current["current_claim_version_id"] != version_id
                         or not self.allow_claim(claim["claim_id"], purpose)):
                     return False
-            originals = set(version.source_evidence_ids) | (set(version.envelope.source_records) - claims)
+            originals = set(version.source_evidence_ids) | (set(version.envelope.source_records)
+                        - claims - set(version.source_episode_ids))
             return (all(self.allow_event(event_id, purpose) for event_id in originals)
                     and self.allow_event(head["approval_event_id"], purpose)
+                    and all(self.state.episodes.current_lineage(episode_id, claims=self.claims, log=self.log) == lineage
+                            for episode_id, lineage in episode_lineages.items())
                     and self.state._fetch(_ACTIVE, key) == head)
         except (KeyError, ValueError, TypeError):
             return False

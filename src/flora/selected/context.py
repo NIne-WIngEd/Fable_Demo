@@ -98,12 +98,14 @@ class LocalContextItem:
     claim_value: dict[str, object] | None = field(default=None, repr=False)
     approval_event_id: str | None = None
     projection_sha256: str | None = None
+    control_event_ids: tuple[str, ...] = ()
 
     def receipt_record(self) -> dict[str, object]:
         return {
             "kind": self.kind, "record_id": self.record_id,
             "version_id": self.version_id,
             "source_event_ids": list(self.source_event_ids),
+            "control_event_ids": list(self.control_event_ids),
             "content_sha256": hashlib.sha256(self.content).hexdigest(),
             "claim_value_sha256": (
                 canonical_sha256(self.claim_value)
@@ -121,7 +123,7 @@ class LocalContext:
 
     def receipt_record(self) -> dict[str, object]:
         material = {
-            "schema": "flora-context-delivery-v1",
+            "schema": "flora-context-delivery-v2",
             "request_id": self.plan.request_id,
             "purpose": self.plan.purpose,
             "routes": {
@@ -143,6 +145,7 @@ class LocalContext:
     def source_event_ids(self) -> tuple[str, ...]:
         return tuple(sorted({source for item in self.items
                              for source in item.source_event_ids} |
+                            {control for item in self.items for control in item.control_event_ids} |
                             {item.approval_event_id for item in self.items
                              if item.approval_event_id is not None}))
 
@@ -211,6 +214,21 @@ def assemble_context(
             verifier=approval_verifier,
         )
         sources = set(active.record["source_evidence_ids"])
+        controls = set()
+        episode_snapshots = {}
+        episode_ids = set(active.record["source_episode_ids"])
+        if episode_ids:
+            episodes = getattr(state, "episodes", None)
+            if episodes is None:
+                raise ValueError("context requires governed accepted episode authority")
+            for episode_id in episode_ids:
+                lineage = episodes.current_lineage(episode_id, claims=claims, log=log)
+                episode_snapshots[episode_id] = lineage
+                controls.add(lineage[1].acceptance_event_id)
+                sources.update(lineage[3])
+            sources.difference_update(controls)
+        sources.update(set(active.record["envelope"]["source_records"])
+                       - set(active.record["source_claim_version_ids"]) - episode_ids)
         for version_id in active.record["source_claim_version_ids"]:
             version = claims.load_version(version_id)
             packet = read_current_sources(
@@ -223,21 +241,25 @@ def assemble_context(
             sources.update(source.event_id for source in packet.sources)
         if active.approval_event_id is None or not all(
             policy.allow_event(event_id, plan.purpose)
-            for event_id in sources | {active.approval_event_id}
+            for event_id in sources | controls | {active.approval_event_id}
         ):
             raise PermissionError("personal state source or approval is not permitted")
+        if any(state.episodes.current_lineage(episode_id, claims=claims, log=log) != lineage
+               for episode_id, lineage in episode_snapshots.items()):
+            raise ValueError("accepted episode lineage changed during context assembly")
         items.append(LocalContextItem(
             kind=f"state:{route.subject_type}", record_id=route.projection_id,
             version_id=active.record["version_id"],
             source_event_ids=tuple(sorted(sources)), content=active.content,
             approval_event_id=active.approval_event_id,
             projection_sha256=active.record["projection_sha256"],
+            control_event_ids=tuple(sorted(controls)),
         ))
     # Separate stores do not give a cross-plane transaction. Recheck each
     # materialized item's present authority and permission before returning.
     for item in items:
         if not all(policy.allow_event(event_id, plan.purpose) is True
-                   for event_id in item.source_event_ids):
+                   for event_id in item.source_event_ids + item.control_event_ids):
             raise PermissionError("context source permission changed during assembly")
         if item.kind == "claim":
             current = claims.load_current(item.record_id)

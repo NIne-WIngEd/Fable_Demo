@@ -215,6 +215,20 @@ class ArmStopped(Exception):
         self.usage = usage
 
 
+class ArmExecutionFailure(ArmStopped):
+    """A rejected/failed execution with independently verified observed usage.
+
+    Adapters attach usage only after their trusted metering proof succeeds.
+    Exception detail never becomes a receipt or a displayed provider message.
+    """
+    def __init__(self, status: str, usage: MeasuredUsage):
+        if status not in {"invalid_result", "failed"}:
+            raise ValueError("observed failures must be invalid_result or failed")
+        usage.validate()
+        Exception.__init__(self, status)
+        self.status, self.usage = status, usage
+
+
 @dataclass(frozen=True)
 class RunAttempt:
     case_id: str
@@ -254,8 +268,24 @@ def _context_bytes(context: LocalContext) -> bytes:
         base64.b64encode(item.content).decode("ascii") for item in context.items]})
 
 
+def _authorize_context(*, policy: RunEvidencePolicy, case_id: str, phase: str,
+                       history: HistorySnapshot, context: LocalContext, arm: str) -> None:
+    if not isinstance(context, LocalContext):
+        raise ValueError("prepared context is not a selected context")
+    originals_only = set(context.source_event_ids).issubset(history.event_ids)
+    # Internal approvals belong to native authority, never shared user history.
+    if arm == "general_model_memory" and not originals_only:
+        raise ValueError("baseline context exceeds original phase evidence")
+    authorize = getattr(policy, "authorize_context", None)
+    if callable(authorize):
+        if authorize(case_id=case_id, phase=phase, history=history, context=context, arm=arm) is not True:
+            raise PermissionError("prepared context lacks current independent phase lineage")
+    elif not originals_only:
+        raise ValueError("internal native context requires independent phase lineage")
+
+
 def _validate_result(result: ArmResult, request: ExecutionRequest,
-                     policy: RunEvidencePolicy) -> None:
+                     policy: RunEvidencePolicy, *, arm: str = "general_model_memory") -> None:
     if not isinstance(result.usage, MeasuredUsage):
         raise ValueError("execution needs observed usage metadata")
     result.usage.validate()
@@ -279,6 +309,22 @@ def _validate_result(result: ArmResult, request: ExecutionRequest,
             or tuple(delivery.parent_event_ids) != request.context.source_event_ids):
         raise ValueError("delivery is not the exact selected context")
     consumed = (delivery.event_id,) + request.context.source_event_ids
+    if (tuple(decision.parent_event_ids) != consumed
+            or (arm == "flora_full" and getattr(policy, "requires_native_result", False) is True)):
+        # A native decision also cites the exact qualified execution output.
+        # Keep this proof; do not flatten it into shared original evidence.
+        verify_native = getattr(policy, "verify_native_result", None)
+        if arm != "flora_full" or not callable(verify_native):
+            raise ValueError("unexpected decision parents lack native execution authority")
+        qualified = verify_native(request, result)
+        if (not isinstance(qualified, RecordedEvent)
+                or qualified.event.event_type != "qualified_model_output"
+                or qualified.event.scope != request.scope or qualified.raw.scope != request.scope
+                or qualified.event.content_digest != qualified.raw.plaintext_sha256
+                or not policy.verify_recorded(qualified)):
+            raise ValueError("native execution parent lacks independently verified custody")
+        qualified.event.validate()
+        consumed = (qualified.event.event_id,) + consumed
     material = _bytes({"schema": "flora-decision-v1",
                        "verdict_base64": base64.b64encode(result.output).decode("ascii"),
                        "consumed_event_ids": list(consumed),
@@ -362,9 +408,8 @@ async def run_paired(
                         else:
                             context = await adapter.prepare(PreparationRequest(
                                 case.case_id, phase, question, history, plan))
-                        if (not isinstance(context, LocalContext)
-                                or not set(context.source_event_ids).issubset(history.event_ids)):
-                            raise ValueError("prepared context violates original evidence or byte budget")
+                        _authorize_context(policy=evidence_policy, case_id=case.case_id, phase=phase,
+                                           history=history, context=context, arm=arm)
                         material = _context_bytes(context)
                         if len(material) > plan.context_byte_budget:
                             raise ValueError("prepared context violates byte budget")
@@ -388,10 +433,13 @@ async def run_paired(
                     request = ExecutionRequest(case.case_id, phase, question, history.scope,
                                                history.digest(), history.event_ids,
                                                context, binding, plan)
-                    _validate_result(result, request, evidence_policy)
+                    _authorize_context(policy=evidence_policy, case_id=case.case_id, phase=phase,
+                                       history=history, context=context, arm=arm)
+                    _validate_result(result, request, evidence_policy, arm=arm)
                     status = "success"
                     if (usage.output_tokens > plan.protocol.response_token_budget
                             or usage.context_tokens > plan.context_token_budget
+                            or usage.input_tokens > plan.context_token_budget
                             or usage.feature_calls > plan.feature_call_budget):
                         status = "budget_exceeded"
                 except ArmStopped as stop:
@@ -480,6 +528,7 @@ def validate_run(run: PairedRun) -> None:
                     or usage.feature_engine_id != run.plan.protocol.feature_engine_id
                     or usage.output_tokens > run.plan.protocol.response_token_budget
                     or usage.context_tokens > run.plan.context_token_budget
+                    or usage.input_tokens > run.plan.context_token_budget
                     or usage.feature_calls > run.plan.feature_call_budget
                     or attempt.elapsed_ms > run.plan.protocol.wall_time_budget_ms):
                 raise ValueError("success receipt lacks measured in-budget evidence")

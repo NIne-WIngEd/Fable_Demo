@@ -165,7 +165,7 @@ class SelectedExperimentRuntimeIntegrationTest(unittest.TestCase):
             attachments=(("content", raw),), parent_event_ids=(source.event_id,), log=self.log, objects=self.objects,
             occurred_at=self.fabric._time(), expected_revision=len(self.log.replay()) - 1)
         approval, approval_raw = self.fabric._append(activation_request(version.metadata_record(),
-            expected_active_version_id=None), event_type="state_activation_approval", provenance="owner_attested_canonical")
+            expected_active_version_id=None), event_type="state_activation_approval", provenance="generated_reconstruction")
         self.private.register_approval(approval_event_id=approval.event_id, candidate=version,
             expected_active_version_id=None, raw=approval_raw, log=self.log, objects=self.objects)
         self._persist_proof(approval, "state_activation")

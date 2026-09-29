@@ -14,7 +14,7 @@ from cognitive_kernel.experience import ExperienceEvent
 from flora.comparison_run import (
     ArmBinding, ArmResult, ArmStopped, HistorySnapshot, MeasuredUsage,
     PairedRunPlan, SourceMaterial, create_blind_review, run_paired, run_summary,
-    validate_run,
+    validate_run, _authorize_context, _validate_result, PreparationRequest,
 )
 from flora.evaluation_protocol import ARMS, EvaluationCase, EvaluationProtocol
 from flora.selected.context import ContextPlan, LocalContext, LocalContextItem
@@ -327,6 +327,82 @@ class PairedComparisonContractTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(run.attempts), 6)
         self.assertEqual(self.adapters["flora_full"].requests, [])
         self.assertEqual(sum(a.status == "unavailable" for a in run.attempts), 4)
+
+
+    async def test_internal_approvals_require_native_phase_authority_and_never_enter_baseline(self):
+        history = self.histories[("fixture-case", "before")]
+        context = await self.adapters["flora_full"].prepare(PreparationRequest(
+            "fixture-case", "before", self.questions["fixture-case"], history, self.plan))
+        internal = replace(context, items=(replace(context.items[0],
+            approval_event_id="fixture-internal-approval"),))
+        args = dict(policy=self.policy, case_id="fixture-case", phase="before",
+                    history=history, context=internal)
+        with self.assertRaisesRegex(ValueError, "independent phase lineage"):
+            _authorize_context(**args, arm="flora_full")
+        self.policy.authorize_context = lambda **fields: fields["phase"] == "before"
+        _authorize_context(**args, arm="flora_full")
+        _authorize_context(**args, arm="same_evidence_ablation")
+        with self.assertRaisesRegex(ValueError, "baseline"):
+            _authorize_context(**args, arm="general_model_memory")
+        with self.assertRaises(PermissionError):
+            _authorize_context(**{**args, "phase": "after"}, arm="flora_full")
+        # Full and ablation keep exact original history; approvals are not added.
+        self.assertNotIn("fixture-internal-approval", history.event_ids)
+
+    async def test_native_execution_parent_requires_exact_independent_proof_and_arm(self):
+        await self.run_fixture()
+        request = self.adapters["flora_full"].requests[0]
+        result = await self.adapters["flora_full"].execute(request)
+        plane, log = self.policy.recorded[result.delivery.event.event_id]
+        raw = plane.put(b"fictional qualified execution output receipt")
+        event = ExperienceEvent.create(event_type="qualified_model_output", scope=request.scope,
+            occurred_at="2026-09-29T12:00:02Z", content_digest=raw.plaintext_sha256,
+            provenance=ProvenanceReference.create(provenance_type="derived_inference",
+                source_reference_ids=(result.delivery.event.event_id,),
+                derivation_activity_id="fictional-qualified-execution",
+                responsible_component=request.binding.producer_component),
+            retention_class="ordinary_experience", storage_tier="raw_buffer",
+            parent_event_ids=(result.delivery.event.event_id,), payload_reference=raw.object_id)
+        log.append(event, expected_revision=len(log.replay()) - 1)
+        qualified = RecordedEvent(event, raw)
+        refs = {source.event.payload_reference: plane.put(source.plaintext)
+                for source in self.histories[(request.case_id, request.phase)].sources}
+        refs.update({raw.object_id: raw, result.delivery.raw.object_id: result.delivery.raw})
+        decision = record_decision(log=log, objects=plane, verdict=result.output,
+            consumed_event_ids=(event.event_id, result.delivery.event.event_id) + request.context.source_event_ids,
+            references=refs, model_artifact_sha256=request.binding.model_artifact_sha256,
+            occurred_at="2026-09-29T12:00:03Z", expected_revision=len(log.replay()) - 1,
+            producer_component=request.binding.producer_component)
+        self.policy.recorded[event.event_id] = (plane, log)
+        self.policy.recorded[decision.event.event_id] = (plane, log)
+        native = replace(result, decision=decision)
+        with self.assertRaisesRegex(ValueError, "native execution authority"):
+            _validate_result(native, request, self.policy, arm="flora_full")
+        self.policy.verify_native_result = lambda request, result: qualified
+        self.policy.requires_native_result = True
+        with self.assertRaisesRegex(ValueError, "exact context-bound"):
+            _validate_result(result, request, self.policy, arm="flora_full")
+        _validate_result(native, request, self.policy, arm="flora_full")
+        for arm in ("general_model_memory", "same_evidence_ablation"):
+            with self.assertRaisesRegex(ValueError, "native execution authority"):
+                _validate_result(native, request, self.policy, arm=arm)
+        self.policy.verify_native_result = lambda request, result: result.delivery
+        with self.assertRaisesRegex(ValueError, "verified custody"):
+            _validate_result(native, request, self.policy, arm="flora_full")
+
+    async def test_actual_processed_input_usage_can_exceed_local_preflight_budget(self):
+        execute = self.adapters["general_model_memory"].execute
+        async def actual_larger_input(request):
+            result = await execute(request)
+            return replace(result, usage=replace(result.usage, input_tokens=self.plan.context_token_budget + 1))
+        self.adapters["general_model_memory"].execute = actual_larger_input
+        run = await self.run_fixture()
+        attempts = [attempt for attempt in run.attempts if attempt.arm == "general_model_memory"]
+        self.assertEqual([attempt.status for attempt in attempts], ["budget_exceeded"] * 2)
+        invalid = replace(run, attempts=tuple(replace(attempt, status="success")
+            if attempt.arm == "general_model_memory" else attempt for attempt in run.attempts))
+        with self.assertRaisesRegex(ValueError, "in-budget"):
+            validate_run(invalid)
 
 
 if __name__ == "__main__":

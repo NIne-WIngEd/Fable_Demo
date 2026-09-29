@@ -11,7 +11,7 @@ import base64
 from dataclasses import dataclass
 import hashlib
 import json
-from typing import Any
+from typing import Any, Mapping
 
 from cognitive_kernel.canonical import canonical_sha256, normalize_timestamp, require_identifier
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
@@ -19,7 +19,8 @@ from cognitive_kernel.experience import ExperienceEvent
 
 from ..comparison_run import (
     ArmBinding, HistorySnapshot, MeasuredUsage, PairedRun, PairedRunPlan,
-    RunAttempt, SourceMaterial, _context_bytes, validate_run,
+    RunAttempt, SourceMaterial, ArmResult, ExecutionRequest, _authorize_context,
+    _context_bytes, _validate_result, validate_run,
 )
 from ..evaluation_protocol import EvaluationCase, EvaluationProtocol
 from .claims import _dml_placeholder, _record_json, _rows, configure_xtdb_connection
@@ -370,7 +371,9 @@ class XTDBComparisonCustody:
                   permissions=permissions, purpose=purpose)
         return history
 
-    def save_run(self, *, run_id: str, run: PairedRun, occurred_at: str) -> None:
+    def save_run(self, *, run_id: str, run: PairedRun, occurred_at: str,
+                 execution_records: Mapping[tuple[str, str, str], tuple[ExecutionRequest, ArmResult]] | None = None,
+                 evidence_policy: SelectedRunEvidencePolicy | None = None) -> None:
         validate_run(run)
         plan = self.metadata(run_id, "plan")
         if (plan is None or plan.record["metadata"]["plan_sha256"] != run.plan.digest()
@@ -404,21 +407,58 @@ class XTDBComparisonCustody:
                     consumed = tuple(material["consumed_event_ids"])
                     if not consumed or consumed != recorded.event.parent_event_ids:
                         raise ValueError("recorded verdict source lineage changed")
-                    context_artifact = self.metadata(run_id, f"context:{consumed[0]}")
+                    first = self.load_recorded(consumed[0])
+                    native_output = first.event.event_type == "qualified_model_output"
+                    offset = 1 if native_output else 0
+                    if len(consumed) <= offset:
+                        raise ValueError("successful verdict omits its context delivery")
+                    delivery_id, context_sources = consumed[offset], consumed[offset + 1:]
+                    originals_only = set(context_sources).issubset(attempt.authorized_event_ids)
+                    native_required = (native_output or not originals_only
+                        or (attempt.arm == "flora_full" and evidence_policy is not None
+                            and evidence_policy.requires_native_result))
+                    request = result = None
+                    if native_required:
+                        if (not isinstance(evidence_policy, SelectedRunEvidencePolicy)
+                                or evidence_policy.custody is not self or evidence_policy.run_id != run_id
+                                or evidence_policy.native_lineage is None or execution_records is None):
+                            raise ValueError("native run custody requires independent current execution lineage")
+                        entry = execution_records.get((attempt.case_id, attempt.phase, attempt.arm))
+                        if not isinstance(entry, tuple) or len(entry) != 2:
+                            raise ValueError("native run custody lost its exact execution record")
+                        request, result = entry
+                        if (not isinstance(request, ExecutionRequest) or not isinstance(result, ArmResult)
+                                or request.case_id != attempt.case_id or request.phase != attempt.phase
+                                or request.scope != self.scope or request.plan.digest() != run.plan.digest()
+                                or request.binding != run.plan.arm_bindings[attempt.arm]
+                                or request.question != run.questions[attempt.case_id]
+                                or request.authorized_event_ids != attempt.authorized_event_ids
+                                or request.authorized_history_sha256 != attempt.authorized_history_sha256
+                                or _digest(_context_bytes(request.context)) != attempt.context_sha256
+                                or result.output != attempt.output or result.decision != recorded
+                                or result.delivery.event.event_id != delivery_id or result.usage != attempt.usage):
+                            raise ValueError("native execution record differs from the frozen successful attempt")
+                        history = evidence_policy.native_lineage.history_for(attempt.case_id, attempt.phase)
+                        _authorize_context(policy=evidence_policy, case_id=attempt.case_id, phase=attempt.phase,
+                            history=history, context=request.context, arm=attempt.arm)
+                        _validate_result(result, request, evidence_policy, arm=attempt.arm)
+                    context_artifact = self.metadata(run_id, f"context:{delivery_id}")
                     if (context_artifact is None
                             or context_artifact.record["content_sha256"] != attempt.context_sha256
-                            or tuple(context_artifact.record["metadata"]["source_event_ids"]) != consumed[1:]
-                            or not set(consumed[1:]).issubset(attempt.authorized_event_ids)):
+                            or tuple(context_artifact.record["metadata"]["source_event_ids"]) != context_sources):
                         raise ValueError("successful run lacks its exact durable input context")
                     context_source = self.registry.lookup(context_artifact.event_id)
                     context_material = self.raw_custody.read(self.scope, context_source.object_ref)
                     if len(context_material) > run.plan.context_byte_budget:
                         raise ValueError("successful context exceeds the frozen actual byte budget")
                     context_body = json.loads(context_material)
-                    delivered = self.load_recorded(consumed[0])
+                    delivered = self.load_recorded(delivery_id)
                     if (not context_body["receipt"]["sufficient_by_declared_count"]
                             or self.raw_custody.read(self.scope, delivered.raw.object_id) != _json(context_body["receipt"])):
                         raise ValueError("successful context no longer matches canonical delivery")
+                    if native_required:
+                        _authorize_context(policy=evidence_policy, case_id=attempt.case_id, phase=attempt.phase,
+                            history=history, context=request.context, arm=attempt.arm)
                     parents.append(context_artifact.event_id)
                     output_parents, output_kind = (attempt.decision_event_id,), "output"
                 output_id = f"output:{attempt.case_id}:{attempt.phase}:{attempt.arm}"
@@ -573,12 +613,38 @@ class SelectedRunEvidencePolicy:
     """Current phase-purpose original access and verified selected event custody."""
 
     def __init__(self, *, custody: XTDBComparisonCustody, run_id: str,
-                 permissions: XTDBFormationPermissionPolicy):
+                 permissions: XTDBFormationPermissionPolicy,
+                 native_lineage=None):
         _identity(run_id, "run_id")
         if (custody.scope != permissions.scope
                 or custody.authority_namespace_id != permissions.authority_namespace_id):
             raise ValueError("comparison evidence policy crosses scope or authority")
         self.custody, self.run_id, self.permissions = custody, run_id, permissions
+        if native_lineage is not None:
+            from .judgment_lineage import NativeJudgmentLineageVerifier
+            plan = custody.metadata(run_id, "plan")
+            if (not isinstance(native_lineage, NativeJudgmentLineageVerifier)
+                    or native_lineage.runtime.scope != custody.scope
+                    or native_lineage.runtime.authority_namespace_id != custody.authority_namespace_id
+                    or plan is None
+                    or plan.record["metadata"]["plan_sha256"] != native_lineage.run_plan_sha256):
+                raise ValueError("native comparison lineage differs from registered host/run plan")
+        self.native_lineage = native_lineage
+        self.requires_native_result = native_lineage is not None
+
+    def authorize_context(self, *, case_id: str, phase: str, history: HistorySnapshot,
+                          context: LocalContext, arm: str) -> bool:
+        if not self.authorize_history(case_id=case_id, phase=phase, history=history):
+            return False
+        if arm == "general_model_memory" or self.native_lineage is None:
+            return set(context.source_event_ids).issubset(history.event_ids)
+        return self.native_lineage.authorize_context(case_id=case_id, phase=phase,
+            history=history, context=context, arm=arm)
+
+    def verify_native_result(self, request, result) -> RecordedEvent:
+        if self.native_lineage is None:
+            raise PermissionError("qualified native comparison lineage is not configured")
+        return self.native_lineage.verify_native_result(request, result)
 
     def authorize_history(self, *, case_id: str, phase: str, history: HistorySnapshot) -> bool:
         try:

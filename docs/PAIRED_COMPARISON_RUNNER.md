@@ -41,3 +41,26 @@ The numerical plan and cohort must be calibrated and preregistered before final 
 Eleven local contract regressions exercise input tampering, independent authorization, revocation during inference, malformed/insufficient context, same actual ablation evidence, recorded-verdict substitution, deadline/refusal/unavailability, failure denominator preservation, explicit unknown costs, frozen questions, and review authorization/blinding. Their fictional adapter and in-memory event log exercise contracts only. They are not selected-backend qualification, a model run, a strong comparator implementation, or a benchmark win.
 
 The next independent integration is a selected-store evidence-policy adapter and selected-context arm plumbing with durable run custody. Actual formation/native inference still comes from the separately built MFM and personality workstreams. A serious general-model comparator and its authorized feature-engine client remain to be integrated; this module performs no live external API call.
+
+## Native phase and execution lineage
+
+A native context can include exact approved-state controls. They stay separate
+from shared original user history; the baseline cannot receive them through a
+source-membership exception. Configure the selected evidence policy with the
+[qualified native lineage bridge](JUDGMENT_COMPARISON_LINEAGE.md). It checks the
+current original closure, Claim/state authority and independently qualified
+phase training/state exclusions before and after execution.
+
+A native decision retains its qualified execution output parent. A configured
+native arm cannot replace it with an otherwise valid generic recorded verdict.
+Run custody requires the exact execution request/result and current selected
+policy for native decisions and internal controls; it does not flatten those
+records into original user history. Verified usage stays in failures; actual
+processed input tokens also have to fit the frozen request budget.
+
+Production adapters must cooperate with cancellation or invoke inference through
+a separately terminable worker. The synchronous supplied-output integration
+fixture tests actual selected custody; it is not a production model worker.
+A shared evaluable decision/output contract must come from the actual qualified
+producer before behavioral scoring. Native IDP bytes and a free-form API answer
+do not by themselves constitute a comparable blinded judgment task.

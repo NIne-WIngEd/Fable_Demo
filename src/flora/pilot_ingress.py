@@ -119,7 +119,7 @@ def _before_phase_records(
                 raise ValueError("pilot before decision payload differs from its source lineage")
             require_sha256(material["model_artifact_sha256"], "model_artifact_sha256")
         else:
-            if (material.get("schema") != "flora-context-delivery-v1"
+            if (material.get("schema") not in {"flora-context-delivery-v1", "flora-context-delivery-v2"}
                     or material.get("receipt_sha256") != canonical_sha256(
                         {key: value for key, value in material.items() if key != "receipt_sha256"})):
                 raise ValueError("pilot before context receipt is unbound")

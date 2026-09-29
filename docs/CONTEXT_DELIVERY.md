@@ -7,3 +7,11 @@ The returned `LocalContext` contains the authoritative claim value with exact ra
 **What this proves:** the selected material was assembled, allowed, and delivered to a decision interface at a particular time. It does not prove a model read or attended to it, that the chosen items were semantically relevant, or that the verdict was caused by personal state. The explicit plan and synthetic test policy are not a learned Context Planner or a production authorization service. Adaptive planning, semantic sufficiency, latency qualification, and intervention tests await their own work and the qualified personality model.
 
 The [registered judgment permission path](JUDGMENT_CONTEXT_PERMISSIONS.md) now checks originals before and after plaintext reads, uses metadata-only graph nomination and reapplies current Claim/state authority after assembly. Formation-use permission alone grants no judgment or provider disclosure. This closes a permission-order gap in the earlier reference assembly.
+
+Delivery schema `flora-context-delivery-v2` distinguishes each item's original
+`source_event_ids` from accepted-episode `control_event_ids`. Its owner approval
+remains separately bound. The full delivery parent set contains all three;
+internal controls never become shared original user history. Episode-derived
+state needs the actual governed accepted-episode authority and exact current
+publication/source closure. The historical pilot reader also accepts v1; new
+deliveries use v2. Neither schema specifies a learned ACFP or IDP codec.
