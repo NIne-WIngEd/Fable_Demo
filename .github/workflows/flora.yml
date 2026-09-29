@@ -74,6 +74,9 @@ jobs:
       - name: Write restart persistence probes
         run: python scripts/backend_restart_probe.py write
 
+      - name: Verify probes before restart
+        run: python scripts/backend_restart_probe.py verify --retry-seconds 15
+
       - name: Restart selected services
         run: docker compose -f compose.integration.yml restart kurrentdb xtdb
 
@@ -96,7 +99,7 @@ jobs:
           done
 
       - name: Verify persistence after restart
-        run: python scripts/backend_restart_probe.py verify
+        run: python scripts/backend_restart_probe.py verify --retry-seconds 30
 
       - name: Capture selected-backend logs
         if: always()

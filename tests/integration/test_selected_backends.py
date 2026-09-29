@@ -20,11 +20,13 @@ from cognitive_kernel.claim_contracts import (
 )
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
+from cognitive_kernel.formation_contracts import FormationProposal, MemoryProposalBundle
 from cognitive_kernel.memory_contracts import MemoryUnitEnvelope
 from flora.selected.claims import XTDBClaimAuthority
 from flora.selected.authority_binding import bind_claim_source
 from flora.selected.experience import KurrentExperienceLog
 from flora.selected.formation_input import formation_input_from_replay
+from flora.selected.formation_gate import assess_formation
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 
 
@@ -180,6 +182,20 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     authority_namespace_id="host-claims")
                 self.assertEqual(packet.experience_refs, (event.event_id,))
                 self.assertEqual(packet.evidence[0].role, "historical_experience")
+                synthetic_proposal = FormationProposal(
+                    proposal_id="proposal-from-history", kind="preference", domain="host",
+                    subject_ref=scope.host_instance_id, value_ref="proposed-value",
+                    evidence_refs=(event.event_id,), epistemic_status="observation")
+                synthetic_bundle = MemoryProposalBundle(
+                    scope=scope, authority_namespace_id="host-claims",
+                    bundle_id="synthetic-bundle", experience_refs=packet.experience_refs,
+                    context_digest=packet.content_digest(), model_artifact_digest="a" * 64,
+                    inference_run_id="synthetic-contract-test", proposals=(synthetic_proposal,))
+                assessment = assess_formation(
+                    context=packet, bundle=synthetic_bundle,
+                    proposal_id=synthetic_proposal.proposal_id,
+                    registered={event.event_id: packet.evidence[0]})
+                self.assertEqual(assessment.disposition, "needs_adjudication")
                 with self.assertRaisesRegex(ValueError, "absent"):
                     formation_input_from_replay(
                         log=log, event_ids=("experience-fabricated",),
@@ -343,7 +359,14 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
             first_projection.assert_projects(identity, first_version)
             self.assertEqual(bind_claim_source(version=first_version,
                 relations=(first_relation,), replayed=replayed).stream_position, 0)
-            authority.put_version(first_version)
+            source_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                source_log = KurrentExperienceLog(scope=scope, client=source_client)
+                authority.put_version(first_version, relations=(first_relation,),
+                                      experience_log=source_log)
+            finally:
+                source_client.close()
             authority.put_current(first_projection)
             authority.put_current(first_projection)  # Same immutable request is idempotent.
 
@@ -430,7 +453,14 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "no replayed"):
                 bind_claim_source(version=second_version, relations=(second_relation,),
                                   replayed=replayed[:1])
-            authority.put_version(second_version)
+            source_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                source_log = KurrentExperienceLog(scope=scope, client=source_client)
+                authority.put_version(second_version, relations=(second_relation,),
+                                      experience_log=source_log)
+            finally:
+                source_client.close()
             with self.assertRaisesRegex(ValueError, "head exists"):
                 authority.put_current(second_projection)
             authority.put_current(second_projection, expected_previous=first_projection)

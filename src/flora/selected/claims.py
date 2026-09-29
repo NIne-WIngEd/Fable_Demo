@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import datetime
 import hashlib
 import json
-from typing import Any
+from typing import Any, Sequence
 
 from cognitive_kernel.canonical import require_identifier
 from cognitive_kernel.adjudication_contracts import ClaimEvidenceRelation
@@ -21,6 +21,8 @@ from cognitive_kernel.claim_contracts import (
     CurrentClaimProjection,
 )
 from cognitive_kernel.contracts import ProductHostScope
+from .authority_binding import bind_claim_source
+from .experience import KurrentExperienceLog
 
 _IDENTITIES = "fable_claim_identities"
 _VERSIONS = "fable_claim_versions"
@@ -208,12 +210,21 @@ class XTDBClaimAuthority:
             ),
         )
 
-    def put_version(self, version: ClaimVersion) -> None:
+    def put_version(self, version: ClaimVersion, *,
+                    relations: Sequence[ClaimEvidenceRelation],
+                    experience_log: KurrentExperienceLog) -> None:
         self._assert_envelope(version)
+        if experience_log.scope != self.scope:
+            raise ValueError("claim source log belongs to a different host")
+        receipt = bind_claim_source(version=version, relations=relations,
+                                    replayed=experience_log.replay())
         if version.adjudication_state in {"accepted", "revised"} and not version.evidence_relation_ids:
             raise ValueError("accepted or revised claim needs exact evidence relations")
         for relation_id in version.evidence_relation_ids:
             relation = self.load_evidence_relation(relation_id)
+            submitted = next(r for r in relations if r.relation_id == relation_id)
+            if relation["relation_sha256"] != submitted.relation_sha256:
+                raise ValueError("persisted evidence relation differs from cited relation")
             if (relation["target_record_id"] != version.claim_version_id
                     or relation["target_record_type"] != "claim_version"
                     or relation["evidence_record_id"] not in version.envelope.source_records):
@@ -235,6 +246,8 @@ class XTDBClaimAuthority:
                 "version_sequence": version.version_sequence,
                 "store_sequence": version.store_sequence,
                 "request_digest": version.request_digest,
+                "experience_event_id": receipt.event_id,
+                "event_stream_position": receipt.stream_position,
                 "version_sha256": version.version_sha256,
                 "record_json": _record_json(version.metadata_record()),
             },
@@ -293,6 +306,11 @@ class XTDBClaimAuthority:
             raise ValueError("projection lacks committed identity and claim version")
         if int(version["store_sequence"]) > projection.source_position:
             raise ValueError("projection precedes the committed claim version")
+        stored_version = json.loads(str(version["record_json"]))
+        if stored_version["adjudication_state"] != projection.adjudication_state:
+            raise ValueError("projection adjudication differs from the committed version")
+        if stored_version["envelope"]["scope"] != self.scope.metadata_record():
+            raise ValueError("stored version crosses the projection host")
         prior = self._fetch_record(table=_HEAD, row_id=row_id)
         if prior is not None and str(prior["projection_sha256"]) == projection.projection_sha256:
             return
