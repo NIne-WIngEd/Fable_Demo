@@ -1,4 +1,4 @@
-name: Demo evidence path
+name: Selected backend evidence path
 
 on:
   push:
@@ -7,29 +7,112 @@ on:
 jobs:
   integration:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PYTHONPATH: alice-reference/src:src
+      KURRENTDB_URI: kurrentdb://127.0.0.1:2113?tls=false
+      XTDB_DSN: postgresql://xtdb@127.0.0.1:5432/xtdb
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+
+      - name: Checkout product-neutral A.L.I.C.E. contracts
+        uses: actions/checkout@v4
         with:
           repository: NIne-WIngEd/A.L.I.C.E
-          ref: 5f9b9ccb2628eb2a5512d8624b9a78bcc9c7fe38
+          ref: 00583fb25fbe07c1452519992de2bc8055dcebd5
           path: alice-reference
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install demo runtime dependency
-        run: python -m pip install -e .
-      - name: Verify frozen fixture
+
+      - name: Verify Docker runtime
         run: |
-          python scripts/generate_longitudinal_fixture.py
-          git diff --exit-code -- fixtures/longitudinal_v1.json
-      - name: Verify frozen evidence packets
-        env:
-          PYTHONPATH: alice-reference/src:src
+          docker version
+          docker compose version
+
+      - name: Install selected-backend test dependencies
+        run: python -m pip install -e '.[backends]'
+
+      - name: Run component contract tests
         run: |
-          python scripts/freeze_trials.py
-          git diff --exit-code -- fixtures/frozen_trials_v1.json
-      - name: Run production-code integration tests
-        env:
-          PYTHONPATH: alice-reference/src:src
-        run: python -m unittest discover -s tests -v
+          for test_file in tests/test_*.py; do
+            python "$test_file"
+          done
+
+      - name: Start selected KurrentDB and XTDB services
+        run: docker compose -f compose.integration.yml up -d
+
+      - name: Wait for selected services
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:2113/health/live >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 90 ]; then
+              echo "KurrentDB did not become healthy"
+              exit 1
+            fi
+            sleep 2
+          done
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8080/healthz/ready >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 90 ]; then
+              echo "XTDB did not become ready"
+              exit 1
+            fi
+            sleep 2
+          done
+          docker compose -f compose.integration.yml ps
+
+      - name: Run real selected-backend integration tests
+        run: python -m unittest discover -s tests/integration -v
+
+      - name: Write restart persistence probes
+        run: python scripts/backend_restart_probe.py write
+
+      - name: Restart selected services
+        run: docker compose -f compose.integration.yml restart kurrentdb xtdb
+
+      - name: Wait after restart
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:2113/health/live >/dev/null; then
+              break
+            fi
+            [ "$attempt" -lt 90 ] || exit 1
+            sleep 2
+          done
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8080/healthz/ready >/dev/null; then
+              break
+            fi
+            [ "$attempt" -lt 90 ] || exit 1
+            sleep 2
+          done
+
+      - name: Verify persistence after restart
+        run: python scripts/backend_restart_probe.py verify
+
+      - name: Capture selected-backend logs
+        if: always()
+        run: |
+          docker compose -f compose.integration.yml ps > selected-backend-ps.txt || true
+          docker compose -f compose.integration.yml logs --no-color > selected-backend-logs.txt || true
+
+      - name: Upload backend evidence logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selected-backend-evidence
+          path: |
+            selected-backend-ps.txt
+            selected-backend-logs.txt
+
+      - name: Tear down selected services
+        if: always()
+        run: docker compose -f compose.integration.yml down -v
