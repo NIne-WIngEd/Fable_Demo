@@ -699,8 +699,58 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                         log=KurrentExperienceLog(scope=scope, client=source_client),
                         objects=objects,
                         references={raw_first.object_id: raw_first,
+                                    raw_second.object_id: raw_second,
                                     episode_summary.object_id: episode_summary,
                                     episode_content.object_id: episode_content})
+                revised_summary = objects.put(b"synthetic revised episode summary")
+                revised_content = objects.put(b"synthetic revised episode content")
+                episode_v2 = EpisodeRecord.create(
+                    envelope=_envelope(
+                        scope=scope, authority_namespace_id="integration-episodes",
+                        record_id="episode-integration-v2", record_type="episode",
+                        authority_role="registered_projection",
+                        created_at="2026-09-16T00:00:00Z",
+                        source_records=(second_event.event_id,
+                                        second_version.claim_version_id),
+                        supersedes=(episode.episode_id,), logical_clock=2,
+                        content_digest=revised_content.plaintext_sha256),
+                    episode_id="episode-integration-v2",
+                    episode_kind="life_event", episode_state="candidate",
+                    member_evidence_ids=(second_event.event_id,),
+                    member_claim_version_ids=(second_version.claim_version_id,),
+                    valid_from="2026-09-15T00:00:00Z", valid_to=None,
+                    formed_at="2026-09-16T00:00:00Z",
+                    formation_component_id="synthetic-test",
+                    formation_version="v1",
+                    summary_content_digest=revised_summary.plaintext_sha256,
+                    full_content_digest=revised_content.plaintext_sha256,
+                    confidence=None, supersedes_episode_id=episode.episode_id,
+                    generation=2)
+                revised_refs = {
+                    raw_first.object_id: raw_first,
+                    raw_second.object_id: raw_second,
+                    revised_summary.object_id: revised_summary,
+                    revised_content.object_id: revised_content}
+                with self.assertRaisesRegex(ValueError, "stale episode predecessor"):
+                    episode_registry.put_candidate(
+                        episode_v2, thread_id="synthetic-episode-thread",
+                        summary=revised_summary, content=revised_content,
+                        claims=authority,
+                        log=KurrentExperienceLog(scope=scope, client=source_client),
+                        objects=objects, references=revised_refs,
+                        expected_previous_episode_id="wrong-episode")
+                episode_registry.put_candidate(
+                    episode_v2, thread_id="synthetic-episode-thread",
+                    summary=revised_summary, content=revised_content,
+                    claims=authority,
+                    log=KurrentExperienceLog(scope=scope, client=source_client),
+                    objects=objects, references=revised_refs,
+                    expected_previous_episode_id=episode.episode_id)
+                self.assertEqual(episode_registry.read_latest_candidate(
+                    thread_id="synthetic-episode-thread", claims=authority,
+                    log=KurrentExperienceLog(scope=scope, client=source_client),
+                    objects=objects, references=revised_refs).record["episode_id"],
+                    episode_v2.episode_id)
             finally:
                 source_client.close()
             source_client = KurrentDBClient(os.environ.get(
