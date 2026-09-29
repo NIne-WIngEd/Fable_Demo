@@ -1,6 +1,6 @@
 # Fable Demo
 
-A small, persistent Fable host built one component at a time from A.L.I.C.E.'s host-neutral kernel. The personality model is being built separately. The goal here is to make its surrounding experience and memory path real, then connect the model and measure one behavior.
+A work-in-progress prototype for one Fable capability. It is currently a narrow experience and explicit-memory plumbing slice over A.L.I.C.E.'s released stores. The personality model is being built separately. **The Fable demo has not been built end to end.**
 
 ## Built now: the experience path
 
@@ -26,13 +26,21 @@ For a recorded host statement, copy its returned `logical_id` into `stage --id I
 
 `formation-context --id OBSERVATION_ID --host-key deep_work` assembles a bounded packet for the future Memory Formation Model: the source observation, its direct parent when linked, and only the current host claims explicitly selected by the caller. It carries event and raw-reference IDs and a packet fingerprint. It does not extract or promote a claim. This packet describes current state at assembly time, not an as-of historical replay.
 
-## Build sequence
+## Actual build status
 
-1. **Experience path — built:** host scope, local sealing, Raw Buffer, Experience Ledger, restart reconciliation.
-2. **Explicit host memory lane — built:** candidate staging, deterministic assessment, user confirmation, provenance-bound promotion, and transition-aware correction through A.L.I.C.E.'s released Memory Core. The learned Memory Formation Model and automatic extraction from arbitrary raw data are still to be built.
-3. **Current-state assembly — built as a rebuildable evidence view:** confirmed host claims remain separate from assistant-self and relationship observations; decisions and outcomes retain their links. Learned self/relationship state and full bitemporal claim authority are still to be built.
-4. **Formation context — built as an input contract:** one sourced event, its direct parent, and explicitly selected current claims. Learned candidate extraction and adaptive context planning remain pending.
-5. **Personality model handoff — pending:** connect the separately qualified model's native judgment output. Only then run behavioral comparisons.
+| Component | Status | Boundary |
+| --- | --- | --- |
+| Raw experience capture and ledger | Thin slice built | One host, single writer, synthetic data; reuses A.L.I.C.E.'s released stores. |
+| Explicit host memory and correction | Thin slice built | Operator supplies a key and confirmation. No learned formation or automatic understanding of raw data. |
+| State and formation packets | Thin slice built | Caller selects host keys. Self and relationship entries are observations, not learned models. |
+| Personality and native judgment | Not integrated | A separate workstream is building the model. There is no live decision loop here. |
+| Memory Formation Model and adaptive retrieval | Not built | No autonomous candidate extraction, topic selection, or relevance planning. |
+| Learned host, assistant-self, and relationship state | Not built | No demonstrated personal development or causal influence on judgment. |
+| Outcome-driven revision | Not built | The ledger can link a decision and its outcome; the outcome does not yet change future judgment. |
+| Fable Builder Model and second-host transfer | Not built | No automatic model building from another person's data. |
+| Conversational product and privacy lifecycle | Not built | No conversation controller, feature API boundary, owner-facing app, production key custody, or complete deletion/rollback. |
+
+For the **first demo claim**, the next work is to establish a narrow learned state and native judgment loop, integrate the separate personality model, make corrections or outcomes change later behavior for a justified reason, and compare that behavior with a strong baseline on the same synthetic history. The second part would ask a small builder to reproduce the capability for another consenting host. Merely attaching the personality model to today's packet will not finish the demo.
 
 A.L.I.C.E.'s Phase 2 SQLite Memory Core is the current released reference authority. Its broader destination considers an event fabric, claim authority, graph, vector, and workflow planes. This demo uses the actual implemented kernel stores for its first component. A passing test on a reference backend will not be presented as proof that every future backend or the complete Fable architecture works.
 
