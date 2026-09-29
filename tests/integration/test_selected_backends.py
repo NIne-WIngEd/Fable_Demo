@@ -2,6 +2,8 @@ import asyncio
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
+import json
+import base64
 import os
 from pathlib import Path
 import tempfile
@@ -32,6 +34,7 @@ from flora.selected.formation_gate import assess_formation
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 from flora.selected.source_native import read_current_sources
 from flora.selected.edge_ingress import EdgePacket, JetStreamEdgeIngress
+from flora.selected.decision_outcome import record_decision, record_outcome_observation
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -116,6 +119,71 @@ def _text(value: str) -> CanonicalTaggedValue:
 
 
 class SelectedBackendIntegrationTest(unittest.TestCase):
+    def test_decision_and_observed_outcome_keep_source_lineage(self):
+        scope = _scope("flora-decision-outcome")
+        with tempfile.TemporaryDirectory() as directory:
+            objects = EncryptedObjectPlane(
+                scope=scope, key=b"o" * 32,
+                backend=LocalObjectBackend(Path(directory) / "objects"))
+            raw = objects.put(b"synthetic-source-observation")
+            source = _event(scope, suffix="source-observation",
+                occurred_at="2026-09-01T00:00:00Z",
+                payload_reference=raw.object_id)
+            client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                log = KurrentExperienceLog(scope=scope, client=client)
+                log.append(source, expected_revision=-1)
+                with self.assertRaisesRegex(ValueError, "absent"):
+                    record_decision(
+                        log=log, objects=objects, verdict=b"synthetic verdict",
+                        consumed_event_ids=("made-up-event",),
+                        references={raw.object_id: raw},
+                        model_artifact_sha256="a" * 64,
+                        occurred_at="2026-09-02T00:00:00Z",
+                        expected_revision=0, producer_component="synthetic-test")
+                decision = record_decision(
+                    log=log, objects=objects, verdict=b"synthetic verdict",
+                    consumed_event_ids=(source.event_id,),
+                    references={raw.object_id: raw},
+                    model_artifact_sha256="a" * 64,
+                    occurred_at="2026-09-02T00:00:00Z",
+                    expected_revision=0, producer_component="synthetic-test")
+                with self.assertRaisesRegex(ValueError, "stale"):
+                    record_outcome_observation(
+                        log=log, objects=objects,
+                        decision_event_id=decision.event.event_id,
+                        observation=b"synthetic outcome",
+                        observation_provenance=ProvenanceReference.create(
+                            provenance_type="derived_inference",
+                            source_reference_ids=("independent-observation",),
+                            responsible_component="synthetic-test"),
+                        occurred_at="2026-09-03T00:00:00Z",
+                        expected_revision=0)
+                outcome = record_outcome_observation(
+                    log=log, objects=objects,
+                    decision_event_id=decision.event.event_id,
+                    observation=b"synthetic outcome",
+                    observation_provenance=ProvenanceReference.create(
+                        provenance_type="derived_inference",
+                        source_reference_ids=("independent-observation",),
+                        responsible_component="synthetic-test"),
+                    occurred_at="2026-09-03T00:00:00Z",
+                    expected_revision=1)
+                self.assertEqual(outcome.event.parent_event_ids,
+                                 (decision.event.event_id,))
+                self.assertEqual(decision.event.parent_event_ids,
+                                 (source.event_id,))
+                decision_record = json.loads(objects.get(decision.raw))
+                self.assertEqual(base64.b64decode(decision_record["verdict_base64"]),
+                                 b"synthetic verdict")
+                self.assertEqual(decision_record["consumed_event_ids"],
+                                 [source.event_id])
+                self.assertEqual(objects.get(outcome.raw), b"synthetic outcome")
+                self.assertEqual(log.replay(), [source, decision.event, outcome.event])
+            finally:
+                client.close()
+
     def test_nats_edge_intake_commits_only_to_kurrent_authority(self):
         async def exercise() -> None:
             scope = _scope("flora-edge-intake")
