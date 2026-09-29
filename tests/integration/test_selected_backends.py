@@ -157,6 +157,7 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                         observation_provenance=ProvenanceReference.create(
                             provenance_type="derived_inference",
                             source_reference_ids=("independent-observation",),
+                            derivation_activity_id="synthetic-outcome-observation",
                             responsible_component="synthetic-test"),
                         occurred_at="2026-09-03T00:00:00Z",
                         expected_revision=0)
@@ -167,6 +168,7 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     observation_provenance=ProvenanceReference.create(
                         provenance_type="derived_inference",
                         source_reference_ids=("independent-observation",),
+                        derivation_activity_id="synthetic-outcome-observation",
                         responsible_component="synthetic-test"),
                     occurred_at="2026-09-03T00:00:00Z",
                     expected_revision=1)
