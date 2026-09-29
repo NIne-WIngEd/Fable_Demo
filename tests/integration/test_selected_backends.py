@@ -29,6 +29,7 @@ from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
 from cognitive_kernel.formation_contracts import FormationProposal, MemoryProposalBundle
 from cognitive_kernel.memory_contracts import MemoryUnitEnvelope
+from cognitive_kernel.projection_contracts import ProjectionVersion
 from flora.selected.claims import XTDBClaimAuthority
 from flora.selected.authority_binding import bind_claim_source
 from flora.selected.experience import KurrentExperienceLog
@@ -39,6 +40,7 @@ from flora.selected.source_native import read_current_sources
 from flora.selected.edge_ingress import EdgePacket, JetStreamEdgeIngress
 from flora.selected.decision_outcome import record_decision, record_outcome_observation
 from flora.selected.vector_recollection import QdrantClaimProjection
+from flora.selected.personal_state import XTDBPersonalStateCandidates
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -87,6 +89,7 @@ def _envelope(
     source_records: tuple[str, ...] = (),
     supersedes: tuple[str, ...] = (),
     logical_clock: int = 1,
+    content_digest: str = CONTENT_DIGEST,
 ) -> MemoryUnitEnvelope:
     return MemoryUnitEnvelope.create(
         scope=scope,
@@ -109,7 +112,7 @@ def _envelope(
         retention_class="authoritative_source",
         deletion_state="active",
         provenance_digest=PROVENANCE_DIGEST,
-        content_digest=CONTENT_DIGEST,
+        content_digest=content_digest,
         writer="claim_authority",
         workflow_or_request_id="integration-request",
         idempotency_namespace="claim_authority",
@@ -691,6 +694,117 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                         references={raw_first.object_id: raw_first})
             finally:
                 source_client.close()
+            state_registry = XTDBPersonalStateCandidates(
+                scope=scope, authority_namespace_id="integration-personal-state",
+                connection=connection)
+            state_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                state_log = KurrentExperienceLog(scope=scope, client=state_client)
+                source_refs = {raw_first.object_id: raw_first,
+                               raw_second.object_id: raw_second}
+                state_versions = {}
+                state_contents = {}
+                for subject_type, subject_id, projection_type in (
+                    ("owner", scope.host_instance_id, "owner_model"),
+                    ("relationship", "synthetic-relation", "relationship_model"),
+                    ("assistant_self", "synthetic-flora-self", "self_model"),
+                ):
+                    content = objects.put(f"synthetic {subject_type} state".encode())
+                    state_contents[subject_type] = content
+                    source_refs[content.object_id] = content
+                    version_id = f"state-{subject_type}-v1"
+                    version = ProjectionVersion.create(
+                        envelope=_envelope(
+                            scope=scope,
+                            authority_namespace_id="integration-personal-state",
+                            record_id=version_id, record_type="projection_version",
+                            authority_role="registered_projection",
+                            created_at="2026-09-16T00:00:00Z",
+                            source_records=(second_version.claim_version_id,),
+                            content_digest=content.plaintext_sha256,
+                        ),
+                        projection_id=f"state-{subject_type}",
+                        version_id=version_id,
+                        projection_type=projection_type,
+                        subject_type=subject_type, subject_id=subject_id,
+                        modalities=("symbolic",), generation=1,
+                        source_claim_version_ids=(second_version.claim_version_id,),
+                        valid_from="2026-09-16T00:00:00Z", valid_to=None,
+                        produced_at="2026-09-16T00:00:00Z",
+                        projection_state="candidate",
+                        responsible_component="synthetic-test",
+                        model_id=None, model_version=None,
+                        content_digest=content.plaintext_sha256,
+                    )
+                    state_versions[subject_type] = version
+                    state_registry.put_candidate(
+                        version, content=content, claims=authority,
+                        log=state_log, objects=objects, references=source_refs)
+                    state_registry.put_candidate(
+                        version, content=content, claims=authority,
+                        log=state_log, objects=objects, references=source_refs)
+                    read = state_registry.read_latest_candidate(
+                        subject_type=subject_type, subject_id=subject_id,
+                        projection_id=version.projection_id, claims=authority,
+                        log=state_log, objects=objects, references=source_refs)
+                    self.assertEqual(read.content, objects.get(content))
+                    self.assertEqual(read.record["subject_type"], subject_type)
+
+                first_owner = state_versions["owner"]
+                second_content = objects.put(b"synthetic revised host state")
+                source_refs[second_content.object_id] = second_content
+                second_owner = ProjectionVersion.create(
+                    envelope=_envelope(
+                        scope=scope,
+                        authority_namespace_id="integration-personal-state",
+                        record_id="state-owner-v2",
+                        record_type="projection_version",
+                        authority_role="registered_projection",
+                        created_at="2026-09-17T00:00:00Z",
+                        source_records=(second_version.claim_version_id,
+                                        second_event.event_id),
+                        supersedes=(first_owner.version_id,),
+                        logical_clock=2,
+                        content_digest=second_content.plaintext_sha256,
+                    ),
+                    projection_id=first_owner.projection_id,
+                    version_id="state-owner-v2", projection_type="owner_model",
+                    subject_type="owner", subject_id=scope.host_instance_id,
+                    modalities=("symbolic",), generation=2,
+                    source_claim_version_ids=(second_version.claim_version_id,),
+                    source_evidence_ids=(second_event.event_id,),
+                    valid_from="2026-09-17T00:00:00Z", valid_to=None,
+                    produced_at="2026-09-17T00:00:00Z",
+                    projection_state="candidate",
+                    responsible_component="synthetic-test",
+                    model_id=None, model_version=None,
+                    content_digest=second_content.plaintext_sha256,
+                    supersedes_version_id=first_owner.version_id,
+                )
+                with self.assertRaisesRegex(ValueError, "predecessor"):
+                    state_registry.put_candidate(
+                        second_owner, content=second_content, claims=authority,
+                        log=state_log, objects=objects, references=source_refs,
+                        expected_previous_version_id="wrong-version")
+                state_registry.put_candidate(
+                    second_owner, content=second_content, claims=authority,
+                    log=state_log, objects=objects, references=source_refs,
+                    expected_previous_version_id=first_owner.version_id)
+                self.assertEqual(state_registry.read_latest_candidate(
+                    subject_type="owner", subject_id=scope.host_instance_id,
+                    projection_id=first_owner.projection_id, claims=authority,
+                    log=state_log, objects=objects,
+                    references=source_refs).content, b"synthetic revised host state")
+                with self.assertRaisesRegex(ValueError, "reference is absent"):
+                    state_registry.read_latest_candidate(
+                        subject_type="owner", subject_id=scope.host_instance_id,
+                        projection_id=first_owner.projection_id, claims=authority,
+                        log=state_log, objects=objects,
+                        references={second_content.object_id: second_content,
+                                    raw_first.object_id: raw_first})
+            finally:
+                state_client.close()
             projection_ids = {
                 row["projection_id"]
                 for row in authority.current_history("claim-integration")
