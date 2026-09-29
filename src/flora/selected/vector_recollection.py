@@ -135,6 +135,20 @@ class QdrantClaimProjection:
                 isinstance(item, str) for item in source_ids
             ):
                 continue
+            if payload.get("embedding_artifact_sha256") != self.embedding_artifact_sha256:
+                continue
+            try:
+                version = authority.load_version(version_id)
+                registered_sources = {
+                    authority.load_evidence_relation(relation_id)["evidence_record_id"]
+                    for relation_id in version["evidence_relation_ids"]
+                }
+            except KeyError:
+                continue
+            if (version["claim_id"] != claim_id
+                    or len(registered_sources) != len(source_ids)
+                    or set(source_ids) != registered_sources):
+                continue
             result.append(VectorCandidate(
                 claim_id, version_id, current["projection_id"],
                 tuple(source_ids), float(point.score)))

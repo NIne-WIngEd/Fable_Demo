@@ -9,10 +9,12 @@ from pathlib import Path
 import tempfile
 from threading import Barrier
 import unittest
+import uuid
 
 import psycopg
 import nats
 from qdrant_client import QdrantClient
+from qdrant_client import models as qdrant_models
 from kurrentdbclient import KurrentDBClient
 from kurrentdbclient.exceptions import WrongCurrentVersionError
 
@@ -617,6 +619,22 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 query_vector=(1.0, 0.0, 0.0, 0.0), authority=authority)
             self.assertEqual([item.claim_version_id for item in candidates],
                              ["claim-integration-v2"])
+            qdrant.upsert(
+                collection_name=vector_projection.collection, wait=True,
+                points=[qdrant_models.PointStruct(
+                    id=str(uuid.uuid4()), vector={"text": [1.0, 0.0, 0.0, 0.0]},
+                    payload={
+                        "claim_id": "claim-integration",
+                        "claim_version_id": "claim-integration-v2",
+                        "projection_id": "claim-integration-projection-v2",
+                        "source_event_ids": ["fabricated-source"],
+                        "embedding_artifact_sha256": "e" * 64,
+                    },
+                )])
+            candidates = vector_projection.query_current(
+                query_vector=(1.0, 0.0, 0.0, 0.0), authority=authority)
+            self.assertEqual([item.source_event_ids for item in candidates],
+                             [(second_event.event_id,)])
             with self.assertRaisesRegex(ValueError, "stale"):
                 authority.put_current(first_projection, expected_previous=first_projection)
 
