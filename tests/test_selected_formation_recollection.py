@@ -88,7 +88,7 @@ class _Graph:
         self.scope, self.candidates = scope, candidates
         self.queries = []
 
-    def related_current(self, **kwargs):
+    def related_current_metadata(self, **kwargs):
         self.queries.append(kwargs)
         return self.candidates
 
@@ -164,6 +164,14 @@ class SelectedFormationRecollectionTest(unittest.TestCase):
             "qdrant": QdrantFormationPlane(vector=self.vector, **self.kwargs),
             "ladybug": LadybugFormationPlane(graph=self.graph, **self.kwargs),
         }
+
+    def test_every_formation_route_nominates_without_opening_originals(self):
+        def forbidden_get(reference):
+            raise AssertionError("retrieval opened originals before registered custody")
+        self.objects.get = forbidden_get
+        for name, plane in self.planes().items():
+            with self.subTest(plane=name):
+                self.assertTrue(plane.source_ids(self.query.query_ref))
 
     def test_upstream_routes_keep_original_source_ids_and_plane_provenance(self):
         planes = self.planes()

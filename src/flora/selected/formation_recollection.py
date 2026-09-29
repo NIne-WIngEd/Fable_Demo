@@ -21,7 +21,7 @@ from .claims import XTDBClaimAuthority
 from .experience import KurrentExperienceLog
 from .graph_recollection import LadybugEvidenceGraph
 from .object_store import EncryptedObjectPlane, RawObjectReference
-from .source_native import CurrentEvidencePacket, read_current_sources
+from .source_native import CurrentSourceManifest, read_current_source_manifest
 from .vector_recollection import QdrantClaimProjection
 
 
@@ -106,13 +106,12 @@ class _CurrentSourcePlane:
             raise ValueError("formation query crosses its registered scope or namespace")
         return query
 
-    def _packet(self, claim_id: str) -> CurrentEvidencePacket:
-        return read_current_sources(
-            claim_id=claim_id, authority=self.authority, log=self.log,
-            objects=self.objects, references=self.references)
+    def _packet(self, claim_id: str) -> CurrentSourceManifest:
+        return read_current_source_manifest(
+            claim_id=claim_id, authority=self.authority, log=self.log)
 
     @staticmethod
-    def _source_ids(packets: list[CurrentEvidencePacket]) -> tuple[str, ...]:
+    def _source_ids(packets: list[CurrentSourceManifest]) -> tuple[str, ...]:
         # Collapse duplicate hits within a plane. The upstream router/assembler
         # preserves every plane that independently finds the same source.
         return tuple(dict.fromkeys(source.event_id for packet in packets
@@ -179,9 +178,9 @@ class LadybugFormationPlane(_CurrentSourcePlane):
             raise ValueError("registered graph seed is absent from this host Experience")
         packets = []
         for source_id in query.graph_source_event_ids:
-            for candidate in self.graph.related_current(
+            for candidate in self.graph.related_current_metadata(
                 source_event_id=source_id, authority=self.authority,
-                log=self.log, objects=self.objects, references=self.references,
+                log=self.log,
                 limit=query.limit,
             ):
                 try:

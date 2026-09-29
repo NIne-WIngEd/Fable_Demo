@@ -14,7 +14,7 @@ import unittest
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
-from flora.selected.source_native import read_current_sources
+from flora.selected.source_native import read_current_source_manifest, read_current_sources
 from flora.selected.vector_recollection import QdrantClaimProjection
 
 
@@ -177,6 +177,39 @@ class SelectedSourceNativeTest(unittest.TestCase):
                 self.authority.present["validity_state"] = state
                 self.assertEqual(projection.query_current(
                     query_vector=(1.0, 0.0), authority=self.authority), ())
+
+    def test_denial_precedes_raw_io_and_revocation_during_read_fails(self):
+        actual_get = self.objects.get
+        reads = []
+        allowed = [False]
+
+        def get(reference):
+            reads.append(reference.object_id)
+            content = actual_get(reference)
+            allowed[0] = False
+            return content
+
+        self.objects.get = get
+        with self.assertRaisesRegex(PermissionError, "before raw read"):
+            self.read(source_authorizer=lambda event_id: allowed[0])
+        self.assertEqual(reads, [])
+        allowed[0] = True
+        with self.assertRaisesRegex(PermissionError, "during raw read"):
+            self.read(source_authorizer=lambda event_id: allowed[0])
+        self.assertEqual(reads, [self.raw.object_id])
+
+    def test_metadata_nomination_never_opens_raw_content(self):
+        def forbidden_get(reference):
+            raise AssertionError("metadata nomination accessed plaintext")
+        self.objects.get = forbidden_get
+        manifest = read_current_source_manifest(
+            claim_id="claim-one", authority=self.authority, log=self.log)
+        self.assertEqual(manifest.sources[0].event_id, self.event.event_id)
+        self.assertFalse(hasattr(manifest.sources[0], "plaintext"))
+        self.authority.present["deletion_state"] = "pending"
+        with self.assertRaisesRegex(ValueError, "active, resolved"):
+            read_current_source_manifest(
+                claim_id="claim-one", authority=self.authority, log=self.log)
 
 
 if __name__ == "__main__":

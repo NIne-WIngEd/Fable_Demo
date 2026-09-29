@@ -3,7 +3,7 @@
 Canonical upstream contracts, enrolled-owner signatures and encrypted objects
 are real here. The SQL recorder and evidence authority responses are controlled
 fixtures for denial/rollback/failure injection. Selected-engine persistence is
-covered separately by integration/test_governed_development.py.
+covered separately by integration/test_selected_governed_development.py.
 """
 import base64
 from contextlib import contextmanager

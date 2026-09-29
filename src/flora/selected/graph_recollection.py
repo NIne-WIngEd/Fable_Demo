@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
-from typing import Mapping
+from typing import Callable, Mapping
 
 from cognitive_kernel.contracts import ProductHostScope
 import ladybug
@@ -12,7 +12,7 @@ import ladybug
 from .claims import XTDBClaimAuthority
 from .experience import KurrentExperienceLog
 from .object_store import EncryptedObjectPlane, RawObjectReference
-from .source_native import read_current_sources
+from .source_native import read_current_source_manifest, read_current_sources
 
 
 @dataclass(frozen=True)
@@ -118,9 +118,38 @@ class LadybugEvidenceGraph:
                         authority: XTDBClaimAuthority, log: KurrentExperienceLog,
                         objects: EncryptedObjectPlane,
                         references: Mapping[str, RawObjectReference],
-                        limit: int = 10) -> tuple[GraphCandidate, ...]:
+                        limit: int = 10,
+                        source_authorizer: Callable[[str], bool] | None = None,
+                        ) -> tuple[GraphCandidate, ...]:
         """Return source-connected claims only if still current and source verified."""
         self._check_scope(authority, log, objects)
+        result = []
+        for candidate in self.related_current_metadata(
+                source_event_id=source_event_id, authority=authority, log=log, limit=limit):
+            try:
+                packet = read_current_sources(
+                    claim_id=candidate.claim_id, authority=authority, log=log,
+                    objects=objects, references=references,
+                    source_authorizer=source_authorizer)
+                if (packet.claim_version_id != candidate.claim_version_id
+                        or packet.projection_id != candidate.projection_id):
+                    continue
+            except (KeyError, ValueError):
+                continue
+            result.append(candidate)
+        return tuple(result)
+
+    def related_current_metadata(self, *, source_event_id: str,
+                                 authority: XTDBClaimAuthority, log: KurrentExperienceLog,
+                                 limit: int = 10) -> tuple[GraphCandidate, ...]:
+        """Nominate exact current sources; open no original content here.
+
+        The registered source/custody boundary must independently authorize and
+        open originals after nomination. Derived graph reachability grants no
+        plaintext use permission.
+        """
+        if self.scope != authority.scope or self.scope != log.scope:
+            raise ValueError("graph nomination crosses host scope")
         if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
             raise ValueError("graph candidate limit must be positive")
         rows = self.connection.execute(
@@ -132,9 +161,8 @@ class LadybugEvidenceGraph:
             if scope_digest != self.scope_digest:
                 continue
             try:
-                packet = read_current_sources(
-                    claim_id=claim_id, authority=authority, log=log,
-                    objects=objects, references=references)
+                packet = read_current_source_manifest(
+                    claim_id=claim_id, authority=authority, log=log)
                 candidate = GraphCandidate(
                     claim_id, packet.claim_version_id, packet.projection_id,
                     tuple(s.relation_id for s in packet.sources),

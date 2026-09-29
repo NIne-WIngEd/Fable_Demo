@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import hashlib
 import json
-from typing import Mapping, Sequence
+from typing import Callable, Mapping, Sequence
 
 from cognitive_kernel.canonical import require_sha256
 from cognitive_kernel.contracts import ProvenanceReference
@@ -43,6 +43,7 @@ def record_decision(
     references: Mapping[str, RawObjectReference],
     model_artifact_sha256: str, occurred_at: str,
     expected_revision: int, producer_component: str,
+    source_authorizer: Callable[[str], bool] | None = None,
 ) -> RecordedEvent:
     """Record a supplied judgment and the exact replayed events it cites.
 
@@ -62,11 +63,15 @@ def record_decision(
     if not set(consumed_event_ids).issubset(by_id):
         raise ValueError("decision cites an absent Experience event")
     for event_id in consumed_event_ids:
+        if source_authorizer is not None and source_authorizer(event_id) is not True:
+            raise PermissionError("decision source is not permitted before raw read")
         source = by_id[event_id]
         reference = references.get(source.payload_reference or "")
         if reference is None or reference.scope != log.scope:
             raise ValueError("decision cites an unavailable raw source")
         plaintext = objects.get(reference)
+        if source_authorizer is not None and source_authorizer(event_id) is not True:
+            raise PermissionError("decision source permission changed during raw read")
         if (reference.object_id != source.payload_reference
                 or hashlib.sha256(plaintext).hexdigest() != source.content_digest):
             raise ValueError("decision source differs from replayed Experience")
@@ -80,6 +85,9 @@ def record_decision(
         "model_artifact_sha256": model_artifact_sha256,
     }, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
     raw = objects.put(material)
+    if source_authorizer is not None and any(
+            source_authorizer(event_id) is not True for event_id in consumed_event_ids):
+        raise PermissionError("decision source permission changed before append")
     event = ExperienceEvent.create(
         event_type="decision", scope=log.scope, occurred_at=occurred_at,
         content_digest=raw.plaintext_sha256,

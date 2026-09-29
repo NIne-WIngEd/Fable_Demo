@@ -156,6 +156,20 @@ class XTDBGovernedPersonalDevelopment(XTDBPersonalStateCandidates):
                     or self.policy.permits(source, _PURPOSE) is not True):
                 raise ValueError("personal judgment source authority changed during read")
 
+    def put_candidate(self, version: ProjectionVersion, **kwargs: Any) -> None:
+        """Check current source use before opening supplied derived state bytes."""
+        version.validate()
+        if version.source_episode_ids:
+            raise ValueError("episode lineage awaits the selected episode plane")
+        source_inputs = {key: kwargs[key] for key in ("claims", "log", "objects", "references")}
+        self._check_sources(source_claim_version_ids=version.source_claim_version_ids,
+                            source_evidence_ids=version.source_evidence_ids,
+                            source_records=version.envelope.source_records, **source_inputs)
+        super().put_candidate(version, **kwargs)
+        self._check_sources(source_claim_version_ids=version.source_claim_version_ids,
+                            source_evidence_ids=version.source_evidence_ids,
+                            source_records=version.envelope.source_records, **source_inputs)
+
     def _immutable(self, table: str, key: str) -> dict[str, object] | None:
         row = self._fetch(table, key, all_valid=True)
         if row is None:

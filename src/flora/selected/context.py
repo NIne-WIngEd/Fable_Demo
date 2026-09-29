@@ -176,9 +176,9 @@ def assemble_context(
     for event_id in plan.graph_source_event_ids:
         if not policy.allow_event(event_id, plan.purpose):
             raise PermissionError("graph source event is not permitted")
-        for candidate in graph.related_current(
+        for candidate in graph.related_current_metadata(
             source_event_id=event_id, authority=claims, log=log,
-            objects=objects, references=references, limit=plan.graph_limit):
+            limit=plan.graph_limit):
             if candidate.claim_id not in claim_ids:
                 claim_ids.append(candidate.claim_id)
     for claim_id in claim_ids:
@@ -187,6 +187,7 @@ def assemble_context(
         packet = read_current_sources(
             claim_id=claim_id, authority=claims, log=log,
             objects=objects, references=references,
+            source_authorizer=lambda event_id: policy.allow_event(event_id, plan.purpose),
         )
         source_ids = tuple(source.event_id for source in packet.sources)
         if not all(policy.allow_event(event_id, plan.purpose)
@@ -215,6 +216,7 @@ def assemble_context(
             packet = read_current_sources(
                 claim_id=version["claim_id"], authority=claims,
                 log=log, objects=objects, references=references,
+                source_authorizer=lambda event_id: policy.allow_event(event_id, plan.purpose),
             )
             if packet.claim_version_id != version_id:
                 raise ValueError("active state cites a superseded claim")
@@ -231,6 +233,36 @@ def assemble_context(
             approval_event_id=active.approval_event_id,
             projection_sha256=active.record["projection_sha256"],
         ))
+    # Separate stores do not give a cross-plane transaction. Recheck each
+    # materialized item's present authority and permission before returning.
+    for item in items:
+        if not all(policy.allow_event(event_id, plan.purpose) is True
+                   for event_id in item.source_event_ids):
+            raise PermissionError("context source permission changed during assembly")
+        if item.kind == "claim":
+            current = claims.load_current(item.record_id)
+            if (policy.allow_claim(item.record_id, plan.purpose) is not True
+                    or current["current_claim_version_id"] != item.version_id
+                    or current["projection_sha256"] != item.projection_sha256):
+                raise ValueError("context claim changed during assembly")
+        else:
+            subject_type = item.kind.split(":", 1)[1]
+            route = next(route for route in plan.state_routes
+                         if route.subject_type == subject_type
+                         and route.projection_id == item.record_id)
+            if (policy.allow_state(route.subject_type, route.subject_id,
+                                   route.projection_id, plan.purpose) is not True
+                    or policy.allow_event(item.approval_event_id, plan.purpose) is not True):
+                raise PermissionError("context state permission changed during assembly")
+            active = state.read_active(
+                subject_type=route.subject_type, subject_id=route.subject_id,
+                projection_id=route.projection_id, claims=claims, log=log,
+                objects=objects, references=references, verifier=approval_verifier)
+            if (active.record["version_id"] != item.version_id
+                    or active.record["projection_sha256"] != item.projection_sha256
+                    or active.approval_event_id != item.approval_event_id
+                    or active.content != item.content):
+                raise ValueError("context state changed during assembly")
     claim_count = sum(item.kind == "claim" for item in items)
     return LocalContext(plan, tuple(items),
                         claim_count >= plan.minimum_claims)
@@ -264,6 +296,8 @@ def record_context_delivery(
         raise ValueError("stale expected Experience revision")
     by_id = {event.event_id: event for event in replayed}
     for event_id in context.source_event_ids:
+        if policy.allow_event(event_id, context.plan.purpose) is not True:
+            raise PermissionError("context source permission changed before delivery")
         event = by_id.get(event_id)
         if event is None or event.payload_reference is None:
             raise ValueError("context receipt cites an absent Experience source")
@@ -271,11 +305,16 @@ def record_context_delivery(
         if (raw is None or raw.scope != log.scope
                 or hashlib.sha256(objects.get(raw)).hexdigest() != event.content_digest):
             raise ValueError("context receipt source differs from Experience")
+        if policy.allow_event(event_id, context.plan.purpose) is not True:
+            raise PermissionError("context source permission changed during delivery")
         if datetime.fromisoformat(event.occurred_at.replace("Z", "+00:00")) > datetime.fromisoformat(occurred_at.replace("Z", "+00:00")):
             raise ValueError("context receipt cites a future source")
     material = json.dumps(context.receipt_record(), sort_keys=True,
                           separators=(",", ":"), allow_nan=False).encode()
     raw = objects.put(material)
+    if any(policy.allow_event(event_id, context.plan.purpose) is not True
+           for event_id in context.source_event_ids):
+        raise PermissionError("context source permission changed before delivery append")
     event = ExperienceEvent.create(
         event_type="context_delivery", scope=log.scope, occurred_at=occurred_at,
         content_digest=raw.plaintext_sha256,
@@ -329,4 +368,7 @@ def record_contextual_decision(
         references=linked, model_artifact_sha256=model_artifact_sha256,
         occurred_at=occurred_at, expected_revision=expected_revision,
         producer_component=producer_component,
+        source_authorizer=lambda event_id: (
+            event_id == delivery.event.event_id
+            or policy.allow_event(event_id, context.plan.purpose)),
     )

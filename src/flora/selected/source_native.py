@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 import hashlib
-from typing import Mapping
+from typing import Callable, Mapping
 
 from .claims import XTDBClaimAuthority
 from .experience import KurrentExperienceLog
@@ -32,11 +32,62 @@ class CurrentEvidencePacket:
     sources: tuple[VerifiedSource, ...]
 
 
+@dataclass(frozen=True)
+class SourceManifestItem:
+    event_id: str
+    relation_id: str
+    content_digest: str
+
+
+@dataclass(frozen=True)
+class CurrentSourceManifest:
+    """Metadata nomination only; original plaintext has not been opened."""
+
+    claim_id: str
+    claim_version_id: str
+    projection_id: str
+    sources: tuple[SourceManifestItem, ...]
+
+
+def read_current_source_manifest(
+    *, claim_id: str, authority: XTDBClaimAuthority, log: KurrentExperienceLog,
+) -> CurrentSourceManifest:
+    """Resolve exact current Claim/Event bindings without accessing raw custody."""
+    if authority.scope != log.scope:
+        raise ValueError("source manifest crosses host scope")
+    projection = authority.load_current(claim_id)
+    _require_available(projection, claim_id)
+    if projection["validity_state"] != "current":
+        raise ValueError("claim validity does not permit current nomination")
+    version = authority.load_version(projection["current_claim_version_id"])
+    if (version["claim_id"] != claim_id
+            or version["adjudication_state"] != projection["adjudication_state"]):
+        raise ValueError("source manifest differs from committed Claim")
+    events = {event.event_id: event for event in log.replay()}
+    sources = []
+    for relation_id in version["evidence_relation_ids"]:
+        relation = authority.load_evidence_relation(relation_id)
+        event_id = relation["evidence_record_id"]
+        event = events.get(event_id)
+        if (relation["target_record_id"] != version["claim_version_id"]
+                or relation["target_record_type"] != "claim_version"
+                or event_id not in version["envelope"]["source_records"]
+                or event is None or event.scope != authority.scope
+                or event.payload_reference is None):
+            raise ValueError("source manifest lacks exact canonical evidence")
+        sources.append(SourceManifestItem(event_id, relation_id, event.content_digest))
+    if not sources or authority.load_current(claim_id) != projection:
+        raise ValueError("current source manifest is empty or changed during nomination")
+    return CurrentSourceManifest(claim_id, version["claim_version_id"],
+                                 projection["projection_id"], tuple(sources))
+
+
 def read_current_sources(
     *, claim_id: str, authority: XTDBClaimAuthority,
     log: KurrentExperienceLog, objects: EncryptedObjectPlane,
     references: Mapping[str, RawObjectReference],
     as_of: datetime | None = None,
+    source_authorizer: Callable[[str], bool] | None = None,
 ) -> CurrentEvidencePacket:
     """Read exact evidence without allowing history to override quarantine.
 
@@ -76,12 +127,21 @@ def read_current_sources(
         event = replayed.get(event_id)
         if event is None or event.scope != authority.scope or event.payload_reference is None:
             raise ValueError("cited Experience source is absent")
+        if source_authorizer is not None and source_authorizer(event_id) is not True:
+            raise PermissionError("cited original source is not permitted before raw read")
         reference = references.get(event.payload_reference)
         if reference is None or reference.scope != authority.scope:
             raise ValueError("cited raw object reference is absent")
+        before_read = authority.load_current(claim_id)
+        _require_available(before_read, claim_id)
+        if as_of is None and before_read != projection:
+            raise ValueError("claim head changed before source read")
         plaintext = objects.get(reference)
-        if hashlib.sha256(plaintext).hexdigest() != event.content_digest:
+        if (reference.object_id != event.payload_reference
+                or hashlib.sha256(plaintext).hexdigest() != event.content_digest):
             raise ValueError("raw source does not match Experience digest")
+        if source_authorizer is not None and source_authorizer(event_id) is not True:
+            raise PermissionError("source permission changed during raw read")
         sources.append(VerifiedSource(event_id, relation_id, event.content_digest,
                                       plaintext))
     if not sources:
@@ -92,6 +152,9 @@ def read_current_sources(
     _require_available(latest, claim_id)
     if as_of is None and latest != projection:
         raise ValueError("claim head changed during current source read")
+    if source_authorizer is not None and any(
+            source_authorizer(source.event_id) is not True for source in sources):
+        raise PermissionError("source permission changed during materialization")
     return CurrentEvidencePacket(claim_id, version["claim_version_id"],
                                  projection["projection_id"], tuple(sources))
 

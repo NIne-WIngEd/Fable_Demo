@@ -33,7 +33,7 @@ The source planes are not one cross-plane transaction. A permission change racin
 ## Qualification boundary
 
 - `tests/test_governed_development.py` exercises signed approval, direct and parent permission, mid-read denial, candidate-only outcome revision, exact restore, unsafe target rejection, superseded claim rejection and interrupted rollback binding. Its SQL call recorder is a boundary test, not XTDB qualification.
-- `tests/integration/test_governed_development.py` uses actual XTDB, KurrentDB, encrypted objects, durable source registration and purpose-specific permission policy. It checks activation, restoration after current-state revocation, fresh-connection read and subsequent source revocation. It is qualified only after the selected-backend CI run passes.
+- `tests/integration/test_selected_governed_development.py` uses actual XTDB, KurrentDB, encrypted objects, durable source registration and purpose-specific permission policy. It checks activation, restoration after current-state revocation, fresh-connection read and subsequent source revocation. It is qualified only after the selected-backend CI run passes.
 - State bytes and synthetic events in these tests are explicit fixtures. No behavioral advantage, learned personal development, native judgment or MFM formation quality is claimed.
 
 ## Remaining dependencies and limits
