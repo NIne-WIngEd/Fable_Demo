@@ -30,7 +30,7 @@ from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
 from cognitive_kernel.formation_contracts import FormationProposal, MemoryProposalBundle
 from cognitive_kernel.memory_contracts import MemoryUnitEnvelope
-from cognitive_kernel.projection_contracts import ProjectionVersion
+from cognitive_kernel.projection_contracts import EpisodeRecord, ProjectionVersion
 from flora.selected.claims import XTDBClaimAuthority
 from flora.selected.authority_binding import bind_claim_source
 from flora.selected.experience import KurrentExperienceLog
@@ -42,6 +42,7 @@ from flora.selected.edge_ingress import EdgePacket, JetStreamEdgeIngress
 from flora.selected.decision_outcome import record_decision, record_outcome_observation
 from flora.selected.vector_recollection import QdrantClaimProjection
 from flora.selected.graph_recollection import LadybugEvidenceGraph
+from flora.selected.episodes import XTDBEpisodeCandidates
 from flora.selected.personal_state import (
     XTDBPersonalStateCandidates, activation_request,
 )
@@ -515,6 +516,54 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 source_client.close()
             authority.put_current(first_projection)
             authority.put_current(first_projection)  # Same immutable request is idempotent.
+            episode_registry = XTDBEpisodeCandidates(
+                scope=scope, authority_namespace_id="integration-episodes",
+                connection=connection)
+            episode_summary = objects.put(b"synthetic episode summary, not model formed")
+            episode_content = objects.put(b"synthetic episode content, not model formed")
+            episode = EpisodeRecord.create(
+                envelope=_envelope(
+                    scope=scope, authority_namespace_id="integration-episodes",
+                    record_id="episode-integration-v1", record_type="episode",
+                    authority_role="registered_projection",
+                    created_at="2026-09-02T00:00:00Z",
+                    source_records=(first_event.event_id, first_version.claim_version_id),
+                    content_digest=episode_content.plaintext_sha256),
+                episode_id="episode-integration-v1", episode_kind="life_event",
+                episode_state="candidate",
+                member_evidence_ids=(first_event.event_id,),
+                member_claim_version_ids=(first_version.claim_version_id,),
+                valid_from="2026-09-01T00:00:00Z", valid_to=None,
+                formed_at="2026-09-02T00:00:00Z",
+                formation_component_id="synthetic-test",
+                formation_version="v1",
+                summary_content_digest=episode_summary.plaintext_sha256,
+                full_content_digest=episode_content.plaintext_sha256,
+                confidence=None)
+            source_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                episode_log = KurrentExperienceLog(scope=scope, client=source_client)
+                episode_refs = {raw_first.object_id: raw_first,
+                                episode_summary.object_id: episode_summary,
+                                episode_content.object_id: episode_content}
+                episode_registry.put_candidate(
+                    episode, thread_id="synthetic-episode-thread",
+                    summary=episode_summary, content=episode_content,
+                    claims=authority, log=episode_log, objects=objects,
+                    references=episode_refs)
+                episode_registry.put_candidate(
+                    episode, thread_id="synthetic-episode-thread",
+                    summary=episode_summary, content=episode_content,
+                    claims=authority, log=episode_log, objects=objects,
+                    references=episode_refs)
+                self.assertEqual(episode_registry.read_latest_candidate(
+                    thread_id="synthetic-episode-thread", claims=authority,
+                    log=episode_log, objects=objects,
+                    references=episode_refs).content,
+                    b"synthetic episode content, not model formed")
+            finally:
+                source_client.close()
             source_client = KurrentDBClient(os.environ.get(
                 "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
             try:
@@ -641,6 +690,19 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 authority.put_current(second_projection)
             authority.put_current(second_projection, expected_previous=first_projection)
             authority.put_current(second_projection, expected_previous=first_projection)
+            source_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                with self.assertRaisesRegex(ValueError, "superseded claim"):
+                    episode_registry.read_latest_candidate(
+                        thread_id="synthetic-episode-thread", claims=authority,
+                        log=KurrentExperienceLog(scope=scope, client=source_client),
+                        objects=objects,
+                        references={raw_first.object_id: raw_first,
+                                    episode_summary.object_id: episode_summary,
+                                    episode_content.object_id: episode_content})
+            finally:
+                source_client.close()
             source_client = KurrentDBClient(os.environ.get(
                 "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
             try:

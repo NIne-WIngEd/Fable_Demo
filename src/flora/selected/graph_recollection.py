@@ -35,7 +35,7 @@ class LadybugEvidenceGraph:
 
     def ensure_schema(self) -> None:
         for statement in (
-            "CREATE NODE TABLE IF NOT EXISTS FloRAClaimVersion(id STRING PRIMARY KEY, claim_id STRING, projection_id STRING)",
+            "CREATE NODE TABLE IF NOT EXISTS FloRAClaimVersion(id STRING PRIMARY KEY, scope_digest STRING, claim_id STRING, projection_id STRING)",
             "CREATE NODE TABLE IF NOT EXISTS FloRAEvidence(id STRING PRIMARY KEY)",
             "CREATE REL TABLE IF NOT EXISTS FloRACites(FROM FloRAClaimVersion TO FloRAEvidence, relation_id STRING, relation_type STRING)",
         ):
@@ -83,17 +83,18 @@ class LadybugEvidenceGraph:
             raise ValueError("graph projection differs from Claim evidence")
         claim_key = self._key(packet.claim_version_id)
         rows = self.connection.execute(
-            "MATCH (c:FloRAClaimVersion {id:$id}) RETURN c.claim_id, c.projection_id",
+            "MATCH (c:FloRAClaimVersion {id:$id}) RETURN c.scope_digest, c.claim_id, c.projection_id",
             {"id": claim_key}).get_all()
         if rows:
-            if rows != [[claim_id, packet.projection_id]] or not self._exact_edges(candidate, authority):
+            if rows != [[self.scope_digest, claim_id, packet.projection_id]] or not self._exact_edges(candidate, authority):
                 raise ValueError("graph version differs from selected authority")
             return candidate
         self.connection.execute("BEGIN TRANSACTION")
         try:
             self.connection.execute(
-                "CREATE (:FloRAClaimVersion {id:$id, claim_id:$claim, projection_id:$projection})",
-                {"id": claim_key, "claim": claim_id, "projection": packet.projection_id})
+                "CREATE (:FloRAClaimVersion {id:$id, scope_digest:$scope, claim_id:$claim, projection_id:$projection})",
+                {"id": claim_key, "scope": self.scope_digest, "claim": claim_id,
+                 "projection": packet.projection_id})
             for source in packet.sources:
                 event_key = self._key(source.event_id)
                 if not self.connection.execute(
@@ -124,10 +125,12 @@ class LadybugEvidenceGraph:
             raise ValueError("graph candidate limit must be positive")
         rows = self.connection.execute(
             "MATCH (c:FloRAClaimVersion)-[r:FloRACites]->(e:FloRAEvidence {id:$event}) "
-            "RETURN c.id, c.claim_id, c.projection_id, r.relation_id",
+            "RETURN c.id, c.scope_digest, c.claim_id, c.projection_id, r.relation_id",
             {"event": self._key(source_event_id)}).get_all()
         result = []
-        for key, claim_id, projection_id, relation_id in rows:
+        for key, scope_digest, claim_id, projection_id, relation_id in rows:
+            if scope_digest != self.scope_digest:
+                continue
             try:
                 packet = read_current_sources(
                     claim_id=claim_id, authority=authority, log=log,
@@ -160,8 +163,9 @@ class LadybugEvidenceGraph:
         except KeyError:
             keep, projection = None, None
         rows = self.connection.execute(
-            "MATCH (c:FloRAClaimVersion {claim_id:$claim}) RETURN c.id, c.projection_id",
-            {"claim": claim_id}).get_all()
+            "MATCH (c:FloRAClaimVersion {scope_digest:$scope, claim_id:$claim}) "
+            "RETURN c.id, c.projection_id",
+            {"scope": self.scope_digest, "claim": claim_id}).get_all()
         stale = [key for key, projected in rows if key != keep or projected != projection]
         for key in stale:
             self.connection.execute(
