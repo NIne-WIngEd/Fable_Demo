@@ -11,6 +11,7 @@ import uuid
 
 from .events import Event, Question
 
+# Earlier frozen diagnostic packets remain bound to this legacy reference hash.
 ALICE_COMMIT = "5f9b9ccb2628eb2a5512d8624b9a78bcc9c7fe38"
 _ID_NAMESPACE = uuid.UUID("cdbbe029-40c5-4af9-9cc4-5da43474af99")
 

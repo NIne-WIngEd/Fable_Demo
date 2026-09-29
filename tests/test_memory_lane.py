@@ -40,7 +40,7 @@ class MemoryLaneTest(unittest.TestCase):
             lane = MemoryLane(runtime)
             staged = lane.stage_host_statement(logical_id=source["logical_id"], key="deep_work", category="goal")
             self.assertEqual(staged["state"], "validated")
-            self.assertEqual(staged["assessment"], "promotion_eligible")
+            self.assertEqual(staged["assessment"], "review_required")
             self.assertEqual(lane.current(key="deep_work"), [])
             promoted = lane.confirm(staged["candidate_id"])
             current = MemoryLane(FableRuntime(runtime.vault)).current(key="deep_work")

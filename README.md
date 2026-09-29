@@ -2,6 +2,8 @@
 
 A work-in-progress prototype for one Fable capability. It is currently a narrow experience and explicit-memory plumbing slice over A.L.I.C.E.'s released stores. The personality model is being built separately. **The Fable demo has not been built end to end.**
 
+The [architecture alignment map](docs/DEMO_ALIGNMENT.md) tracks the selected full-scale workflow and identifies which demo components can be built before personality training. The current SQLite-based runtime is a **compatibility/reference path**. Its results do not qualify the selected KurrentDB, XTDB, LadybugDB, Qdrant, or Temporal stack.
+
 ## Built now: the experience path
 
 `fable-runtime` can create an isolated host vault, locally seal an observation, capture it in A.L.I.C.E.'s content-addressed Raw Buffer, and append a linked metadata event to A.L.I.C.E.'s Experience Ledger. It reopens across processes, verifies both stores, and finishes a ledger append if a process stopped after raw capture. Host, assistant-self, and relationship observations are distinct. Corrections and outcomes point to a prior observation of the right kind.
@@ -10,7 +12,7 @@ This is a working infrastructure slice, **not yet a conversational Fable**. The 
 
 ```bash
 git clone https://github.com/NIne-WIngEd/A.L.I.C.E.git
-git -C A.L.I.C.E checkout 5f9b9ccb2628eb2a5512d8624b9a78bcc9c7fe38
+git -C A.L.I.C.E checkout 00583fb25fbe07c1452519992de2bc8055dcebd5
 git clone https://github.com/NIne-WIngEd/Fable_Demo.git
 python -m pip install -e Fable_Demo
 PYTHONPATH=A.L.I.C.E/src python -m fable_demo.runtime_cli init /tmp/my-fable-demo
@@ -19,12 +21,13 @@ PYTHONPATH=A.L.I.C.E/src python -m fable_demo.runtime_cli inspect /tmp/my-fable-
 ```
 
 Use a vault path outside either repository. `history` shows metadata; `history --reveal` explicitly decrypts text.
+The runtime manifest is pinned to the MFM branch commit above. Earlier synthetic vaults made with the previous pin require an explicit migration or a fresh vault; this command does not silently reinterpret them.
 
-For a recorded host statement, copy its returned `logical_id` into `stage --id ID --key deep_work --category goal`. Staging creates a non-authoritative candidate. `confirm --candidate ID` promotes it only after A.L.I.C.E.'s deterministic assessment. `memory --key deep_work` reads the current confirmed claim. For a correction, record it with `--kind correction --relates-to ORIGINAL_LOGICAL_ID`, then run `correct --id CORRECTION_LOGICAL_ID --key deep_work --category goal`; confirm the candidate with `--target-memory ORIGINAL_MEMORY_ID`. This invokes A.L.I.C.E.'s transition-aware correction path and keeps the older record in history.
+For a recorded host statement, copy its returned `logical_id` into `stage --id ID --key deep_work --category goal`. Staging creates a non-authoritative candidate requiring review. In this synthetic-only runtime, `confirm --candidate ID` simulates the host's separate confirmation after A.L.I.C.E.'s deterministic assessment. The CLI does not authenticate a real person and must not be used as a consumer approval path. `memory --key deep_work` reads the current confirmed claim. For a correction, record it with `--kind correction --relates-to ORIGINAL_LOGICAL_ID`, then run `correct --id CORRECTION_LOGICAL_ID --key deep_work --category goal`; confirm the candidate with `--target-memory ORIGINAL_MEMORY_ID`. This invokes A.L.I.C.E.'s transition-aware correction path and keeps the older record in history.
 
 `memory-history --key deep_work` shows current and superseded versions with source links. `state --host-key deep_work` assembles current host claims and their correction history, separately labeled assistant-self and relationship observations, and linked decisions and outcomes. It is an evidence packet for the separately built personality model. It makes no judgment and does not claim those observations are learned self or relationship models.
 
-`formation-context --id OBSERVATION_ID --host-key deep_work` assembles a bounded packet for the future Memory Formation Model: the source observation, its direct parent when linked, and only the current host claims explicitly selected by the caller. It carries event and raw-reference IDs and a packet fingerprint. It does not extract or promote a claim. This packet describes current state at assembly time, not an as-of historical replay.
+`formation-context --id OBSERVATION_ID --host-key deep_work` assembles a bounded packet for the future Memory Formation Model: the source observation, its direct parent when linked, and only the current host claims explicitly selected by the caller. It also creates A.L.I.C.E.'s actual `FormationContextPacket` manifest and digest. The binding path checks a `MemoryProposalBundle` against registered evidence without granting it authority. CLI input is unverified historical experience, not authenticated owner speech. This packet describes current state at assembly time, not an as-of historical replay.
 
 ## Actual build status
 
@@ -32,7 +35,7 @@ For a recorded host statement, copy its returned `logical_id` into `stage --id I
 | --- | --- | --- |
 | Raw experience capture and ledger | Thin slice built | One host, single writer, synthetic data; reuses A.L.I.C.E.'s released stores. |
 | Explicit host memory and correction | Thin slice built | Operator supplies a key and confirmation. No learned formation or automatic understanding of raw data. |
-| State and formation packets | Thin slice built | Caller selects host keys. Self and relationship entries are observations, not learned models. |
+| State and formation packets | Thin slice built | Caller selects host keys. The upstream MFM input/output binding contract is used, but no learned model runs. |
 | Personality and native judgment | Not integrated | A separate workstream is building the model. There is no live decision loop here. |
 | Memory Formation Model and adaptive retrieval | Not built | No autonomous candidate extraction, topic selection, or relevance planning. |
 | Learned host, assistant-self, and relationship state | Not built | No demonstrated personal development or causal influence on judgment. |
@@ -40,7 +43,7 @@ For a recorded host statement, copy its returned `logical_id` into `stage --id I
 | Fable Builder Model and second-host transfer | Not built | No automatic model building from another person's data. |
 | Conversational product and privacy lifecycle | Not built | No conversation controller, feature API boundary, owner-facing app, production key custody, or complete deletion/rollback. |
 
-For the **first demo claim**, the next work is to establish a narrow learned state and native judgment loop, integrate the separate personality model, make corrections or outcomes change later behavior for a justified reason, and compare that behavior with a strong baseline on the same synthetic history. The second part would ask a small builder to reproduce the capability for another consenting host. Merely attaching the personality model to today's packet will not finish the demo.
+For the **first demo claim**, the next work is to instantiate the selected fabric, connect learned formation and personal state, then integrate native judgment and test outcome-driven behavior against a strong comparator. The second part would ask a small builder to reproduce the capability for another isolated host. Merely attaching the personality model to today's packet will not finish the demo.
 
 A.L.I.C.E.'s Phase 2 SQLite Memory Core is the current released reference authority. Its broader destination considers an event fabric, claim authority, graph, vector, and workflow planes. This demo uses the actual implemented kernel stores for its first component. A passing test on a reference backend will not be presented as proof that every future backend or the complete Fable architecture works.
 

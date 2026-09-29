@@ -17,7 +17,9 @@ import uuid
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from .alice_adapter import ALICE_COMMIT
+# This MFM branch contains the shared FormationContextPacket/MemoryProposalBundle
+# contracts. The earlier fixture evaluator retains its own frozen legacy pin.
+RUNTIME_ALICE_COMMIT = "00583fb25fbe07c1452519992de2bc8055dcebd5"
 
 _MAGIC = b"FBD1"
 _KINDS = {"statement", "correction", "decision", "outcome", "observation"}
@@ -90,7 +92,7 @@ class FableRuntime:
 
         self.vault = _require_vault_location(Path(vault))
         manifest = json.loads((self.vault / "manifest.json").read_text())
-        if manifest.get("version") != 1 or manifest.get("alice_commit") != ALICE_COMMIT:
+        if manifest.get("version") != 1 or manifest.get("alice_commit") != RUNTIME_ALICE_COMMIT:
             raise ValueError("unsupported host manifest or kernel version")
         self.scope = ProductHostScope.create(product_id=manifest["product_id"],
             host_instance_id=manifest["host_instance_id"], schema_version="1.0.0",
@@ -113,7 +115,7 @@ class FableRuntime:
             raise FileExistsError("host vault must be an empty directory")
         created_at = _utc_now()
         manifest = {"version": 1, "product_id": "friday", "host_instance_id": f"host-{uuid.uuid4()}",
-                    "encryption_domain": f"domain-{uuid.uuid4()}", "alice_commit": ALICE_COMMIT,
+                    "encryption_domain": f"domain-{uuid.uuid4()}", "alice_commit": RUNTIME_ALICE_COMMIT,
                     "created_at": created_at}
         key_path = root / "demo.key"
         descriptor = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -177,7 +179,9 @@ class FableRuntime:
             if observation.relates_to and parent is None:
                 raise ValueError(f"missing parent observation: {observation.relates_to}")
             provenance = ProvenanceReference.create(
-                provenance_type="evolved_identity" if observation.subject == "assistant_self" else "owner_attested_canonical",
+                # CLI input is not authenticated owner evidence and an observed
+                # self event is not already a learned identity update.
+                provenance_type="conflict_or_uncertain", confidence=0.0,
                 source_reference_ids=(reference.reference_id,), responsible_component="fable-demo-runtime",
                 supersedes_record_ids=(parent,) if observation.kind == "correction" else (),
             )

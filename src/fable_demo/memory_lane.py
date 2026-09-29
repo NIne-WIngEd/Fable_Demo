@@ -63,7 +63,7 @@ class MemoryLane:
             data_classification="PRIVATE", recorded_at=observation.occurred_at,
             valid_from=observation.occurred_at, time_precision="day",
             sources=(source,), origin="explicit_user", memory_key=f"demo.host.{key}",
-            rayan_confirmed=True)
+            rayan_confirmed=False)
         with open_memory_store(self.runtime.vault) as connection:
             try:
                 candidate = propose_memory_candidate(connection, request=request,
