@@ -2,6 +2,12 @@
 
 This note is the takeover point after provisioning the first Docker-capable successor-fabric environment for FloRA.
 
+## Current checkpoint — 2026-09-29
+
+The original green receipt below is historical. The later [run 36541803371](https://github.com/NIne-WIngEd/FloRA/actions/runs/36541803371) passed at commit `1fba75318b807c95312104e44bcaaf2741f0945d`. It additionally exercises immutable evidence relations, a one-winner XTDB relation race, formation input from actual KurrentDB replay, a deterministic pre-adjudication gate, source binding of a claim version to its replayed event position, and expected-head current projection writes. The restart probe is read before shutdown and then polled for at most 30 seconds after restart. One prior run failed an immediate XTDB post-health read; its rerun passed, so recovery timing is plausible but not proven as the root cause.
+
+Owner-source authentication, full conflict adjudication, deletion/influence removal, projection rebuild, and all later planes remain open. A synthetic owner-source verifier is not authentication. This checkpoint is backend integration evidence, not a qualified memory or behavioral result.
+
 ## Authority boundary
 
 - A.L.I.C.E. Phase 2 is not an active implementation basis here.
@@ -49,8 +55,8 @@ A real XTDB pgwire incompatibility was found during qualification: Psycopg sends
 
 Do not call this full Stage G qualification or a Fable capability result. Still open:
 
-- deterministic `MemoryProposalBundle -> Claim Authority` gate;
-- exact evidence-relation persistence from proposal to accepted/revised claim;
+- authenticated owner-source verification and an end-to-end `MemoryProposalBundle -> adjudication -> Claim Authority` commit;
+- complete proposal-to-claim evidence lineage;
 - complete conflict/adjudication cases;
 - projection rebuild from authority history;
 - deletion, cryptographic erasure and influence-removal lineage;
@@ -89,9 +95,10 @@ PYTHONPATH=alice-reference/src:src python -m unittest discover -s tests -v
 PYTHONPATH=alice-reference/src:src python -m unittest discover -s tests/integration -v
 
 PYTHONPATH=alice-reference/src:src python scripts/backend_restart_probe.py write
+PYTHONPATH=alice-reference/src:src python scripts/backend_restart_probe.py verify --retry-seconds 15
 docker compose -f compose.integration.yml restart kurrentdb xtdb
 # wait until both health endpoints are ready
-PYTHONPATH=alice-reference/src:src python scripts/backend_restart_probe.py verify
+PYTHONPATH=alice-reference/src:src python scripts/backend_restart_probe.py verify --retry-seconds 30
 
 docker compose -f compose.integration.yml down -v
 ```

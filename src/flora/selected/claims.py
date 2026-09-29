@@ -216,8 +216,22 @@ class XTDBClaimAuthority:
         self._assert_envelope(version)
         if experience_log.scope != self.scope:
             raise ValueError("claim source log belongs to a different host")
+        replayed = experience_log.replay()
         receipt = bind_claim_source(version=version, relations=relations,
-                                    replayed=experience_log.replay())
+                                    replayed=replayed)
+        identity = self._fetch_record(
+            table=_IDENTITIES, row_id=self._row_id(version.claim_id), all_valid=True)
+        if identity is None:
+            raise ValueError("claim version lacks a committed identity")
+        for predecessor_id in version.correction_of:
+            predecessor = self._fetch_record(
+                table=_VERSIONS, row_id=self._row_id(predecessor_id), all_valid=True)
+            if (predecessor is None or predecessor["claim_id"] != version.claim_id
+                    or int(predecessor["version_sequence"]) >= version.version_sequence
+                    or int(predecessor["event_stream_position"]) >= receipt.stream_position
+                    or predecessor["experience_event_id"]
+                    not in replayed[receipt.stream_position].parent_event_ids):
+                raise ValueError("correction lacks its committed predecessor event")
         if version.adjudication_state in {"accepted", "revised"} and not version.evidence_relation_ids:
             raise ValueError("accepted or revised claim needs exact evidence relations")
         for relation_id in version.evidence_relation_ids:
