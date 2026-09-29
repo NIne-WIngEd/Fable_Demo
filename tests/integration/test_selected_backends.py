@@ -10,6 +10,8 @@ import tempfile
 from threading import Barrier
 import unittest
 import uuid
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 import psycopg
 import nats
@@ -48,6 +50,9 @@ from flora.selected.episodes import XTDBEpisodeCandidates
 from flora.selected.derived_reconciliation import (
     DerivedCleanupActivities, ReconcileDerivedClaimWorkflow,
     cleanup_request, cleanup_workflow_id,
+)
+from flora.selected.owner_authorization import (
+    Ed25519OwnerActionVerifier, OwnerActionProof, owner_action_message,
 )
 from flora.selected.personal_state import (
     XTDBPersonalStateCandidates, activation_request,
@@ -1232,14 +1237,27 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     quarantine_claim(
                         **quarantine_args,
                         verifier=SyntheticRevocationVerifier(False))
+                owner_signer = Ed25519PrivateKey.generate()
+                owner_proof = OwnerActionProof(
+                    action="claim_quarantine",
+                    event_id=deletion_event.event_id,
+                    event_sha256=deletion_event.event_sha256,
+                    signature_base64=base64.b64encode(owner_signer.sign(
+                        owner_action_message(deletion_event,
+                                             "claim_quarantine"))).decode())
+                signed_owner = Ed25519OwnerActionVerifier(
+                    scope=scope,
+                    owner_public_key=owner_signer.public_key().public_bytes(
+                        Encoding.Raw, PublicFormat.Raw),
+                    proofs={deletion_event.event_id: owner_proof})
                 quarantined = quarantine_claim(
                     **quarantine_args,
-                    verifier=SyntheticRevocationVerifier(True))
+                    verifier=signed_owner)
                 self.assertEqual(quarantined.projection.deletion_state, "pending")
                 self.assertEqual(quarantined.removed_vector_points, 1)
                 self.assertEqual(quarantine_claim(
                     **quarantine_args,
-                    verifier=SyntheticRevocationVerifier(True)
+                    verifier=signed_owner
                 ).removed_vector_points, 0)
                 self.assertEqual(vector_projection.query_current(
                     query_vector=(1.0, 0.0, 0.0, 0.0),
