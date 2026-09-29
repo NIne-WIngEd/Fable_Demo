@@ -21,6 +21,7 @@ from cognitive_kernel.experience import ExperienceEvent
 from .claims import XTDBClaimAuthority
 from .decision_outcome import RecordedEvent, record_decision
 from .experience import KurrentExperienceLog
+from .graph_recollection import LadybugEvidenceGraph
 from .object_store import EncryptedObjectPlane, RawObjectReference
 from .personal_state import StateApprovalVerifier, XTDBPersonalStateCandidates
 from .source_native import read_current_sources
@@ -52,6 +53,8 @@ class ContextPlan:
     query_vector: tuple[float, ...] | None = None
     vector_limit: int = 0
     minimum_claims: int = 0
+    graph_source_event_ids: tuple[str, ...] = ()
+    graph_limit: int = 0
 
     def validate(self) -> None:
         require_identifier(self.request_id, "request_id")
@@ -61,6 +64,10 @@ class ContextPlan:
             raise ValueError("context plan contains duplicate routes")
         for claim_id in self.exact_claim_ids:
             require_identifier(claim_id, "claim_id")
+        if len(set(self.graph_source_event_ids)) != len(self.graph_source_event_ids):
+            raise ValueError("context plan has duplicate graph sources")
+        for event_id in self.graph_source_event_ids:
+            require_identifier(event_id, "source_event_id")
         for route in self.state_routes:
             for label, value in (("subject_type", route.subject_type),
                                  ("subject_id", route.subject_id),
@@ -72,7 +79,12 @@ class ContextPlan:
                 or self.vector_limit < 0 or isinstance(self.minimum_claims, bool)
                 or not isinstance(self.minimum_claims, int) or self.minimum_claims < 0):
             raise ValueError("context route limits must be nonnegative integers")
-        if not self.exact_claim_ids and not self.state_routes and self.query_vector is None:
+        if (isinstance(self.graph_limit, bool) or not isinstance(self.graph_limit, int)
+                or self.graph_limit < 0
+                or bool(self.graph_source_event_ids) != (self.graph_limit > 0)):
+            raise ValueError("graph route needs sources and a positive limit")
+        if (not self.exact_claim_ids and not self.state_routes
+                and self.query_vector is None and not self.graph_source_event_ids):
             raise ValueError("context plan has no retrieval route")
 
 
@@ -117,6 +129,8 @@ class LocalContext:
                 "state_routes": [vars(route) for route in self.plan.state_routes],
                 "vector_used": self.plan.query_vector is not None,
                 "vector_limit": self.plan.vector_limit,
+                "graph_source_event_ids": list(self.plan.graph_source_event_ids),
+                "graph_limit": self.plan.graph_limit,
                 "minimum_claims": self.plan.minimum_claims,
             },
             "items": [item.receipt_record() for item in self.items],
@@ -140,6 +154,7 @@ def assemble_context(
     references: Mapping[str, RawObjectReference],
     policy: ContextUsePolicy, approval_verifier: StateApprovalVerifier,
     vector: QdrantClaimProjection | None = None,
+    graph: LadybugEvidenceGraph | None = None,
 ) -> LocalContext:
     """Assemble only permitted exact, active, source-verified material."""
     plan.validate()
@@ -147,6 +162,8 @@ def assemble_context(
         raise ValueError("context planes cross host scope")
     if plan.query_vector is not None and (vector is None or vector.scope != claims.scope):
         raise ValueError("selected vector route is unavailable or cross host")
+    if plan.graph_source_event_ids and (graph is None or graph.scope != claims.scope):
+        raise ValueError("selected graph route is unavailable or cross host")
     items: list[LocalContextItem] = []
     claim_ids = list(plan.exact_claim_ids)
     if plan.query_vector is not None:
@@ -154,6 +171,14 @@ def assemble_context(
             query_vector=plan.query_vector, authority=claims,
             limit=plan.vector_limit,
         ):
+            if candidate.claim_id not in claim_ids:
+                claim_ids.append(candidate.claim_id)
+    for event_id in plan.graph_source_event_ids:
+        if not policy.allow_event(event_id, plan.purpose):
+            raise PermissionError("graph source event is not permitted")
+        for candidate in graph.related_current(
+            source_event_id=event_id, authority=claims, log=log,
+            objects=objects, references=references, limit=plan.graph_limit):
             if candidate.claim_id not in claim_ids:
                 claim_ids.append(candidate.claim_id)
     for claim_id in claim_ids:
@@ -218,6 +243,7 @@ def record_context_delivery(
     claims: XTDBClaimAuthority, state: XTDBPersonalStateCandidates,
     policy: ContextUsePolicy, approval_verifier: StateApprovalVerifier,
     vector: QdrantClaimProjection | None = None,
+    graph: LadybugEvidenceGraph | None = None,
     occurred_at: str, expected_revision: int,
 ) -> RecordedEvent:
     """Append a receipt for material delivered to a judgment interface.
@@ -229,7 +255,7 @@ def record_context_delivery(
     fresh = assemble_context(
         plan=context.plan, claims=claims, state=state, log=log,
         objects=objects, references=references, policy=policy,
-        approval_verifier=approval_verifier, vector=vector,
+        approval_verifier=approval_verifier, vector=vector, graph=graph,
     )
     if fresh.receipt_record() != context.receipt_record():
         raise ValueError("context changed before delivery")
@@ -274,6 +300,7 @@ def record_contextual_decision(
     claims: XTDBClaimAuthority, state: XTDBPersonalStateCandidates,
     policy: ContextUsePolicy, approval_verifier: StateApprovalVerifier,
     vector: QdrantClaimProjection | None = None,
+    graph: LadybugEvidenceGraph | None = None,
     verdict: bytes, model_artifact_sha256: str, occurred_at: str,
     expected_revision: int, producer_component: str,
 ) -> RecordedEvent:
@@ -285,7 +312,7 @@ def record_contextual_decision(
     fresh = assemble_context(
         plan=context.plan, claims=claims, state=state, log=log,
         objects=objects, references=references, policy=policy,
-        approval_verifier=approval_verifier, vector=vector,
+        approval_verifier=approval_verifier, vector=vector, graph=graph,
     )
     if fresh.receipt_record() != context.receipt_record():
         raise ValueError("context changed before decision")

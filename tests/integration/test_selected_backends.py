@@ -13,6 +13,7 @@ import uuid
 
 import psycopg
 import nats
+import ladybug
 from qdrant_client import QdrantClient
 from qdrant_client import models as qdrant_models
 from kurrentdbclient import KurrentDBClient
@@ -40,6 +41,7 @@ from flora.selected.source_native import read_current_sources
 from flora.selected.edge_ingress import EdgePacket, JetStreamEdgeIngress
 from flora.selected.decision_outcome import record_decision, record_outcome_observation
 from flora.selected.vector_recollection import QdrantClaimProjection
+from flora.selected.graph_recollection import LadybugEvidenceGraph
 from flora.selected.personal_state import (
     XTDBPersonalStateCandidates, activation_request,
 )
@@ -392,6 +394,9 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 scope=scope, client=qdrant,
                 embedding_artifact_sha256="e" * 64, dimension=4)
             vector_projection.ensure_collection()
+            graph = LadybugEvidenceGraph(scope=scope, connection=ladybug.Connection(
+                ladybug.Database(str(Path(object_directory.name) / "graph"))))
+            graph.ensure_schema()
             raw_first = objects.put(b"synthetic-claim-source-one")
             raw_second = objects.put(b"synthetic-claim-source-two")
             first_event = _event(scope, suffix="claim-source-one",
@@ -513,6 +518,26 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
             source_client = KurrentDBClient(os.environ.get(
                 "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
             try:
+                graph_log = KurrentExperienceLog(scope=scope, client=source_client)
+                graph.project_current(
+                    claim_id="claim-integration", authority=authority,
+                    log=graph_log, objects=objects,
+                    references={raw_first.object_id: raw_first})
+                graph.project_current(
+                    claim_id="claim-integration", authority=authority,
+                    log=graph_log, objects=objects,
+                    references={raw_first.object_id: raw_first})
+                self.assertEqual([item.claim_version_id for item in
+                    graph.related_current(
+                        source_event_id=first_event.event_id, authority=authority,
+                        log=graph_log, objects=objects,
+                        references={raw_first.object_id: raw_first})],
+                    [first_version.claim_version_id])
+            finally:
+                source_client.close()
+            source_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
                 vector_projection.index_current(
                     claim_id="claim-integration", vector=(1.0, 0.0, 0.0, 0.0),
                     authority=authority,
@@ -616,6 +641,26 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 authority.put_current(second_projection)
             authority.put_current(second_projection, expected_previous=first_projection)
             authority.put_current(second_projection, expected_previous=first_projection)
+            source_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                graph_log = KurrentExperienceLog(scope=scope, client=source_client)
+                refs = {raw_first.object_id: raw_first, raw_second.object_id: raw_second}
+                self.assertEqual(graph.related_current(
+                    source_event_id=first_event.event_id, authority=authority,
+                    log=graph_log, objects=objects, references=refs), ())
+                graph.project_current(
+                    claim_id="claim-integration", authority=authority,
+                    log=graph_log, objects=objects, references=refs)
+                self.assertEqual([item.claim_version_id for item in
+                    graph.related_current(
+                        source_event_id=second_event.event_id, authority=authority,
+                        log=graph_log, objects=objects, references=refs)],
+                    [second_version.claim_version_id])
+                self.assertEqual(graph.prune_noncurrent(
+                    claim_id="claim-integration", authority=authority), 1)
+            finally:
+                source_client.close()
             source_client = KurrentDBClient(os.environ.get(
                 "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
             try:
@@ -913,6 +958,18 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                         **context_args, policy=SyntheticContextPolicy(False))
                 context = assemble_context(
                     **context_args, policy=SyntheticContextPolicy(True))
+                graph_context = assemble_context(
+                    plan=ContextPlan(
+                        request_id="graph-route-synthetic", purpose="judgment",
+                        graph_source_event_ids=(second_event.event_id,),
+                        graph_limit=2, minimum_claims=1),
+                    claims=authority, state=state_registry, log=state_log,
+                    objects=objects, references=source_refs,
+                    policy=SyntheticContextPolicy(True),
+                    approval_verifier=SyntheticApprovalVerifier(True),
+                    graph=graph)
+                self.assertEqual([item.version_id for item in graph_context.items],
+                                 [second_version.claim_version_id])
                 self.assertTrue(context.sufficient_by_declared_count)
                 self.assertEqual([item.kind for item in context.items],
                                  ["claim", "state:owner"])
@@ -1069,6 +1126,12 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 self.assertEqual(vector_projection.query_current(
                     query_vector=(1.0, 0.0, 0.0, 0.0),
                     authority=authority), ())
+                self.assertEqual(graph.related_current(
+                    source_event_id=second_event.event_id,
+                    authority=authority, log=state_log, objects=objects,
+                    references=source_refs), ())
+                self.assertEqual(graph.prune_noncurrent(
+                    claim_id="claim-integration", authority=authority), 1)
                 with self.assertRaisesRegex(ValueError, "not an active"):
                     read_current_sources(
                         claim_id="claim-integration", authority=authority,
