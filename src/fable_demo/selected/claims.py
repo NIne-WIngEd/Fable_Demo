@@ -45,6 +45,18 @@ def _rows(cursor: Any) -> list[dict[str, object]]:
     return [dict(zip(names, row)) for row in cursor.fetchall()]
 
 
+def _dml_placeholder(value: object) -> str:
+    """Give XTDB pgwire an explicit type for Python strings in DML.
+
+    Psycopg intentionally sends ordinary Python strings with an unknown OID.
+    PostgreSQL usually infers that type from a table schema. XTDB's DML
+    protocol requires every non-null parameter to arrive typed, so text values
+    are explicitly cast while native integer/timestamp parameters keep their
+    driver-provided OIDs.
+    """
+    return "%s::text" if isinstance(value, str) else "%s"
+
+
 class XTDBClaimAuthority:
     """Bitemporal physical placement for one product/host claim namespace."""
 
@@ -121,7 +133,9 @@ class XTDBClaimAuthority:
         if valid_to is not None:
             material["_valid_to"] = valid_to
         names = tuple(material)
-        placeholders = ", ".join(["%s"] * len(names))
+        placeholders = ", ".join(
+            _dml_placeholder(material[name]) for name in names
+        )
         sql = (
             f"INSERT INTO {table} ("
             + ", ".join(names)

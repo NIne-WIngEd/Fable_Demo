@@ -65,7 +65,7 @@ def write_probe() -> None:
     with psycopg.connect(dsn, autocommit=True) as connection:
         connection.execute(
             "INSERT INTO fable_backend_restart_probe (_id, marker) "
-            "VALUES (%s, %s)",
+            "VALUES (%s::text, %s::text)",
             (PROBE_ID, MARKER),
         )
 
