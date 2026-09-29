@@ -6,6 +6,8 @@ import argparse
 import asyncio
 import hashlib
 import os
+from pathlib import Path
+import tempfile
 import time
 
 import psycopg
@@ -13,14 +15,21 @@ import nats
 from kurrentdbclient import KurrentDBClient
 
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
+from cognitive_kernel.canonical import normalize_timestamp
 from cognitive_kernel.experience import ExperienceEvent
+from cognitive_kernel.formation_context_planner import FormationPlanningRequest
 from flora.selected.claims import configure_xtdb_connection
 from flora.selected.experience import KurrentExperienceLog
 from flora.selected.edge_ingress import EdgePacket, JetStreamEdgeIngress
+from flora.selected.formation_context import prepare_selected_formation, register_experience_source
+from flora.selected.formation_registry import XTDBFormationSourceRegistry
+from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 
 MARKER = "selected-backend-persistence-v1"
 PROBE_ID = "flora-selected-backend-restart-probe"
 EDGE_MARKER = "selected-edge-persistence-v1"
+FORMATION_MARKER = b"fictional registered formation persistence probe"
+FORMATION_NAMESPACE = "formation-restart-probe"
 
 
 def _scope() -> ProductHostScope:
@@ -56,6 +65,69 @@ def _edge_scope() -> ProductHostScope:
         product_id="friday", host_instance_id="edge-restart-probe",
         schema_version="1.0.0", encryption_domain="edge-restart-probe-key",
     )
+
+
+def _formation_scope() -> ProductHostScope:
+    return ProductHostScope.create(
+        product_id="friday", host_instance_id="formation-restart-probe",
+        schema_version="1.0.0", encryption_domain="formation-restart-probe-key")
+
+
+def _formation_probe(*, write: bool = False) -> None:
+    """Reopen XTDB source/custody registration after a real backend restart.
+
+    Fixed fictional key/material belong only to this CI probe. Production keys
+    and source permissions are independently provisioned and are not supplied
+    by this test. No learned formation is claimed.
+    """
+    scope = _formation_scope()
+    objects = EncryptedObjectPlane(
+        scope=scope, key=b"m" * 32,
+        backend=LocalObjectBackend(Path(tempfile.gettempdir()) / "flora-formation-restart-objects"))
+    raw = objects.put(FORMATION_MARKER) if write else None
+    client = KurrentDBClient(os.environ.get(
+        "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+    try:
+        log = KurrentExperienceLog(scope=scope, client=client)
+        if write:
+            event = ExperienceEvent.create(
+                event_type="observation", scope=scope,
+                occurred_at="2020-01-01T12:00:00Z", content_digest=raw.plaintext_sha256,
+                provenance=ProvenanceReference.create(
+                    provenance_type="generated_reconstruction",
+                    source_reference_ids=("formation-restart-fixture",),
+                    derivation_activity_id="formation-restart-probe",
+                    responsible_component="synthetic-test"),
+                retention_class="ordinary_experience", storage_tier="raw_buffer",
+                payload_reference=raw.object_id)
+            log.append(event, expected_revision=-1)
+        committed = log.replay_committed()
+        if len(committed) != 1 or committed[0].recorded_at is None:
+            raise RuntimeError("registered formation probe lacks exact physical replay")
+        entry = committed[0]
+        with psycopg.connect(os.environ.get(
+                "XTDB_DSN", "postgresql://xtdb@127.0.0.1:5432/xtdb"), autocommit=True) as connection:
+            registry = XTDBFormationSourceRegistry(
+                scope=scope, authority_namespace_id=FORMATION_NAMESPACE, connection=connection)
+            if write:
+                register_experience_source(
+                    event_id=entry.event.event_id, raw=raw, registry=registry,
+                    log=log, objects=objects, role="generated_reconstruction", modality="text",
+                    source_item_ref="formation-restart-fixture")
+            source = registry.lookup(entry.event.event_id)
+            if source is None or source.evidence.recorded_at != normalize_timestamp(
+                    entry.recorded_at.isoformat(), "recorded_at"):
+                raise RuntimeError("registered source/availability metadata did not recover")
+            prepared = prepare_selected_formation(
+                request=FormationPlanningRequest(scope, FORMATION_NAMESPACE,
+                                                 (entry.event.event_id,)),
+                registry=registry, objects=objects,
+                permits=lambda source, purpose: purpose == "memory_formation")
+            if prepared.assembled.opened_content != ((entry.event.event_id, FORMATION_MARKER),):
+                raise RuntimeError("registered encrypted formation custody did not recover")
+            print("Registered formation source, physical time and encrypted custody recovered")
+    finally:
+        client.close()
 
 
 def _edge_packet() -> EdgePacket:
@@ -128,6 +200,7 @@ def write_probe() -> None:
             (PROBE_ID, MARKER),
         )
     asyncio.run(_edge_probe(write=True))
+    _formation_probe(write=True)
 
 
 def verify_probe(*, retry_seconds: int = 0,
@@ -175,6 +248,7 @@ def verify_probe(*, retry_seconds: int = 0,
             )
         time.sleep(min(1.0, max(0.0, deadline - time.monotonic())))
     asyncio.run(_edge_probe(consume=consume_edge))
+    _formation_probe()
 
 
 def main() -> None:

@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: NIne-WIngEd/A.L.I.C.E
-          ref: 00583fb25fbe07c1452519992de2bc8055dcebd5
+          ref: 4f287a488bc908bd04f99255ee01b794bacba50b
           path: alice-reference
 
       - uses: actions/setup-python@v5

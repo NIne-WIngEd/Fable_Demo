@@ -1,6 +1,8 @@
 import hashlib
 import json
 import unittest
+from datetime import datetime, timezone
+from types import SimpleNamespace
 
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
@@ -24,6 +26,26 @@ class CallRecorder:
 
 
 class SelectedExperienceContractTest(unittest.TestCase):
+    def test_replay_preserves_physical_record_time_separately_from_observation(self):
+        event = event_for("host-one")
+        recorded_at = datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
+        record = SimpleNamespace(stream_position=0, type="FableExperienceV1",
+                                 data=encode_event(event), id=event_uuid(event),
+                                 recorded_at=recorded_at)
+        client = SimpleNamespace(get_stream=lambda **kwargs: [record])
+        log = KurrentExperienceLog(scope=event.scope, client=client)
+        committed = log.replay_committed()[0]
+        self.assertEqual(committed.event, event)
+        self.assertEqual(committed.stream_position, 0)
+        self.assertEqual(committed.recorded_at, recorded_at)
+        self.assertNotEqual(recorded_at.isoformat(), event.occurred_at)
+        self.assertEqual(log.replay(), [event])
+        record.recorded_at = None
+        self.assertIsNone(log.replay_committed()[0].recorded_at)
+        record.recorded_at = datetime(2026, 9, 29, 12)
+        with self.assertRaisesRegex(ValueError, "timezone-aware"):
+            log.replay_committed()
+
     def test_envelope_round_trip_and_cross_host_rejection(self):
         event = event_for("host-one")
         self.assertEqual(decode_event(encode_event(event), event.scope), event)

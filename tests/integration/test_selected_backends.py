@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import replace
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
@@ -24,6 +25,8 @@ from kurrentdbclient import KurrentDBClient
 from kurrentdbclient.exceptions import WrongCurrentVersionError
 
 from cognitive_kernel.adjudication_contracts import ClaimEvidenceRelation
+from cognitive_kernel.canonical import CognitiveKernelContractError, normalize_timestamp
+from cognitive_kernel.formation_context_planner import FormationPlanningRequest
 from cognitive_kernel.claim_contracts import (
     CanonicalTaggedValue,
     ClaimIdentity,
@@ -39,6 +42,11 @@ from flora.selected.claims import XTDBClaimAuthority
 from flora.selected.authority_binding import bind_claim_source
 from flora.selected.experience import KurrentExperienceLog
 from flora.selected.formation_input import formation_input_from_replay
+from flora.selected.formation_registry import XTDBFormationSourceRegistry
+from flora.selected.formation_context import (
+    prepare_selected_formation, register_experience_source,
+    record_selected_formation_delivery,
+)
 from flora.selected.formation_gate import assess_formation
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 from flora.selected.source_native import read_current_sources
@@ -149,6 +157,101 @@ def _text(value: str) -> CanonicalTaggedValue:
 
 
 class SelectedBackendIntegrationTest(unittest.TestCase):
+    def test_registered_mfm_context_recovers_sources_and_original_closure(self):
+        """Real selected stores; fictional metadata and exact-read policy only."""
+        scope = _scope("flora-registered-formation")
+        namespace = "registered-source-claims"
+        dsn = os.environ.get("XTDB_DSN", "postgresql://xtdb@127.0.0.1:5432/xtdb")
+        client = KurrentDBClient(os.environ.get(
+            "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                objects = EncryptedObjectPlane(
+                    scope=scope, key=b"j" * 32,
+                    backend=LocalObjectBackend(Path(directory) / "objects"))
+                log = KurrentExperienceLog(scope=scope, client=client)
+                raws, events = [], []
+                for index, observed in enumerate(("2020-01-01T12:00:00Z",
+                                                  "2020-02-01T12:00:00Z")):
+                    raw = objects.put(f"fictional formation source {index}".encode())
+                    event = ExperienceEvent.create(
+                        event_type="observation", scope=scope, occurred_at=observed,
+                        content_digest=raw.plaintext_sha256,
+                        provenance=ProvenanceReference.create(
+                            provenance_type="generated_reconstruction",
+                            source_reference_ids=(f"fixture-item-{index}",),
+                            derivation_activity_id="registered-source-integration",
+                            responsible_component="synthetic-test"),
+                        retention_class="ordinary_experience", storage_tier="raw_buffer",
+                        parent_event_ids=(events[0].event_id,) if index else (),
+                        payload_reference=raw.object_id)
+                    log.append(event, expected_revision=index - 1)
+                    raws.append(raw)
+                    events.append(event)
+                committed = log.replay_committed()
+                self.assertTrue(all(entry.recorded_at is not None for entry in committed))
+                with psycopg.connect(dsn, autocommit=True) as connection:
+                    registry = XTDBFormationSourceRegistry(
+                        scope=scope, authority_namespace_id=namespace, connection=connection)
+                    sources = tuple(register_experience_source(
+                        event_id=event.event_id, raw=raw, registry=registry, log=log,
+                        objects=objects, role="generated_reconstruction", modality="text",
+                        subject_ref="fictional-source-person", speaker_ref="fictional-speaker",
+                        source_item_ref=f"fixture-item-{index}",
+                        duplicate_group_ref="fictional-duplicate-group")
+                        for index, (event, raw) in enumerate(zip(events, raws)))
+                    for entry, source in zip(committed, sources):
+                        self.assertEqual(source.evidence.recorded_at,
+                            normalize_timestamp(entry.recorded_at.isoformat(), "recorded_at"))
+                        self.assertNotEqual(source.evidence.recorded_at, source.evidence.observed_at)
+                    with self.assertRaisesRegex(ValueError, "immutable"):
+                        registry.register(
+                            evidence=replace(sources[0].evidence, duplicate_group_ref="changed-group"),
+                            raw=raws[0], log=log, objects=objects)
+
+                # Recreate the connection and registry, without a raw-reference
+                # dictionary or any caller-held source metadata registration.
+                with psycopg.connect(dsn, autocommit=True) as connection:
+                    registry = XTDBFormationSourceRegistry(
+                        scope=scope, authority_namespace_id=namespace, connection=connection)
+                    self.assertEqual(registry.lookup(events[1].event_id), sources[1])
+                    self.assertEqual(registry.get(raws[0].object_id), raws[0])
+                    allowed = {event.event_id for event in events}
+                    permits = lambda source, purpose: (
+                        purpose == "memory_formation" and source.evidence.ref_id in allowed)
+                    request = FormationPlanningRequest(
+                        scope, namespace, (events[1].event_id,))
+                    prepared = prepare_selected_formation(
+                        request=request, registry=registry, objects=objects, permits=permits)
+                    self.assertEqual(prepared.assembled.closure_refs, (events[0].event_id,))
+                    self.assertEqual(tuple(ref.ref_id for ref in prepared.assembled.packet.evidence),
+                                     tuple(event.event_id for event in events))
+                    self.assertEqual(prepared.assembled.opened_content,
+                        tuple((event.event_id, objects.get(raw))
+                              for event, raw in zip(events, raws)))
+                    with self.assertRaisesRegex(CognitiveKernelContractError, "future-recorded"):
+                        prepare_selected_formation(
+                            request=replace(request, as_of="2020-12-31T23:59:59.000000Z"),
+                            registry=registry, objects=objects, permits=permits)
+                    delivered = record_selected_formation_delivery(
+                        prepared=prepared, log=log, objects=objects,
+                        occurred_at="2026-09-29T12:00:00Z", expected_revision=1,
+                        request_id="registered-formation-delivery")
+                    self.assertEqual(delivered.event.parent_event_ids,
+                                     tuple(event.event_id for event in events))
+                    material = json.loads(objects.get(delivered.raw))
+                    self.assertEqual(material["receipt_sha256"], prepared.receipt.receipt_sha256)
+                    self.assertNotIn("opened_content", material)
+                    allowed.remove(events[0].event_id)
+                    with self.assertRaisesRegex(CognitiveKernelContractError, "source changed"):
+                        record_selected_formation_delivery(
+                            prepared=prepared, log=log, objects=objects,
+                            occurred_at="2026-09-29T12:00:01Z", expected_revision=2,
+                            request_id="revoked-formation-delivery")
+                    self.assertEqual(len(log.replay()), 3)
+        finally:
+            client.close()
+
     def test_fictional_pilot_has_separate_before_and_after_experience(self):
         pilot_path = Path(__file__).resolve().parents[2] / "data/synthetic_pilot/v1.json"
         cases = ("pilot-caregiving-correction", "pilot-coffee-correction",

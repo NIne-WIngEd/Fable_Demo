@@ -6,6 +6,8 @@ This adapter deliberately has no alternate database implementation.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from datetime import datetime
 import hashlib
 import json
 from typing import Any
@@ -41,6 +43,19 @@ def decode_event(data: bytes, scope: ProductHostScope) -> ExperienceEvent:
     return event
 
 
+@dataclass(frozen=True)
+class CommittedExperience:
+    """Verified event with physical append position and availability time.
+
+    ``recorded_at`` comes from KurrentDB, not the source's observation clock.
+    Older clients may omit it; historical formation must then fail closed.
+    """
+
+    event: ExperienceEvent
+    stream_position: int
+    recorded_at: datetime | None
+
+
 class KurrentExperienceLog:
     """Expected-revision append and verified replay for one host stream.
 
@@ -70,19 +85,28 @@ class KurrentExperienceLog:
                              id=event_uuid(event))],
         )
 
-    def replay(self) -> list[ExperienceEvent]:
+    def replay_committed(self) -> tuple[CommittedExperience, ...]:
         from kurrentdbclient.exceptions import NotFoundError
 
         try:
             records = self.client.get_stream(stream_name=self.stream)
         except NotFoundError:
-            return []
-        result: list[ExperienceEvent] = []
+            return ()
+        result: list[CommittedExperience] = []
         for expected_position, record in enumerate(records):
             if record.stream_position != expected_position or record.type != "FableExperienceV1":
                 raise ValueError("unexpected event or gap in Experience stream")
             event = decode_event(record.data, self.scope)
             if record.id != event_uuid(event):
                 raise ValueError("Kurrent event ID differs from the Experience envelope")
-            result.append(event)
-        return result
+            recorded_at = getattr(record, "recorded_at", None)
+            if recorded_at is not None and (
+                not isinstance(recorded_at, datetime)
+                or recorded_at.tzinfo is None or recorded_at.utcoffset() is None
+            ):
+                raise ValueError("Kurrent record time must be timezone-aware")
+            result.append(CommittedExperience(event, expected_position, recorded_at))
+        return tuple(result)
+
+    def replay(self) -> list[ExperienceEvent]:
+        return [record.event for record in self.replay_committed()]

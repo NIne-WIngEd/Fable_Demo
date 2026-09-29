@@ -63,6 +63,12 @@ These repairs address concrete defects. They do not complete the independent wor
 
 Local verification passed 21 component test methods, including five source-use regressions, three seed-contract regressions and a Temporal local-server activity retry check. The Temporal server uses in-memory persistence, so this is not durable server-restart evidence. Seed shape validation and `git diff --check` also passed. The updated pilot regression must additionally pass on real KurrentDB in the audit commit's selected-backend CI.
 
+### Follow-up after the audit
+
+- [Selected-backend run 36619700275](https://github.com/NIne-WIngEd/FloRA/actions/runs/36619700275) passed at audit repair commit `96a6302c`. The audit's updated pilot sequencing and selected-backend restart probes are green.
+- Work continued instead of declaring a model-only pause. The active pin is moving to MFM `4f287a48`, schema 1.2.0. The [registered formation slice](REGISTERED_FORMATION.md) persists source metadata/raw custody in XTDB, preserves actual Kurrent availability time, and reuses upstream routing, parent closure and input receipts. New backend qualification is pending; this is infrastructure integration, not learned formation.
+- Persistent formation-use permissions, recoverable proposal candidates and the paired execution/report harness are being built in parallel. Admission, personal-state governance, qualified runtime artifacts and the other open rows still require follow-through.
+
 ## Actual stopping rule
 
 Do not mark this workstream on break merely because the current component checks pass. First finish the included slice's independent wiring and evaluation infrastructure, with selected-stack failure/recovery evidence and explicit admission interfaces. The runner should reach a named missing-model boundary while preserving all earlier state and lineage.

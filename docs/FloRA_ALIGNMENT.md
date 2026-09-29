@@ -6,7 +6,7 @@ The [frozen FloRA experiment goal](EXPERIMENT_GOAL.md) controls what counts as a
 
 The [2026-09-29 readiness re-audit](READINESS_REAUDIT_2026-09-29.md) supersedes the previous conclusion that only personality and MFM remain. The independent lanes below are not complete. It also records a newer MFM interface and conflicting engine choices in Fable Sleight's execution profile; this map follows the A.L.I.C.E. successor selected by the owner, rather than claiming all product documents already agree.
 
-Sources reviewed: A.L.I.C.E. `main@8ea804aa` `docs/ALICE_PHASE2_REPLACEMENT_AND_FABLE_V1_EXECUTION_PLAN_2026-09-27.md`, `docs/STAGE_G_MEMORY_FABRIC_CANDIDATE_QUALIFICATION_MATRIX.md`, `docs/PHASE2_TO_KERNEL_MEMORY_MIGRATION_PLAN.md`, `docs/FRIDAY_ROADMAP.md`, `docs/FRIDAY_ARCHITECTURE.md`, `docs/FABLE_PERSONAL_DEVELOPMENT_ARCHITECTURE.md`; MFM branch `research/mfm-foundation-20260923@00583fb2` `src/cognitive_kernel/formation_contracts.py`.
+Sources reviewed: A.L.I.C.E. `main@8ea804aa` `docs/ALICE_PHASE2_REPLACEMENT_AND_FABLE_V1_EXECUTION_PLAN_2026-09-27.md`, `docs/STAGE_G_MEMORY_FABRIC_CANDIDATE_QUALIFICATION_MATRIX.md`, `docs/PHASE2_TO_KERNEL_MEMORY_MIGRATION_PLAN.md`, `docs/FRIDAY_ROADMAP.md`, `docs/FRIDAY_ARCHITECTURE.md`, `docs/FABLE_PERSONAL_DEVELOPMENT_ARCHITECTURE.md`; current MFM branch `research/mfm-foundation-20260923@4f287a48` formation contracts, sources, context planner and retrieval router.
 
 ## Full-scale path for the claim
 
@@ -58,3 +58,7 @@ Development environment status: `compose.integration.yml` and GitHub Actions pro
 [Run 36611584250](https://github.com/NIne-WIngEd/FloRA/actions/runs/36611584250) passed a host-bound Ed25519 owner-action signature over the exact Experience deletion event before the quarantine write. It does not qualify a real person's key enrollment or recovery. The fictional [multi-year pilot fixture](../data/synthetic_pilot/v1.json) prepares three source-lineage cases and has no model score.
 
 [Run 36612501266](https://github.com/NIne-WIngEd/FloRA/actions/runs/36612501266) passed two-stage pilot ingestion in separate fictional KurrentDB host streams. The before phase reaches the evidence-verified MFM input boundary before its intervention is appended. The after phase adds one relevant correction, irrelevant correction, or outcome, then rejects a second application. All three carry generated/synthetic provenance. This is prepared input, not learned formation or a judgment result.
+
+[Run 36619700275](https://github.com/NIne-WIngEd/FloRA/actions/runs/36619700275) passed the audit repair commit `96a6302c`, including an explicit before-phase decision before the intervention, actual decision-linked outcome ingestion, and the corrected fictional trial chronology. It qualifies that repair on selected backends; it does not complete the remaining independent lanes.
+
+The next [registered formation slice](REGISTERED_FORMATION.md) integrates current MFM schema 1.2.0 with XTDB durable source/custody references, actual Kurrent record time, parent closure and current permission checks. Its new real-backend and authority-restart checks await the next CI run. Recollection adapters preserve original Experience IDs and route provenance; embeddings and learned selection are not qualified.

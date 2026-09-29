@@ -1,7 +1,9 @@
-"""Evidence-verified MFM input manifest from the selected raw and event planes.
+"""Primitive replay manifest retained for historical component regressions.
 
-This does not infer a memory or grant Claim authority. The model may consume
-authorized bytes separately after this manifest is bound to exact evidence.
+This helper lacks registered identity, physical availability time and lineage
+closure. It is not the current MFM inference entry point. Use formation_context
+with registered custody and independent permissions for the actual model seam.
+This helper neither infers memory nor grants Claim authority.
 """
 
 from __future__ import annotations
