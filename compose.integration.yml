@@ -24,7 +24,16 @@ services:
     volumes:
       - xtdb-data:/var/lib/xtdb
 
+  nats:
+    image: nats:2.12.15-linux
+    command: ["-js", "-sd", "/data"]
+    ports:
+      - "4222:4222"
+    volumes:
+      - nats-data:/data
+
 volumes:
   kurrentdb-data:
   kurrentdb-logs:
   xtdb-data:
+  nats-data:

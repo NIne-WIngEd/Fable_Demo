@@ -14,12 +14,13 @@ The [alignment and build map](docs/FloRA_ALIGNMENT.md) names the selected planes
 
 - `selected/object_store.py` starts the encrypted, content-addressed raw object plane. It keeps host-held keys out of stored objects, confines deduplication to the host and encryption domain, and verifies ciphertext on reads. The local placement implements an opaque object backend; S3-compatible placement, key custody, lifecycle deletion, and backend qualification are still open.
 - `selected/experience.py` maps A.L.I.C.E.'s metadata-only Experience envelope to a scoped KurrentDB stream with expected-revision writes, deterministic event IDs, and verified replay. The Docker integration gate now exercises this against KurrentDB 26.1.1, including retry behavior, stale-revision rejection, replay, and persistence across a service restart.
+- `selected/edge_ingress.py` buffers metadata-only device events in a host-scoped NATS JetStream stream and acknowledges delivery only after replay or an expected-revision KurrentDB commit. The current slice tests one device, duplicate delivery, and cross-host rejection; device-clock conflicts, durable recovery, and multi-device reconciliation remain open.
 - `selected/claims.py` places validated A.L.I.C.E. claim identities, immutable evidence relations and versions, and current projections in XTDB v2. A committed version must cite its exact KurrentDB Experience source; current projection writes check the expected head. The Docker gate exercises valid-time correction reads, cross-host isolation, concurrent immutable writes, and restart persistence.
 - `selected/formation_input.py` binds a manifest to same-host KurrentDB replay and verified raw content for the separately developed MFM. `selected/formation_gate.py` checks a proposal against independently registered evidence and leaves it for adjudication; it grants no claim authority or owner authentication on its own.
 - `selected/source_native.py` reads exact evidence for an active current claim across XTDB, KurrentDB, and the encrypted object plane. It checks host scope, relation targets, replayed event IDs, and raw content digests; a caller must still decide whether it is authorized to expose plaintext to a model.
 - Synthetic component tests and real-backend integration tests cover these boundaries. They are infrastructure evidence, not a Fable capability or behavioral result.
 
-Owner-source authentication, complete conflict/deletion lineage, edge ingress, episodes, graph, vector and source retrieval, Context Planner, personal-state projections, outcome revision, and workflow/recovery path remain open. No model or behavioral score is being inferred from the backend result. See the [backend integration handoff](docs/BACKEND_INTEGRATION_HANDOFF.md) for the exact green boundary.
+Owner-source authentication, complete conflict/deletion lineage, multi-device reconciliation, episodes, graph, vector and wider source retrieval, Context Planner, personal-state projections, outcome revision, and workflow/recovery path remain open. No model or behavioral score is being inferred from the backend result. See the [backend integration handoff](docs/BACKEND_INTEGRATION_HANDOFF.md) for the exact green boundary.
 
 ## Dependencies and evidence gates
 
@@ -35,7 +36,7 @@ The component checks run with Python 3.11+, `cryptography`, `kurrentdbclient~=1.
 PYTHONPATH=../ALICE/src:src python -m unittest discover -s tests -v
 ```
 
-Use synthetic data only. A repeatable Docker environment for the first selected backends now lives in `compose.integration.yml`. The GitHub Actions gate starts the real KurrentDB and XTDB services, runs the integration tests, restarts both services, verifies persistence, captures logs, and tears the stack down. For local use:
+Use synthetic data only. A repeatable Docker environment for the first selected backends now lives in `compose.integration.yml`. The GitHub Actions gate starts real KurrentDB, XTDB, and NATS JetStream services, runs the integration tests, restarts the authority services, verifies persistence, captures logs, and tears the stack down. For local use:
 
 ```bash
 python -m pip install -e '.[backends]'

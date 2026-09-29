@@ -40,7 +40,7 @@ jobs:
             python "$test_file"
           done
 
-      - name: Start selected KurrentDB and XTDB services
+      - name: Start selected KurrentDB, XTDB, and NATS services
         run: docker compose -f compose.integration.yml up -d
 
       - name: Wait for selected services
@@ -64,6 +64,13 @@ jobs:
               echo "XTDB did not become ready"
               exit 1
             fi
+            sleep 2
+          done
+          for attempt in $(seq 1 90); do
+            if python -c 'import socket; s=socket.create_connection(("127.0.0.1", 4222), timeout=1); s.close()' 2>/dev/null; then
+              break
+            fi
+            [ "$attempt" -lt 90 ] || exit 1
             sleep 2
           done
           docker compose -f compose.integration.yml ps

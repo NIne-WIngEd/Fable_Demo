@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
@@ -8,6 +9,7 @@ from threading import Barrier
 import unittest
 
 import psycopg
+import nats
 from kurrentdbclient import KurrentDBClient
 from kurrentdbclient.exceptions import WrongCurrentVersionError
 
@@ -29,6 +31,7 @@ from flora.selected.formation_input import formation_input_from_replay
 from flora.selected.formation_gate import assess_formation
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 from flora.selected.source_native import read_current_sources
+from flora.selected.edge_ingress import EdgePacket, JetStreamEdgeIngress
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -113,6 +116,41 @@ def _text(value: str) -> CanonicalTaggedValue:
 
 
 class SelectedBackendIntegrationTest(unittest.TestCase):
+    def test_nats_edge_intake_commits_only_to_kurrent_authority(self):
+        async def exercise() -> None:
+            scope = _scope("flora-edge-intake")
+            client = await nats.connect(os.environ.get(
+                "NATS_URI", "nats://127.0.0.1:4222"))
+            event_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                ingress = JetStreamEdgeIngress(scope=scope,
+                                               jetstream=client.jetstream())
+                await ingress.create_stream()
+                log = KurrentExperienceLog(scope=scope, client=event_client)
+                event = _event(scope, suffix="edge-one",
+                               occurred_at="2026-09-29T09:00:00Z")
+                packet = EdgePacket("synthetic-device-one", 1, event)
+                await ingress.publish(packet)
+                self.assertEqual(log.replay(), [])
+                self.assertEqual(await ingress.reconcile_one(log=log), packet)
+                self.assertEqual(log.replay(), [event])
+
+                # A distinct delivery of the same immutable event is harmless.
+                retry = EdgePacket("synthetic-device-one", 2, event)
+                await ingress.publish(retry)
+                self.assertEqual(await ingress.reconcile_one(log=log), retry)
+                self.assertEqual(log.replay(), [event])
+                with self.assertRaisesRegex(ValueError, "host scope"):
+                    await ingress.publish(EdgePacket(
+                        "synthetic-device-two", 3,
+                        _event(_scope("different-edge-host"), suffix="foreign",
+                               occurred_at="2026-09-29T09:02:00Z")))
+            finally:
+                event_client.close()
+                await client.close()
+        asyncio.run(exercise())
+
     def test_xtdb_immutable_relation_race_has_one_winner(self):
         scope = _scope("flora-relation-race")
         namespace = "race-claims"
