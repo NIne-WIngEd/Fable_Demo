@@ -16,6 +16,8 @@ import nats
 import ladybug
 from qdrant_client import QdrantClient
 from qdrant_client import models as qdrant_models
+from temporalio.testing import WorkflowEnvironment
+from temporalio.worker import Worker
 from kurrentdbclient import KurrentDBClient
 from kurrentdbclient.exceptions import WrongCurrentVersionError
 
@@ -43,6 +45,10 @@ from flora.selected.decision_outcome import record_decision, record_outcome_obse
 from flora.selected.vector_recollection import QdrantClaimProjection
 from flora.selected.graph_recollection import LadybugEvidenceGraph
 from flora.selected.episodes import XTDBEpisodeCandidates
+from flora.selected.derived_reconciliation import (
+    DerivedCleanupActivities, ReconcileDerivedClaimWorkflow,
+    cleanup_request, cleanup_workflow_id,
+)
 from flora.selected.personal_state import (
     XTDBPersonalStateCandidates, activation_request,
 )
@@ -1242,8 +1248,27 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     source_event_id=second_event.event_id,
                     authority=authority, log=state_log, objects=objects,
                     references=source_refs), ())
+                async def reconcile_derived() -> dict:
+                    activities = DerivedCleanupActivities(
+                        authority=authority, vector=vector_projection,
+                        graph=graph)
+                    request = cleanup_request(
+                        authority=authority, claim_id="claim-integration")
+                    async with await WorkflowEnvironment.start_local() as env:
+                        queue = f"flora-reconcile-integration-{uuid.uuid4()}"
+                        async with Worker(
+                            env.client, task_queue=queue,
+                            workflows=[ReconcileDerivedClaimWorkflow],
+                            activities=[activities.prune_vector,
+                                        activities.prune_graph],
+                        ):
+                            return await env.client.execute_workflow(
+                                ReconcileDerivedClaimWorkflow.run, request,
+                                id=cleanup_workflow_id(request), task_queue=queue)
+                cleanup_receipt = asyncio.run(reconcile_derived())
+                self.assertEqual(cleanup_receipt["graph_removed"], 1)
                 self.assertEqual(graph.prune_noncurrent(
-                    claim_id="claim-integration", authority=authority), 1)
+                    claim_id="claim-integration", authority=authority), 0)
                 with self.assertRaisesRegex(ValueError, "not an active"):
                     read_current_sources(
                         claim_id="claim-integration", authority=authority,
