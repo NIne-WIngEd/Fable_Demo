@@ -635,6 +635,20 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 query_vector=(1.0, 0.0, 0.0, 0.0), authority=authority)
             self.assertEqual([item.source_event_ids for item in candidates],
                              [(second_event.event_id,)])
+            self.assertEqual(vector_projection.prune_noncurrent(
+                claim_id="claim-integration", authority=authority), 2)
+            self.assertEqual(vector_projection.prune_noncurrent(
+                claim_id="claim-integration", authority=authority), 0)
+            points, _ = qdrant.scroll(
+                collection_name=vector_projection.collection,
+                scroll_filter=qdrant_models.Filter(must=[
+                    qdrant_models.FieldCondition(
+                        key="claim_id", match=qdrant_models.MatchValue(
+                            value="claim-integration"))]),
+                with_payload=True,
+            )
+            self.assertEqual([point.payload["claim_version_id"] for point in points],
+                             ["claim-integration-v2"])
             with self.assertRaisesRegex(ValueError, "stale"):
                 authority.put_current(first_projection, expected_previous=first_projection)
 

@@ -71,6 +71,49 @@ class QdrantClaimProjection:
             raise ValueError("vector does not match the finite model dimension")
         return [float(item) for item in value]
 
+    def _point_id(self, version_id: str) -> str:
+        return str(uuid.uuid5(uuid.NAMESPACE_OID,
+            f"{self.collection}:{version_id}"))
+
+    def _current_binding(self, authority: XTDBClaimAuthority,
+                         claim_id: str) -> tuple[str, str, set[str]] | None:
+        try:
+            current = authority.load_current(claim_id)
+            if (current["deletion_state"] != "active"
+                    or current["conflict_state"] != "none"
+                    or current["adjudication_state"] not in {"accepted", "revised"}):
+                return None
+            version_id = current["current_claim_version_id"]
+            version = authority.load_version(version_id)
+            if version["claim_id"] != claim_id:
+                return None
+            sources = {
+                authority.load_evidence_relation(relation_id)["evidence_record_id"]
+                for relation_id in version["evidence_relation_ids"]
+            }
+            return version_id, current["projection_id"], sources
+        except KeyError:
+            return None
+
+    def _matches_binding(self, *, payload: dict, point_id: str,
+                         binding: tuple[str, str, set[str]] | None,
+                         authority: XTDBClaimAuthority) -> bool:
+        if binding is None:
+            return False
+        version_id, projection_id, sources = binding
+        source_ids = payload.get("source_event_ids")
+        return (
+            point_id == self._point_id(version_id)
+            and payload.get("claim_version_id") == version_id
+            and payload.get("projection_id") == projection_id
+            and payload.get("authority_scope_digest") == authority.scope_digest
+            and payload.get("embedding_artifact_sha256") == self.embedding_artifact_sha256
+            and isinstance(source_ids, list)
+            and all(isinstance(item, str) for item in source_ids)
+            and len(source_ids) == len(sources)
+            and set(source_ids) == sources
+        )
+
     def index_current(
         self, *, claim_id: str, vector: Sequence[float],
         authority: XTDBClaimAuthority, log: KurrentExperienceLog,
@@ -83,8 +126,7 @@ class QdrantClaimProjection:
             claim_id=claim_id, authority=authority, log=log,
             objects=objects, references=references)
         value = self._vector(vector)
-        point_id = str(uuid.uuid5(uuid.NAMESPACE_OID,
-            f"{self.collection}:{packet.claim_version_id}"))
+        point_id = self._point_id(packet.claim_version_id)
         source_ids = tuple(item.event_id for item in packet.sources)
         self.client.upsert(collection_name=self.collection, wait=True, points=[
             models.PointStruct(
@@ -95,6 +137,7 @@ class QdrantClaimProjection:
                     "projection_id": packet.projection_id,
                     "source_event_ids": list(source_ids),
                     "embedding_artifact_sha256": self.embedding_artifact_sha256,
+                    "authority_scope_digest": authority.scope_digest,
                 },
             )
         ])
@@ -120,38 +163,49 @@ class QdrantClaimProjection:
             version_id = payload.get("claim_version_id")
             if not isinstance(claim_id, str) or not isinstance(version_id, str):
                 continue
-            try:
-                current = authority.load_current(claim_id)
-            except KeyError:
-                continue
-            if (current["current_claim_version_id"] != version_id
-                    or current["projection_id"] != payload.get("projection_id")
-                    or current["deletion_state"] != "active"
-                    or current["conflict_state"] != "none"
-                    or current["adjudication_state"] not in {"accepted", "revised"}):
-                continue
-            source_ids = payload.get("source_event_ids")
-            if not isinstance(source_ids, list) or not all(
-                isinstance(item, str) for item in source_ids
+            binding = self._current_binding(authority, claim_id)
+            if not self._matches_binding(
+                payload=payload, point_id=str(point.id), binding=binding,
+                authority=authority,
             ):
                 continue
-            if payload.get("embedding_artifact_sha256") != self.embedding_artifact_sha256:
-                continue
-            try:
-                version = authority.load_version(version_id)
-                registered_sources = {
-                    authority.load_evidence_relation(relation_id)["evidence_record_id"]
-                    for relation_id in version["evidence_relation_ids"]
-                }
-            except KeyError:
-                continue
-            if (version["claim_id"] != claim_id
-                    or len(registered_sources) != len(source_ids)
-                    or set(source_ids) != registered_sources):
-                continue
             result.append(VectorCandidate(
-                claim_id, version_id, current["projection_id"],
-                tuple(source_ids), float(point.score)))
+                claim_id, version_id, binding[1],
+                tuple(payload["source_event_ids"]), float(point.score)))
             if len(result) == limit:
                 break
         return tuple(result)
+
+    def prune_noncurrent(self, *, claim_id: str,
+                         authority: XTDBClaimAuthority) -> int:
+        """Remove obsolete or unbound derived points after an authority change.
+
+        This is safe to retry. Read-time authority filtering remains mandatory:
+        XTDB and Qdrant do not update atomically, and a cleanup may lag.
+        """
+        if authority.scope != self.scope:
+            raise ValueError("vector reconciliation crosses host scope")
+        binding = self._current_binding(authority, claim_id)
+        offset = None
+        obsolete: list[str | int] = []
+        while True:
+            points, offset = self.client.scroll(
+                collection_name=self.collection,
+                scroll_filter=models.Filter(must=[models.FieldCondition(
+                    key="claim_id", match=models.MatchValue(value=claim_id))]),
+                limit=128, offset=offset, with_payload=True, with_vectors=False,
+            )
+            for point in points:
+                if not self._matches_binding(
+                    payload=point.payload or {}, point_id=str(point.id),
+                    binding=binding, authority=authority,
+                ):
+                    obsolete.append(point.id)
+            if offset is None:
+                break
+        if obsolete:
+            self.client.delete(
+                collection_name=self.collection,
+                points_selector=models.PointIdsList(points=obsolete), wait=True,
+            )
+        return len(obsolete)
