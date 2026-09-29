@@ -22,6 +22,7 @@ from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
 from cognitive_kernel.memory_contracts import MemoryUnitEnvelope
 from flora.selected.claims import XTDBClaimAuthority
+from flora.selected.authority_binding import bind_claim_source
 from flora.selected.experience import KurrentExperienceLog
 from flora.selected.formation_input import formation_input_from_replay
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
@@ -31,10 +32,11 @@ PROVENANCE_DIGEST = "a" * 64
 CONTENT_DIGEST = "b" * 64
 
 
-def _event(scope: ProductHostScope, *, suffix: str, occurred_at: str) -> ExperienceEvent:
+def _event(scope: ProductHostScope, *, suffix: str, occurred_at: str,
+           event_type: str = "observation", parent_event_ids: tuple[str, ...] = ()) -> ExperienceEvent:
     payload = f"synthetic-{suffix}".encode()
     return ExperienceEvent.create(
-        event_type="observation",
+        event_type=event_type,
         scope=scope,
         occurred_at=occurred_at,
         content_digest=hashlib.sha256(payload).hexdigest(),
@@ -47,6 +49,7 @@ def _event(scope: ProductHostScope, *, suffix: str, occurred_at: str) -> Experie
         retention_class="ordinary_experience",
         storage_tier="raw_buffer",
         payload_reference=f"raw-{suffix}",
+        parent_event_ids=parent_event_ids,
     )
 
 
@@ -236,6 +239,20 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 authority_namespace_id=namespace,
                 connection=connection,
             )
+            first_event = _event(scope, suffix="claim-source-one",
+                occurred_at="2026-09-01T00:00:00Z")
+            second_event = _event(scope, suffix="claim-source-two",
+                occurred_at="2026-09-15T00:00:00Z", event_type="correction",
+                parent_event_ids=(first_event.event_id,))
+            event_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                experience_log = KurrentExperienceLog(scope=scope, client=event_client)
+                experience_log.append(first_event, expected_revision=-1)
+                experience_log.append(second_event, expected_revision=0)
+                replayed = experience_log.replay()
+            finally:
+                event_client.close()
 
             identity = ClaimIdentity.create(
                 envelope=_envelope(
@@ -264,10 +281,10 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     record_type="claim_evidence_relation",
                     authority_role="claim_authority",
                     created_at="2026-09-01T00:00:00Z",
-                    source_records=("evidence-one", "claim-integration-v1"),
+                    source_records=(first_event.event_id, "claim-integration-v1"),
                 ),
                 relation_id="relation-integration-v1",
-                evidence_record_id="evidence-one",
+                evidence_record_id=first_event.event_id,
                 target_record_id="claim-integration-v1",
                 target_record_type="claim_version",
                 relation_type="support", source_class="experience",
@@ -288,7 +305,7 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     record_type="claim_version",
                     authority_role="claim_authority",
                     created_at="2026-09-01T00:00:00Z",
-                    source_records=("claim-integration", "evidence-one", first_relation.relation_id),
+                    source_records=("claim-integration", first_event.event_id, first_relation.relation_id),
                 ),
                 claim_version_id="claim-integration-v1",
                 claim_id="claim-integration",
@@ -324,6 +341,8 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 source_position=1,
             )
             first_projection.assert_projects(identity, first_version)
+            self.assertEqual(bind_claim_source(version=first_version,
+                relations=(first_relation,), replayed=replayed).stream_position, 0)
             authority.put_version(first_version)
             authority.put_current(first_projection)
             authority.put_current(first_projection)  # Same immutable request is idempotent.
@@ -344,10 +363,10 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     record_type="claim_evidence_relation",
                     authority_role="claim_authority",
                     created_at="2026-09-15T00:00:00Z",
-                    source_records=("evidence-two", "claim-integration-v2"),
+                    source_records=(second_event.event_id, "claim-integration-v2"),
                 ),
                 relation_id="relation-integration-v2",
-                evidence_record_id="evidence-two",
+                evidence_record_id=second_event.event_id,
                 target_record_id="claim-integration-v2",
                 target_record_type="claim_version",
                 relation_type="correction", source_class="experience",
@@ -365,7 +384,7 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     record_type="claim_version",
                     authority_role="claim_authority",
                     created_at="2026-09-15T00:00:00Z",
-                    source_records=("claim-integration", "evidence-two", second_relation.relation_id),
+                    source_records=("claim-integration", second_event.event_id, second_relation.relation_id),
                     supersedes=("claim-integration-v1",),
                     logical_clock=2,
                 ),
@@ -406,6 +425,11 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 source_position=2,
             )
             second_projection.assert_projects(identity, second_version)
+            self.assertEqual(bind_claim_source(version=second_version,
+                relations=(second_relation,), replayed=replayed).stream_position, 1)
+            with self.assertRaisesRegex(ValueError, "no replayed"):
+                bind_claim_source(version=second_version, relations=(second_relation,),
+                                  replayed=replayed[:1])
             authority.put_version(second_version)
             with self.assertRaisesRegex(ValueError, "head exists"):
                 authority.put_current(second_projection)
