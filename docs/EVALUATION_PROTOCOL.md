@@ -1,0 +1,9 @@
+# FloRA evaluation protocol contract
+
+The [experiment goal](EXPERIMENT_GOAL.md) is frozen. Its numerical win threshold and actual cohort are **not** frozen. Before final evaluation, a pilot must determine those values and a dated manifest must lock the cases, baseline design, rubric, thresholds, and builder recipe. This module validates that manifest and the attempt receipts; it does not author the missing values.
+
+`EvaluationProtocol` specifies held-out cases, before/after history digests, sealed rubric digests, a common feature engine, response and wall-time budgets, a strong general-model-plus-memory baseline design, and builder transfer hosts isolated from the evaluation hosts. Every case requires three arms at both time points: full FloRA, the general model with memory, and an ablation given the **same selected evidence** as FloRA without its personal judgment update. All arms receive the same authorized raw-history digest and feature engine for that case and phase. The general baseline can select its own evidence from that equal history.
+
+`validate_paired_run` rejects missing or duplicate attempts, cross-host records, changed histories or budgets, and an ablation with different selected evidence. An attempt carries hashes for delivered context, output, and artifact lineage. No result, score, or customer claim follows merely from a complete receipt matrix.
+
+Still required before final scoring: a serious implemented comparator, pilot, frozen numerical thresholds and sample size, qualified MFM and personality output, blind human assessment, per-host relevant and irrelevant change metrics, latency analysis, failure reporting, and a second isolated host built by a small FBM. Synthetic histories test a mechanism; consenting real-host evaluation is separate evidence.

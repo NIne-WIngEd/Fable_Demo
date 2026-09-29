@@ -4,6 +4,8 @@ An experiment for one Fable claim: after a host corrects a relevant belief or pr
 
 The [frozen experiment goal](docs/EXPERIMENT_GOAL.md) defines the product comparison, mechanism ablation, cross-host builder test, and evidence rules. Numerical acceptance thresholds will be preregistered before the final evaluation.
 
+The [evaluation protocol contract](docs/EVALUATION_PROTOCOL.md) now checks equal authorized histories and budgets, the same-evidence ablation, complete paired attempts, and isolated builder transfer hosts. It holds the structure for a later preregistration; it contains no fabricated model result or frozen numerical threshold.
+
 Material build decisions and failures are captured as [FBM process seeds](docs/fbm-seeds/README.md) using the A.L.I.C.E. builder trace schema. They teach the future builder how this infrastructure was constructed; they are not trained builder weights.
 
 **Status: infrastructure under construction.** There is no conversational demo, trained personality model, Memory Formation Model (MFM), builder, qualified behavioral result, or consumer release here yet. The personality and MFM are being developed in separate workstreams. This repository builds the other demo infrastructure and will integrate their qualified outputs when ready.
