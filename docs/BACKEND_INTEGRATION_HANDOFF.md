@@ -8,6 +8,8 @@ The original green receipt below is historical. The later [run 36541803371](http
 
 Owner-source authentication, full conflict adjudication, deletion/influence removal, projection rebuild, and all later planes remain open. A synthetic owner-source verifier is not authentication. This checkpoint is backend integration evidence, not a qualified memory or behavioral result.
 
+The subsequent [run 36542838235](https://github.com/NIne-WIngEd/FloRA/actions/runs/36542838235) passed at `489bce9099008074b12e1b537b77b5520fc12aa1`. It adds exact source reads spanning XTDB, KurrentDB replay, and encrypted raw objects across an as-of correction, plus a real NATS JetStream metadata-only intake that commits to KurrentDB before acknowledging. This is one device/duplicate-delivery evidence. It does not establish durable NATS recovery, device-clock conflict policy, multi-device reconciliation, or permission to disclose retrieved plaintext to a model.
+
 ## Authority boundary
 
 - A.L.I.C.E. Phase 2 is not an active implementation basis here.
