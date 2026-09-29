@@ -92,7 +92,7 @@ jobs:
         run: python scripts/backend_restart_probe.py verify --retry-seconds 15
 
       - name: Restart selected services
-        run: docker compose -f compose.integration.yml restart kurrentdb xtdb
+        run: docker compose -f compose.integration.yml restart kurrentdb xtdb nats
 
       - name: Wait after restart
         run: |
@@ -111,9 +111,16 @@ jobs:
             [ "$attempt" -lt 90 ] || exit 1
             sleep 2
           done
+          for attempt in $(seq 1 90); do
+            if python -c 'import socket; s=socket.create_connection(("127.0.0.1", 4222), timeout=1); s.close()' 2>/dev/null; then
+              break
+            fi
+            [ "$attempt" -lt 90 ] || exit 1
+            sleep 2
+          done
 
       - name: Verify persistence after restart
-        run: python scripts/backend_restart_probe.py verify --retry-seconds 30
+        run: python scripts/backend_restart_probe.py verify --retry-seconds 30 --consume-edge
 
       - name: Capture selected-backend logs
         if: always()
