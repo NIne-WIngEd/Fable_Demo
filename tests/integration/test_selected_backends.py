@@ -54,6 +54,7 @@ from flora.selected.derived_reconciliation import (
 from flora.selected.owner_authorization import (
     Ed25519OwnerActionVerifier, OwnerActionProof, owner_action_message,
 )
+from flora.pilot_ingress import materialize_before, apply_intervention
 from flora.selected.personal_state import (
     XTDBPersonalStateCandidates, activation_request,
 )
@@ -148,6 +149,48 @@ def _text(value: str) -> CanonicalTaggedValue:
 
 
 class SelectedBackendIntegrationTest(unittest.TestCase):
+    def test_fictional_pilot_has_separate_before_and_after_experience(self):
+        pilot_path = Path(__file__).resolve().parents[2] / "data/synthetic_pilot/v1.json"
+        cases = ("pilot-caregiving-correction", "pilot-coffee-correction",
+                 "pilot-commute-outcome")
+        for case_id in cases:
+            scope = _scope(f"fictional-host-mira-{case_id}")
+            with tempfile.TemporaryDirectory() as directory:
+                objects = EncryptedObjectPlane(
+                    scope=scope, key=b"s" * 32,
+                    backend=LocalObjectBackend(Path(directory) / "objects"))
+                client = KurrentDBClient(os.environ.get(
+                    "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+                try:
+                    log = KurrentExperienceLog(scope=scope, client=client)
+                    before = materialize_before(
+                        path=pilot_path, case_id=case_id, scope=scope,
+                        log=log, objects=objects)
+                    before_ids = tuple(before.event_by_source_id.values())
+                    packet = formation_input_from_replay(
+                        log=log, event_ids=before_ids,
+                        references=before.references,
+                        modalities={item: "text" for item in before_ids},
+                        objects=objects, authority_namespace_id="pilot-formation")
+                    self.assertEqual(len(packet.experience_refs), len(before_ids))
+                    after = apply_intervention(
+                        path=pilot_path, checkpoint=before,
+                        log=log, objects=objects)
+                    self.assertNotEqual(before.history_sha256,
+                                        after.history_sha256)
+                    replayed = log.replay()
+                    self.assertEqual([event.event_id for event in replayed[:-1]],
+                                     list(before_ids))
+                    self.assertEqual(len(after.event_by_source_id), len(before_ids) + 1)
+                    self.assertEqual(replayed[-1].provenance.provenance_type,
+                                     "generated_reconstruction")
+                    with self.assertRaisesRegex(ValueError, "exact before"):
+                        apply_intervention(
+                            path=pilot_path, checkpoint=before,
+                            log=log, objects=objects)
+                finally:
+                    client.close()
+
     def test_decision_and_observed_outcome_keep_source_lineage(self):
         scope = _scope("flora-decision-outcome")
         with tempfile.TemporaryDirectory() as directory:

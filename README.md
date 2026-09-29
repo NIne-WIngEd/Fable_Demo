@@ -7,6 +7,7 @@ The [frozen experiment goal](docs/EXPERIMENT_GOAL.md) defines the product compar
 The [evaluation protocol contract](docs/EVALUATION_PROTOCOL.md) now checks equal authorized histories and budgets, the same-evidence ablation, complete paired attempts, and isolated builder transfer hosts. It holds the structure for a later preregistration; it contains no fabricated model result or frozen numerical threshold.
 
 A [fictional multi-year pilot fixture](data/synthetic_pilot/v1.json) supplies source histories for relevant correction, irrelevant correction, and outcome cases. It prepares the harness without exposing anyone's private life or claiming a scored result.
+The [pilot ingestion path](docs/EVALUATION_PROTOCOL.md) materializes each case in an isolated KurrentDB and encrypted-object scope in two phases, so the intervention is absent during the before phase.
 
 Material build decisions and failures are captured as [FBM process seeds](docs/fbm-seeds/README.md) using the A.L.I.C.E. builder trace schema. They teach the future builder how this infrastructure was constructed; they are not trained builder weights.
 
