@@ -1,6 +1,6 @@
 # Selected-backend integration handoff — 2026-09-28
 
-This note is the takeover point after provisioning the first Docker-capable successor-fabric environment for Flora.
+This note is the takeover point after provisioning the first Docker-capable successor-fabric environment for FloRA.
 
 ## Authority boundary
 

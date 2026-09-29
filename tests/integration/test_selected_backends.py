@@ -1,6 +1,10 @@
 from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import os
+from pathlib import Path
+import tempfile
+from threading import Barrier
 import unittest
 
 import psycopg
@@ -19,6 +23,8 @@ from cognitive_kernel.experience import ExperienceEvent
 from cognitive_kernel.memory_contracts import MemoryUnitEnvelope
 from flora.selected.claims import XTDBClaimAuthority
 from flora.selected.experience import KurrentExperienceLog
+from flora.selected.formation_input import formation_input_from_replay
+from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -100,6 +106,86 @@ def _text(value: str) -> CanonicalTaggedValue:
 
 
 class SelectedBackendIntegrationTest(unittest.TestCase):
+    def test_xtdb_immutable_relation_race_has_one_winner(self):
+        scope = _scope("flora-relation-race")
+        namespace = "race-claims"
+        relation_id = "relation-race-one"
+        dsn = os.environ.get("XTDB_DSN", "postgresql://xtdb@127.0.0.1:5432/xtdb")
+        barrier = Barrier(2)
+
+        def contender(source: str) -> str:
+            relation = ClaimEvidenceRelation.create(
+                envelope=_envelope(
+                    scope=scope, authority_namespace_id=namespace,
+                    record_id=relation_id, record_type="claim_evidence_relation",
+                    authority_role="claim_authority",
+                    created_at="2026-09-01T00:00:00Z",
+                    source_records=(source, "claim-race-v1"),
+                ),
+                relation_id=relation_id, evidence_record_id=source,
+                target_record_id="claim-race-v1", target_record_type="claim_version",
+                relation_type="support", source_class="experience",
+                source_authority_class="historical_experience",
+                extractor_component_id="flora-integration", extractor_version="v1",
+                confidence=0.5,
+            )
+            try:
+                with psycopg.connect(dsn, autocommit=True) as connection:
+                    authority = XTDBClaimAuthority(scope=scope,
+                        authority_namespace_id=namespace, connection=connection)
+                    barrier.wait(timeout=20)
+                    authority.put_evidence_relation(relation)
+                return "accepted"
+            except (ValueError, psycopg.Error):
+                return "rejected"
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(contender, ("evidence-left", "evidence-right")))
+        self.assertEqual(sorted(results), ["accepted", "rejected"])
+        with psycopg.connect(dsn, autocommit=True) as connection:
+            authority = XTDBClaimAuthority(scope=scope,
+                authority_namespace_id=namespace, connection=connection)
+            stored = authority.load_evidence_relation(relation_id)
+            self.assertIn(stored["evidence_record_id"], ("evidence-left", "evidence-right"))
+
+    def test_raw_experience_replay_binds_mfm_input_without_granting_authority(self):
+        scope = _scope("flora-formation")
+        with tempfile.TemporaryDirectory() as directory:
+            objects = EncryptedObjectPlane(scope=scope, key=b"f" * 32,
+                backend=LocalObjectBackend(Path(directory) / "objects"))
+            raw = objects.put(b"synthetic, unverified experience")
+            event = ExperienceEvent.create(
+                event_type="observation", scope=scope,
+                occurred_at="2026-09-28T21:00:00Z", content_digest=raw.plaintext_sha256,
+                provenance=ProvenanceReference.create(
+                    provenance_type="derived_inference",
+                    source_reference_ids=(raw.object_id,),
+                    derivation_activity_id="flora-formation-test",
+                    responsible_component="synthetic-test"),
+                retention_class="ordinary_experience", storage_tier="raw_buffer",
+                payload_reference=raw.object_id,
+            )
+            client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                log = KurrentExperienceLog(scope=scope, client=client)
+                log.append(event, expected_revision=-1)
+                packet = formation_input_from_replay(
+                    log=log, event_ids=(event.event_id,),
+                    references={raw.object_id: raw},
+                    modalities={event.event_id: "text"}, objects=objects,
+                    authority_namespace_id="host-claims")
+                self.assertEqual(packet.experience_refs, (event.event_id,))
+                self.assertEqual(packet.evidence[0].role, "historical_experience")
+                with self.assertRaisesRegex(ValueError, "absent"):
+                    formation_input_from_replay(
+                        log=log, event_ids=("experience-fabricated",),
+                        references={raw.object_id: raw},
+                        modalities={event.event_id: "text"}, objects=objects,
+                        authority_namespace_id="host-claims")
+            finally:
+                client.close()
+
     def test_kurrent_expected_revision_idempotency_and_replay(self):
         scope = _scope("integration-kurrent")
         client = KurrentDBClient(

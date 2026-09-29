@@ -1,4 +1,4 @@
-name: Flora selected backend evidence path
+name: FloRA selected backend evidence path
 
 on:
   push:

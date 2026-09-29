@@ -12,6 +12,7 @@ from cognitive_kernel.experience import ExperienceEvent
 from cognitive_kernel.formation_contracts import FormationContextPacket, FormationEvidenceRef
 
 from .object_store import EncryptedObjectPlane, RawObjectReference
+from .experience import KurrentExperienceLog
 
 
 def formation_input(*, events: Sequence[ExperienceEvent],
@@ -41,3 +42,20 @@ def formation_input(*, events: Sequence[ExperienceEvent],
         experience_refs=tuple(event.event_id for event in events), evidence=tuple(refs))
     packet.validate()
     return packet
+
+
+def formation_input_from_replay(*, log: KurrentExperienceLog,
+                                event_ids: Sequence[str],
+                                references: dict[str, RawObjectReference],
+                                modalities: dict[str, str],
+                                objects: EncryptedObjectPlane,
+                                authority_namespace_id: str) -> FormationContextPacket:
+    """Bind formation to the real Experience stream, not caller-made events."""
+    if log.scope != objects.scope or not event_ids or len(set(event_ids)) != len(event_ids):
+        raise ValueError("formation replay must select unique events within one host")
+    replayed = {event.event_id: event for event in log.replay()}
+    if not set(event_ids).issubset(replayed):
+        raise ValueError("formation evidence is absent from Experience replay")
+    return formation_input(events=[replayed[event_id] for event_id in event_ids],
+        references=references, modalities=modalities, objects=objects,
+        authority_namespace_id=authority_namespace_id)
