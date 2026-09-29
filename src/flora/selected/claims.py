@@ -26,6 +26,7 @@ _IDENTITIES = "fable_claim_identities"
 _VERSIONS = "fable_claim_versions"
 _CURRENT = "fable_current_claims"
 _EVIDENCE = "fable_claim_evidence_relations"
+_HEAD = "fable_claim_heads"
 
 
 def _timestamp(value: str) -> datetime:
@@ -209,6 +210,14 @@ class XTDBClaimAuthority:
 
     def put_version(self, version: ClaimVersion) -> None:
         self._assert_envelope(version)
+        if version.adjudication_state in {"accepted", "revised"} and not version.evidence_relation_ids:
+            raise ValueError("accepted or revised claim needs exact evidence relations")
+        for relation_id in version.evidence_relation_ids:
+            relation = self.load_evidence_relation(relation_id)
+            if (relation["target_record_id"] != version.claim_version_id
+                    or relation["target_record_type"] != "claim_version"
+                    or relation["evidence_record_id"] not in version.envelope.source_records):
+                raise ValueError("claim version evidence relation does not bind its source")
         row_id = self._row_id(version.claim_version_id)
         prior = self._fetch_record(table=_VERSIONS, row_id=row_id, all_valid=True)
         if prior is not None:
@@ -271,38 +280,62 @@ class XTDBClaimAuthority:
             raise KeyError(relation_id)
         return json.loads(str(row["record_json"]))
 
-    def put_current(self, projection: CurrentClaimProjection) -> None:
+    def put_current(self, projection: CurrentClaimProjection, *,
+                    expected_previous: CurrentClaimProjection | None = None) -> None:
         self._assert_envelope(projection)
         valid_from = _timestamp(projection.envelope.valid_from)
         row_id = self._row_id(projection.claim_id)
-        prior = self._fetch_record(
-            table=_CURRENT,
-            row_id=row_id,
-            valid_time=valid_from,
-        )
-        if prior is not None and (
-            str(prior["projection_sha256"]) == projection.projection_sha256
-        ):
+        identity = self._fetch_record(table=_IDENTITIES,
+                                      row_id=self._row_id(projection.claim_id), all_valid=True)
+        version = self._fetch_record(table=_VERSIONS,
+                                     row_id=self._row_id(projection.current_claim_version_id), all_valid=True)
+        if identity is None or version is None or version["claim_id"] != projection.claim_id:
+            raise ValueError("projection lacks committed identity and claim version")
+        if int(version["store_sequence"]) > projection.source_position:
+            raise ValueError("projection precedes the committed claim version")
+        prior = self._fetch_record(table=_HEAD, row_id=row_id)
+        if prior is not None and str(prior["projection_sha256"]) == projection.projection_sha256:
             return
-        self._insert(
-            table=_CURRENT,
-            columns={
-                "_id": row_id,
-                "scope_digest": self.scope_digest,
-                "claim_id": projection.claim_id,
-                "current_claim_version_id": projection.current_claim_version_id,
-                "projection_generation": projection.projection_generation,
-                "source_position": projection.source_position,
-                "projection_sha256": projection.projection_sha256,
-                "record_json": _record_json(projection.metadata_record()),
-            },
-            valid_from=valid_from,
-            valid_to=(
-                None
-                if projection.envelope.valid_to is None
-                else _timestamp(projection.envelope.valid_to)
-            ),
-        )
+        if expected_previous is None:
+            if prior is not None or projection.projection_generation != 1:
+                raise ValueError("claim head exists or initial generation is invalid")
+        else:
+            self._assert_envelope(expected_previous)
+            if (prior is None or prior["projection_sha256"] != expected_previous.projection_sha256
+                    or expected_previous.claim_id != projection.claim_id
+                    or projection.projection_generation != expected_previous.projection_generation + 1
+                    or expected_previous.projection_id not in projection.envelope.supersedes
+                    or projection.source_position <= expected_previous.source_position):
+                raise ValueError("stale or invalid expected claim head")
+
+        columns = {
+            "_id": row_id,
+            "scope_digest": self.scope_digest,
+            "claim_id": projection.claim_id,
+            "current_claim_version_id": projection.current_claim_version_id,
+            "projection_generation": projection.projection_generation,
+            "source_position": projection.source_position,
+            "projection_sha256": projection.projection_sha256,
+            "record_json": _record_json(projection.metadata_record()),
+        }
+        valid_to = (None if projection.envelope.valid_to is None
+                    else _timestamp(projection.envelope.valid_to))
+        with self.connection.transaction():
+            if expected_previous is None:
+                self.connection.execute(
+                    f"ASSERT NOT EXISTS (SELECT 1 FROM {_HEAD} WHERE _id = %s::text)",
+                    (row_id,),
+                )
+            else:
+                self.connection.execute(
+                    f"ASSERT EXISTS (SELECT 1 FROM {_HEAD} WHERE _id = %s::text "
+                    "AND projection_sha256 = %s::text)",
+                    (row_id, expected_previous.projection_sha256),
+                )
+            self._insert(table=_CURRENT, columns=columns,
+                         valid_from=valid_from, valid_to=valid_to)
+            self._insert(table=_HEAD, columns=columns,
+                         valid_from=valid_from, valid_to=None)
 
     def load_current(
         self,

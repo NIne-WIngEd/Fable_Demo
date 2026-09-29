@@ -240,6 +240,7 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
             first_projection.assert_projects(identity, first_version)
             authority.put_version(first_version)
             authority.put_current(first_projection)
+            authority.put_current(first_projection)  # Same immutable request is idempotent.
 
             before_change = authority.load_current(
                 "claim-integration",
@@ -320,7 +321,12 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
             )
             second_projection.assert_projects(identity, second_version)
             authority.put_version(second_version)
-            authority.put_current(second_projection)
+            with self.assertRaisesRegex(ValueError, "head exists"):
+                authority.put_current(second_projection)
+            authority.put_current(second_projection, expected_previous=first_projection)
+            authority.put_current(second_projection, expected_previous=first_projection)
+            with self.assertRaisesRegex(ValueError, "stale"):
+                authority.put_current(first_projection, expected_previous=first_projection)
 
             still_before = authority.load_current(
                 "claim-integration",
