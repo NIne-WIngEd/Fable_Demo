@@ -4,6 +4,10 @@ This note is the takeover point after provisioning the first Docker-capable succ
 
 ## Current checkpoint — 2026-09-29
 
+The latest green receipt is [run 36574921127](https://github.com/NIne-WIngEd/FloRA/actions/runs/36574921127). Since the original handoff, the selected-backend gate has also passed Qdrant current-claim indexing, source-bound authority filtering and obsolete-point cleanup; a pending NATS event across restart; separate XTDB host/relationship/assistant-self candidate state; exact KurrentDB approval and activation with a synthetic verifier; and an outcome-linked revision that stays a candidate while the older approved state remains active. See the [alignment map](FloRA_ALIGNMENT.md) and [candidate-state boundary](PERSONAL_STATE_CANDIDATES.md) for scope and gaps. This is infrastructure evidence, not a trained memory, native judgment, or builder transfer result.
+
+The earlier receipts and original engineering checklist below are preserved as historical checkpoints; their "next" list no longer describes every completed slice.
+
 The original green receipt below is historical. The later [run 36541803371](https://github.com/NIne-WIngEd/FloRA/actions/runs/36541803371) passed at commit `1fba75318b807c95312104e44bcaaf2741f0945d`. It additionally exercises immutable evidence relations, a one-winner XTDB relation race, formation input from actual KurrentDB replay, a deterministic pre-adjudication gate, source binding of a claim version to its replayed event position, and expected-head current projection writes. The restart probe is read before shutdown and then polled for at most 30 seconds after restart. One prior run failed an immediate XTDB post-health read; its rerun passed, so recovery timing is plausible but not proven as the root cause.
 
 Owner-source authentication, full conflict adjudication, deletion/influence removal, projection rebuild, and all later planes remain open. A synthetic owner-source verifier is not authentication. This checkpoint is backend integration evidence, not a qualified memory or behavioral result.
