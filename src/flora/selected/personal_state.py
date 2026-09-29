@@ -41,6 +41,7 @@ _TYPE_PAIRS = {
 class VerifiedStateCandidate:
     record: dict[str, object]
     content: bytes = field(repr=False)
+    approval_event_id: str | None = None
 
 
 class StateApprovalVerifier(Protocol):
@@ -349,7 +350,8 @@ class XTDBPersonalStateCandidates:
         version_id = str(candidate.record["version_id"])
         if (prior is not None and prior["version_id"] == version_id
                 and prior["approval_event_id"] == event.event_id):
-            return candidate
+            return VerifiedStateCandidate(candidate.record, candidate.content,
+                                          event.event_id)
         if expected_active_version_id is None:
             if prior is not None:
                 raise ValueError("active personal state already exists")
@@ -387,7 +389,8 @@ class XTDBPersonalStateCandidates:
                      prior["approval_event_id"]),
                 )
             self.connection.execute(sql, tuple(columns.values()))
-        return candidate
+        return VerifiedStateCandidate(candidate.record, candidate.content,
+                                      event.event_id)
 
     def read_active(
         self, *, subject_type: str, subject_id: str, projection_id: str,
@@ -416,4 +419,5 @@ class XTDBPersonalStateCandidates:
         )
         if event.event_sha256 != head["approval_event_sha256"]:
             raise ValueError("active personal-state approval event changed")
-        return candidate
+        return VerifiedStateCandidate(candidate.record, candidate.content,
+                                      event.event_id)

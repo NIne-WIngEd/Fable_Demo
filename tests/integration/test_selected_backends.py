@@ -44,6 +44,10 @@ from flora.selected.personal_state import (
     XTDBPersonalStateCandidates, activation_request,
 )
 from flora.selected.outcome_revision import register_outcome_revision
+from flora.selected.context import (
+    ContextPlan, LocalContext, StateRoute, assemble_context,
+    record_context_delivery, record_contextual_decision,
+)
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -874,13 +878,81 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                                     if key != approval_raw.object_id},
                         verifier=SyntheticApprovalVerifier(True))
 
-                decision = record_decision(
+                class SyntheticContextPolicy:
+                    def __init__(self, allowed: bool):
+                        self.allowed = allowed
+
+                    def allow_claim(self, claim_id, purpose):
+                        return self.allowed and claim_id == "claim-integration"
+
+                    def allow_state(self, subject_type, subject_id,
+                                        projection_id, purpose):
+                        return self.allowed and subject_type == "owner"
+
+                    def allow_event(self, event_id, purpose):
+                        return self.allowed
+
+                context_args = dict(
+                    plan=ContextPlan(
+                        request_id="synthetic-decision-context",
+                        purpose="local-personal-judgment",
+                        exact_claim_ids=("claim-integration",),
+                        state_routes=(StateRoute(
+                            "owner", scope.host_instance_id, "state-owner"),),
+                        query_vector=(1.0, 0.0, 0.0, 0.0), vector_limit=2,
+                        minimum_claims=1,
+                    ),
+                    claims=authority, state=state_registry, log=state_log,
+                    objects=objects, references=source_refs,
+                    approval_verifier=SyntheticApprovalVerifier(True),
+                    vector=vector_projection,
+                )
+                with self.assertRaises(PermissionError):
+                    assemble_context(
+                        **context_args, policy=SyntheticContextPolicy(False))
+                context = assemble_context(
+                    **context_args, policy=SyntheticContextPolicy(True))
+                self.assertTrue(context.sufficient_by_declared_count)
+                self.assertEqual([item.kind for item in context.items],
+                                 ["claim", "state:owner"])
+                self.assertEqual(context.items[0].version_id,
+                                 second_version.claim_version_id)
+                self.assertEqual(context.items[1].version_id,
+                                 second_owner.version_id)
+                with self.assertRaisesRegex(ValueError, "changed before delivery"):
+                    record_context_delivery(
+                        context=LocalContext(context.plan, (), True),
+                        log=state_log, objects=objects, references=source_refs,
+                        claims=authority, state=state_registry,
+                        policy=SyntheticContextPolicy(True),
+                        approval_verifier=SyntheticApprovalVerifier(True),
+                        vector=vector_projection,
+                        occurred_at="2026-09-18T12:00:00Z",
+                        expected_revision=2)
+                delivery = record_context_delivery(
+                    context=context, log=state_log, objects=objects,
+                    references=source_refs,
+                    claims=authority, state=state_registry,
+                    policy=SyntheticContextPolicy(True),
+                    approval_verifier=SyntheticApprovalVerifier(True),
+                    vector=vector_projection,
+                    occurred_at="2026-09-18T12:00:00Z",
+                    expected_revision=2)
+                source_refs[delivery.raw.object_id] = delivery.raw
+                decision = record_contextual_decision(
+                    context=context, delivery=delivery,
                     log=state_log, objects=objects,
+                    references=source_refs,
+                    claims=authority, state=state_registry,
+                    policy=SyntheticContextPolicy(True),
+                    approval_verifier=SyntheticApprovalVerifier(True),
+                    vector=vector_projection,
                     verdict=b"synthetic judgment from an unqualified producer",
-                    consumed_event_ids=(second_event.event_id,),
-                    references=source_refs, model_artifact_sha256="c" * 64,
-                    occurred_at="2026-09-19T00:00:00Z", expected_revision=2,
+                    model_artifact_sha256="c" * 64,
+                    occurred_at="2026-09-19T00:00:00Z", expected_revision=3,
                     producer_component="synthetic-test")
+                self.assertIn(delivery.event.event_id,
+                              decision.event.parent_event_ids)
                 source_refs[decision.raw.object_id] = decision.raw
                 outcome = record_outcome_observation(
                     log=state_log, objects=objects,
@@ -891,7 +963,7 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                         source_reference_ids=("synthetic-independent-report",),
                         derivation_activity_id="synthetic-followup",
                         responsible_component="synthetic-test"),
-                    occurred_at="2026-09-20T00:00:00Z", expected_revision=3)
+                    occurred_at="2026-09-20T00:00:00Z", expected_revision=4)
                 source_refs[outcome.raw.object_id] = outcome.raw
                 revised_content = objects.put(b"synthetic proposed outcome revision")
                 source_refs[revised_content.object_id] = revised_content
