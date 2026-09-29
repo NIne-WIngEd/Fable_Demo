@@ -43,6 +43,7 @@ from flora.selected.vector_recollection import QdrantClaimProjection
 from flora.selected.personal_state import (
     XTDBPersonalStateCandidates, activation_request,
 )
+from flora.selected.outcome_revision import register_outcome_revision
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -872,6 +873,81 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                         references={key: value for key, value in source_refs.items()
                                     if key != approval_raw.object_id},
                         verifier=SyntheticApprovalVerifier(True))
+
+                decision = record_decision(
+                    log=state_log, objects=objects,
+                    verdict=b"synthetic judgment from an unqualified producer",
+                    consumed_event_ids=(second_event.event_id,),
+                    references=source_refs, model_artifact_sha256="c" * 64,
+                    occurred_at="2026-09-19T00:00:00Z", expected_revision=2,
+                    producer_component="synthetic-test")
+                source_refs[decision.raw.object_id] = decision.raw
+                outcome = record_outcome_observation(
+                    log=state_log, objects=objects,
+                    decision_event_id=decision.event.event_id,
+                    observation=b"synthetic independent outcome",
+                    observation_provenance=ProvenanceReference.create(
+                        provenance_type="derived_inference",
+                        source_reference_ids=("synthetic-independent-report",),
+                        derivation_activity_id="synthetic-followup",
+                        responsible_component="synthetic-test"),
+                    occurred_at="2026-09-20T00:00:00Z", expected_revision=3)
+                source_refs[outcome.raw.object_id] = outcome.raw
+                revised_content = objects.put(b"synthetic proposed outcome revision")
+                source_refs[revised_content.object_id] = revised_content
+                third_owner = ProjectionVersion.create(
+                    envelope=_envelope(
+                        scope=scope,
+                        authority_namespace_id="integration-personal-state",
+                        record_id="state-owner-v3",
+                        record_type="projection_version",
+                        authority_role="registered_projection",
+                        created_at="2026-09-21T00:00:00Z",
+                        source_records=(second_version.claim_version_id,
+                                        outcome.event.event_id),
+                        supersedes=(second_owner.version_id,),
+                        logical_clock=3,
+                        content_digest=revised_content.plaintext_sha256),
+                    projection_id=first_owner.projection_id,
+                    version_id="state-owner-v3", projection_type="owner_model",
+                    subject_type="owner", subject_id=scope.host_instance_id,
+                    modalities=("symbolic",), generation=3,
+                    source_claim_version_ids=(second_version.claim_version_id,),
+                    source_evidence_ids=(outcome.event.event_id,),
+                    valid_from="2026-09-21T00:00:00Z", valid_to=None,
+                    produced_at="2026-09-21T00:00:00Z",
+                    projection_state="candidate",
+                    responsible_component="synthetic-test",
+                    model_id=None, model_version=None,
+                    content_digest=revised_content.plaintext_sha256,
+                    supersedes_version_id=second_owner.version_id)
+                revision_args = dict(
+                    state=state_registry, version=third_owner,
+                    content=revised_content,
+                    decision_event_id=decision.event.event_id,
+                    outcome_event_id=outcome.event.event_id,
+                    claims=authority, log=state_log, objects=objects,
+                    references=source_refs,
+                    verifier=SyntheticApprovalVerifier(True))
+                with self.assertRaisesRegex(ValueError, "linked observation"):
+                    register_outcome_revision(
+                        **{**revision_args,
+                           "outcome_event_id": second_event.event_id})
+                register_outcome_revision(**revision_args)
+                register_outcome_revision(**revision_args)
+                self.assertEqual(state_registry.read_latest_candidate(
+                    subject_type="owner", subject_id=scope.host_instance_id,
+                    projection_id=first_owner.projection_id,
+                    claims=authority, log=state_log, objects=objects,
+                    references=source_refs).content,
+                    b"synthetic proposed outcome revision")
+                self.assertEqual(state_registry.read_active(
+                    subject_type="owner", subject_id=scope.host_instance_id,
+                    projection_id=first_owner.projection_id,
+                    claims=authority, log=state_log, objects=objects,
+                    references=source_refs,
+                    verifier=SyntheticApprovalVerifier(True)).content,
+                    b"synthetic revised host state")
             finally:
                 state_client.close()
             projection_ids = {
