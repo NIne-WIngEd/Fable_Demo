@@ -39,9 +39,77 @@ services:
     volumes:
       - qdrant-data:/qdrant/storage
 
+  temporal-postgresql:
+    image: postgres:16.14
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal-ci-fixture
+    volumes:
+      - temporal-postgresql-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  temporal-schema:
+    image: temporalio/admin-tools:1.32.0
+    depends_on:
+      temporal-postgresql:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_SEEDS: temporal-postgresql
+      SQL_PASSWORD: temporal-ci-fixture
+    volumes:
+      - ./scripts/temporal_schema_setup.sh:/scripts/temporal_schema_setup.sh:ro
+    entrypoint: ["/bin/sh", "/scripts/temporal_schema_setup.sh"]
+
+  temporal:
+    image: temporalio/server:1.32.0
+    restart: on-failure:5
+    depends_on:
+      temporal-schema:
+        condition: service_completed_successfully
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: temporal-ci-fixture
+      POSTGRES_SEEDS: temporal-postgresql
+      BIND_ON_IP: "0.0.0.0"
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/flora-integration.yaml
+    ports:
+      - "7233:7233"
+    volumes:
+      - ./config/temporal-integration.yaml:/etc/temporal/config/dynamicconfig/flora-integration.yaml:ro
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "7233"]
+      interval: 2s
+      timeout: 3s
+      retries: 90
+
+  temporal-namespace:
+    image: temporalio/admin-tools:1.32.0
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - >-
+        for attempt in $(seq 1 60); do
+          if temporal operator cluster health --address temporal:7233; then break; fi;
+          [ "$attempt" -lt 60 ] || exit 1;
+          sleep 1;
+        done;
+        temporal operator namespace create -n default --address temporal:7233
+
 volumes:
   kurrentdb-data:
   kurrentdb-logs:
   xtdb-data:
   nats-data:
   qdrant-data:
+  temporal-postgresql-data:

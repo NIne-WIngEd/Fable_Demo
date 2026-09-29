@@ -25,7 +25,7 @@ The receipt means **bytes delivered to an input interface**. It does not mean mo
 
 Deterministic contract tests cover registration integrity, metadata/provenance escalation, host isolation, permission races and stale retrieval hits. [Run 36623668349](https://github.com/NIne-WIngEd/FloRA/actions/runs/36623668349) passed the source/context commit `9b1f024`: physical Kurrent time, XTDB registration reconstruction, encrypted source reopening, original parent closure, historical cutoff and a current-policy delivery check. Its restart probe recreated the registered input after restarting KurrentDB and XTDB.
 
-The next integration extends this path with durable signed source permissions and proposal output custody; its backend qualification is pending. Delivery now rejects a timestamp earlier than physical source availability.
+[Run 36625507265](https://github.com/NIne-WIngEd/FloRA/actions/runs/36625507265) passed `0e0a69af`: durable signed source permissions, denial of wrong-key authorization, parent revocation, old-grant retry, candidate output/value recovery and current-source rejection after revocation. The restart probe recovered a registered source with its persisted signed permission after authority services restarted. Delivery also rejects a timestamp earlier than physical source availability. This is selected-store infrastructure evidence, not a model result.
 
 ## Governed source use and proposal custody
 

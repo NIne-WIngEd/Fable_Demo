@@ -1,0 +1,4 @@
+# Integration only. Temporal history/visibility use the actual PostgreSQL plane.
+limit.maxIDLength:
+  - value: 255
+    constraints: {}
