@@ -2,6 +2,8 @@
 
 This repo qualifies one causal personal-memory claim within the full-scale successor architecture. **A.L.I.C.E. Phase 2 is void and ancient for this implementation.** Stage G/H/I/J are replacing it. Older A.L.I.C.E. documentation may still describe it as canonical during migration; that is not authority for new FloRA code. The former Phase 2-based demo files survive in git history only.
 
+The [frozen FloRA experiment goal](EXPERIMENT_GOAL.md) controls what counts as a behavioral or builder result.
+
 Sources reviewed: A.L.I.C.E. `main@8ea804aa` `docs/ALICE_PHASE2_REPLACEMENT_AND_FABLE_V1_EXECUTION_PLAN_2026-09-27.md`, `docs/STAGE_G_MEMORY_FABRIC_CANDIDATE_QUALIFICATION_MATRIX.md`, `docs/PHASE2_TO_KERNEL_MEMORY_MIGRATION_PLAN.md`, `docs/FRIDAY_ROADMAP.md`, `docs/FRIDAY_ARCHITECTURE.md`, `docs/FABLE_PERSONAL_DEVELOPMENT_ARCHITECTURE.md`; MFM branch `research/mfm-foundation-20260923@00583fb2` `src/cognitive_kernel/formation_contracts.py`.
 
 ## Full-scale path for the claim
