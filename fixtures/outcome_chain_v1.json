@@ -1,8 +1,0 @@
-{
-  "description": "Synthetic decision followed by observed outcome. Ledger contract fixture only; no judgment score.",
-  "events": [
-    {"id":"s1","at":"2025-01-01T10:00:00Z","kind":"assertion","topic":"work_style","text":"I want to keep one uninterrupted evening each week for deep work.","source":"synthetic:week1"},
-    {"id":"d1","at":"2025-02-01T10:00:00Z","kind":"decision","topic":"work_style","text":"I accepted a recurring evening meeting despite the deep work goal.","source":"synthetic:week5"},
-    {"id":"o1","at":"2025-03-01T10:00:00Z","kind":"outcome","topic":"work_style","text":"The recurring evening meeting displaced deep work on four consecutive weeks.","source":"synthetic:week9","decision_id":"d1"}
-  ]
-}
