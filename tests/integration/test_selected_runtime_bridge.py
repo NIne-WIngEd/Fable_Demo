@@ -7,6 +7,7 @@ Claim admission/governed state/context and process recreation are actual paths.
 import base64
 from dataclasses import replace
 import hashlib
+import importlib.util
 from pathlib import Path
 import sys
 import unittest
@@ -45,10 +46,21 @@ _INTEGRATION = str(Path(__file__).resolve().parent)
 for path in (_TESTS, _INTEGRATION):
     if path not in sys.path:
         sys.path.insert(0, path)
-import test_selected_experiment_runtime as _runtime_fixture
-import test_selected_formation_admission as _semantic_fixture
-import test_artifact_registry as _artifact_fixture
-import test_formation_admission as _fabric_fixture
+def _fixture(name, path):
+    # Unit and selected-backend suites deliberately have different fixtures.
+    # Resolve exact files rather than whichever duplicate module name discovery
+    # happened to cache first.
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_runtime_fixture = _fixture("flora_runtime_unit_fixture", Path(_TESTS) / "test_selected_experiment_runtime.py")
+_semantic_fixture = _fixture("flora_semantic_unit_fixture", Path(_TESTS) / "test_selected_formation_admission.py")
+_artifact_fixture = _fixture("flora_artifact_unit_fixture", Path(_TESTS) / "test_artifact_registry.py")
+_fabric_fixture = _fixture("flora_admission_backend_fixture", Path(_INTEGRATION) / "test_formation_admission.py")
 
 
 class SelectedExperimentRuntimeIntegrationTest(unittest.TestCase):
