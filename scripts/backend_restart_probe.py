@@ -11,6 +11,7 @@ from kurrentdbclient import KurrentDBClient
 
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
+from fable_demo.selected.claims import configure_xtdb_connection
 from fable_demo.selected.experience import KurrentExperienceLog
 
 MARKER = "selected-backend-persistence-v1"
@@ -63,6 +64,7 @@ def write_probe() -> None:
         "postgresql://xtdb@127.0.0.1:5432/xtdb",
     )
     with psycopg.connect(dsn, autocommit=True) as connection:
+        configure_xtdb_connection(connection)
         connection.execute(
             "INSERT INTO fable_backend_restart_probe (_id, marker) "
             "VALUES (%s::text, %s::text)",
@@ -92,6 +94,7 @@ def verify_probe() -> None:
         "postgresql://xtdb@127.0.0.1:5432/xtdb",
     )
     with psycopg.connect(dsn, autocommit=True) as connection:
+        configure_xtdb_connection(connection)
         row = connection.execute(
             "SELECT marker FROM fable_backend_restart_probe WHERE _id = %s",
             (PROBE_ID,),

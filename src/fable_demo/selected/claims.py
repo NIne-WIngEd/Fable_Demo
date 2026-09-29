@@ -45,15 +45,25 @@ def _rows(cursor: Any) -> list[dict[str, object]]:
     return [dict(zip(names, row)) for row in cursor.fetchall()]
 
 
-def _dml_placeholder(value: object) -> str:
-    """Give XTDB pgwire an explicit type for Python strings in DML.
+def configure_xtdb_connection(connection: Any) -> None:
+    """Bind Python strings as PostgreSQL TEXT for XTDB pgwire DML.
 
-    Psycopg intentionally sends ordinary Python strings with an unknown OID.
-    PostgreSQL usually infers that type from a table schema. XTDB's DML
-    protocol requires every non-null parameter to arrive typed, so text values
-    are explicitly cast while native integer/timestamp parameters keep their
-    driver-provided OIDs.
+    Psycopg normally sends str parameters with OID 0 (unknown), which
+    PostgreSQL can infer in most contexts. XTDB v2 requires non-null DML
+    parameters to carry explicit type OIDs. A connection-local dumper keeps
+    normal parameter binding while sending the PostgreSQL text OID.
     """
+    from psycopg.types.string import StrDumper
+
+    text_oid = connection.adapters.types["text"].oid
+
+    class XTDBTextDumper(StrDumper):
+        oid = text_oid
+
+    connection.adapters.register_dumper(str, XTDBTextDumper)
+
+
+def _dml_placeholder(value: object) -> str:
     return "%s::text" if isinstance(value, str) else "%s"
 
 
@@ -73,6 +83,7 @@ class XTDBClaimAuthority:
             authority_namespace_id, "authority_namespace_id"
         )
         self.connection = connection
+        configure_xtdb_connection(self.connection)
         self.scope_digest = hashlib.sha256(
             (
                 scope.storage_scope()
