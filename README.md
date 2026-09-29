@@ -17,6 +17,8 @@ Material build decisions and failures are captured as [FBM process seeds](docs/f
 
 **Re-audit — 2026-09-29:** we have **not** finished all work independent of those models. Selected-backend components still need current MFM source/planner integration, proposal-to-authority wiring, governed update/rollback, a runnable slice, and the comparator/evaluation pipeline. The [readiness re-audit](docs/READINESS_REAUDIT_2026-09-29.md) records the gaps, repairs, source refs, and actual stopping rule. Green infrastructure checks do not place FloRA at a model-only waiting point.
 
+The current registered source/context path has passed the selected-backend gate. [Governed proposal admission](docs/FORMATION_ADMISSION.md), [personal-state rollback](docs/GOVERNED_PERSONAL_DEVELOPMENT.md), [artifact qualification](docs/ARTIFACT_ADMISSION.md), persistent Temporal and blinded human assessment are now being connected and qualified. Durable private-state recovery, runnable model integration and the complete comparison pipeline remain work in progress.
+
 ## Architecture boundary
 
 The active path follows the A.L.I.C.E. Stage G–J successor design. The old Phase 2 runtime is void as an implementation basis for this demo. It was removed from `main`; the historical work remains in [commit `aad9ad4`](https://github.com/NIne-WIngEd/FloRA/tree/aad9ad46bd0def74755728ed967d5a003f66e93b). Passing tests there never qualified this experiment.

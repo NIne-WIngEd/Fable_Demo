@@ -3,6 +3,11 @@
 This is a first influence barrier, not deletion completion. Original objects,
 append-only events, derivatives outside this slice, and model weights require
 separate coordinated removal or quarantine work.
+
+This legacy Claim quarantine uses the source-event sequence and is refused for
+governed-admission namespaces, whose authority ordering is independent. Use the
+durable Formation source permission barrier to stop further Formation reads;
+governed Claim quarantine/influence invalidation is a separate open boundary.
 """
 
 from __future__ import annotations
@@ -55,11 +60,16 @@ def quarantine_claim(
     references: Mapping[str, RawObjectReference],
     vector: QdrantClaimProjection, verifier: RevocationVerifier,
 ) -> QuarantineResult:
-    """Fail closed on use immediately; retry vector cleanup if it lagged."""
+    """Legacy namespaces only: quarantine use and retry vector cleanup.
+
+    A governed namespace needs its controller's sequence/CAS protocol; mixing
+    a Kurrent request position into its Claim authority order is refused.
+    """
     prior.validate()
     if not (prior.envelope.scope == authority.scope == log.scope
             == objects.scope == vector.scope):
         raise ValueError("claim quarantine crosses host scope")
+    authority._assert_legacy_namespace()
     current = authority.load_current(prior.claim_id)
     retry_head = False
     if current["projection_sha256"] != prior.projection_sha256:

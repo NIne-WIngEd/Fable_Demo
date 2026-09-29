@@ -29,6 +29,7 @@ _VERSIONS = "fable_claim_versions"
 _CURRENT = "fable_current_claims"
 _EVIDENCE = "fable_claim_evidence_relations"
 _HEAD = "fable_claim_heads"
+_GOVERNED_COUNTER = "flora_claim_admission_namespace_counters"
 
 
 def _timestamp(value: str) -> datetime:
@@ -113,6 +114,26 @@ class XTDBClaimAuthority:
         ):
             raise ValueError("claim record belongs to a different authority namespace")
 
+    def _assert_legacy_namespace(self) -> None:
+        """Legacy piecemeal writes must not bypass an established controller.
+
+        Once governed admission owns a namespace, all authority mutations must
+        use its atomic sequence/receipt protocol. Historical controller presence
+        is sufficient to refuse a legacy writer, including idempotent retries.
+        """
+        rows = _rows(self.connection.execute(
+            f"SELECT _id FROM {_GOVERNED_COUNTER} FOR VALID_TIME ALL WHERE _id = %s::text",
+            (self._row_id("admission-namespace-counter"),)))
+        if rows:
+            raise ValueError("legacy Claim writes are disabled for a governed namespace")
+
+    def _assert_no_governed_controller(self) -> None:
+        # Keep the race with first admission inside the same native transaction.
+        self.connection.execute(
+            f"ASSERT NOT EXISTS (SELECT 1 FROM {_GOVERNED_COUNTER} "
+            "FOR VALID_TIME ALL WHERE _id = %s::text)",
+            (self._row_id("admission-namespace-counter"),))
+
     def _fetch_record(
         self,
         *,
@@ -152,6 +173,7 @@ class XTDBClaimAuthority:
         # XTDB INSERT is an upsert. Assert absence inside the same DML
         # transaction so a racing writer cannot replace an immutable record.
         with self.connection.transaction():
+            self._assert_no_governed_controller()
             self.connection.execute(
                 f"ASSERT NOT EXISTS (SELECT 1 FROM {table} "
                 "FOR VALID_TIME ALL WHERE _id = %s::text)",
@@ -185,6 +207,7 @@ class XTDBClaimAuthority:
 
     def put_identity(self, identity: ClaimIdentity) -> None:
         self._assert_envelope(identity)
+        self._assert_legacy_namespace()
         row_id = self._row_id(identity.claim_id)
         prior = self._fetch_record(table=_IDENTITIES, row_id=row_id, all_valid=True)
         if prior is not None:
@@ -214,6 +237,7 @@ class XTDBClaimAuthority:
                     relations: Sequence[ClaimEvidenceRelation],
                     experience_log: KurrentExperienceLog) -> None:
         self._assert_envelope(version)
+        self._assert_legacy_namespace()
         if experience_log.scope != self.scope:
             raise ValueError("claim source log belongs to a different host")
         replayed = experience_log.replay()
@@ -275,6 +299,7 @@ class XTDBClaimAuthority:
 
     def put_evidence_relation(self, relation: ClaimEvidenceRelation) -> None:
         self._assert_envelope(relation)
+        self._assert_legacy_namespace()
         row_id = self._row_id(relation.relation_id)
         prior = self._fetch_record(table=_EVIDENCE, row_id=row_id, all_valid=True)
         if prior is not None:
@@ -317,6 +342,7 @@ class XTDBClaimAuthority:
     def put_current(self, projection: CurrentClaimProjection, *,
                     expected_previous: CurrentClaimProjection | None = None) -> None:
         self._assert_envelope(projection)
+        self._assert_legacy_namespace()
         valid_from = _timestamp(projection.envelope.valid_from)
         row_id = self._row_id(projection.claim_id)
         identity = self._fetch_record(table=_IDENTITIES,
@@ -360,6 +386,7 @@ class XTDBClaimAuthority:
         valid_to = (None if projection.envelope.valid_to is None
                     else _timestamp(projection.envelope.valid_to))
         with self.connection.transaction():
+            self._assert_no_governed_controller()
             if expected_previous is None:
                 self.connection.execute(
                     f"ASSERT NOT EXISTS (SELECT 1 FROM {_HEAD} WHERE _id = %s::text)",

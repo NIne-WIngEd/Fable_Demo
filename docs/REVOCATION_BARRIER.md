@@ -7,3 +7,5 @@ All current claim reads already reject non-active projections. Active personal s
 `pending` is deliberate. The raw object and immutable Experience event still exist. Other derivatives, cached or running-model context, backups, exports, training data, and weights are not erased by this function. Complete deletion and influence removal need a durable coordinator, lineage traversal, restore checks, and model-specific rebuild or unlearning. This slice must never be reported as completed erasure.
 
 The integration verifier is synthetic. Production owner authentication and policy remain open.
+
+The legacy path above is refused for namespaces owned by the new [governed admission controller](FORMATION_ADMISSION.md). Its Kurrent request position cannot serve as a Claim store sequence. Registered formation permission revocation provides a separate current source-use barrier; governed Claim quarantine and cross-layer invalidation still require controller-aware implementation.

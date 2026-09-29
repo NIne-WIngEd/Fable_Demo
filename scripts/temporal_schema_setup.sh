@@ -11,11 +11,11 @@ for temporal_database in temporal temporal_visibility; do
     if [ "$temporal_database" = temporal_visibility ]; then
         temporal_schema=visibility
     fi
-    temporal-sql-tool --plugin postgres12 --ep "$POSTGRES_SEEDS" -u "$POSTGRES_USER" \
+    temporal-sql-tool --plugin postgres12 --ep "$POSTGRES_SEEDS" -p 5432 -u "$POSTGRES_USER" \
         --db "$temporal_database" create
-    temporal-sql-tool --plugin postgres12 --ep "$POSTGRES_SEEDS" -u "$POSTGRES_USER" \
+    temporal-sql-tool --plugin postgres12 --ep "$POSTGRES_SEEDS" -p 5432 -u "$POSTGRES_USER" \
         --db "$temporal_database" setup-schema -v 0.0
-    temporal-sql-tool --plugin postgres12 --ep "$POSTGRES_SEEDS" -u "$POSTGRES_USER" \
+    temporal-sql-tool --plugin postgres12 --ep "$POSTGRES_SEEDS" -p 5432 -u "$POSTGRES_USER" \
         --db "$temporal_database" update-schema \
         -d "/etc/temporal/schema/postgresql/v12/$temporal_schema/versioned"
 done
