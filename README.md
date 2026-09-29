@@ -23,9 +23,10 @@ The [alignment and build map](docs/FloRA_ALIGNMENT.md) names the selected planes
 - `selected/formation_input.py` binds a manifest to same-host KurrentDB replay and verified raw content for the separately developed MFM. `selected/formation_gate.py` checks a proposal against independently registered evidence and leaves it for adjudication; it grants no claim authority or owner authentication on its own.
 - `selected/source_native.py` reads exact evidence for an active current claim across XTDB, KurrentDB, and the encrypted object plane. It checks host scope, relation targets, replayed event IDs, and raw content digests; a caller must still decide whether it is authorized to expose plaintext to a model.
 - `selected/decision_outcome.py` records a supplied verdict with verified source event IDs and an encrypted payload, then links a later independently sourced outcome observation to that decision in KurrentDB. It records lineage; it does not qualify the producer, judge correctness, or automatically revise personal state.
+- `selected/vector_recollection.py` indexes a source-verified current claim in Qdrant by host and embedding generation. Query results are candidates; it checks each one against XTDB and drops a superseded claim version. Synthetic vectors test the selected engine and authority filter, not semantic retrieval quality.
 - Synthetic component tests and real-backend integration tests cover these boundaries. They are infrastructure evidence, not a Fable capability or behavioral result.
 
-Owner-source authentication, complete conflict/deletion lineage, multi-device reconciliation, episodes, graph, vector and wider source retrieval, Context Planner, personal-state projections, outcome revision, and workflow/recovery path remain open. No model or behavioral score is being inferred from the backend result. See the [backend integration handoff](docs/BACKEND_INTEGRATION_HANDOFF.md) for the exact green boundary.
+Owner-source authentication, complete conflict/deletion lineage, multi-device reconciliation, episodes, graph, qualified semantic/vector retrieval and wider source retrieval, Context Planner, personal-state projections, outcome revision, and workflow/recovery path remain open. No model or behavioral score is being inferred from the backend result. See the [backend integration handoff](docs/BACKEND_INTEGRATION_HANDOFF.md) for the exact green boundary.
 
 ## Dependencies and evidence gates
 
@@ -41,7 +42,7 @@ The component checks run with Python 3.11+, `cryptography`, `kurrentdbclient~=1.
 PYTHONPATH=../ALICE/src:src python -m unittest discover -s tests -v
 ```
 
-Use synthetic data only. A repeatable Docker environment for the first selected backends now lives in `compose.integration.yml`. The GitHub Actions gate starts real KurrentDB, XTDB, and NATS JetStream services, runs the integration tests, restarts the authority services, verifies persistence, captures logs, and tears the stack down. For local use:
+Use synthetic data only. A repeatable Docker environment for the first selected backends now lives in `compose.integration.yml`. The GitHub Actions gate starts real KurrentDB, XTDB, NATS JetStream, and Qdrant services, runs the integration tests, restarts the authority services, verifies persistence, captures logs, and tears the stack down. For local use:
 
 ```bash
 python -m pip install -e '.[backends]'

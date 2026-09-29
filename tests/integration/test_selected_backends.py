@@ -12,6 +12,7 @@ import unittest
 
 import psycopg
 import nats
+from qdrant_client import QdrantClient
 from kurrentdbclient import KurrentDBClient
 from kurrentdbclient.exceptions import WrongCurrentVersionError
 
@@ -35,6 +36,7 @@ from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 from flora.selected.source_native import read_current_sources
 from flora.selected.edge_ingress import EdgePacket, JetStreamEdgeIngress
 from flora.selected.decision_outcome import record_decision, record_outcome_observation
+from flora.selected.vector_recollection import QdrantClaimProjection
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -370,6 +372,13 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
             objects = EncryptedObjectPlane(
                 scope=scope, key=b"x" * 32,
                 backend=LocalObjectBackend(Path(object_directory.name) / "objects"))
+            qdrant = QdrantClient(url=os.environ.get(
+                "QDRANT_URL", "http://127.0.0.1:6333"))
+            self.addCleanup(qdrant.close)
+            vector_projection = QdrantClaimProjection(
+                scope=scope, client=qdrant,
+                embedding_artifact_sha256="e" * 64, dimension=4)
+            vector_projection.ensure_collection()
             raw_first = objects.put(b"synthetic-claim-source-one")
             raw_second = objects.put(b"synthetic-claim-source-two")
             first_event = _event(scope, suffix="claim-source-one",
@@ -488,6 +497,16 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 source_client.close()
             authority.put_current(first_projection)
             authority.put_current(first_projection)  # Same immutable request is idempotent.
+            source_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                vector_projection.index_current(
+                    claim_id="claim-integration", vector=(1.0, 0.0, 0.0, 0.0),
+                    authority=authority,
+                    log=KurrentExperienceLog(scope=scope, client=source_client),
+                    objects=objects, references={raw_first.object_id: raw_first})
+            finally:
+                source_client.close()
 
             before_change = authority.load_current(
                 "claim-integration",
@@ -584,6 +603,20 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 authority.put_current(second_projection)
             authority.put_current(second_projection, expected_previous=first_projection)
             authority.put_current(second_projection, expected_previous=first_projection)
+            source_client = KurrentDBClient(os.environ.get(
+                "KURRENTDB_URI", "kurrentdb://127.0.0.1:2113?tls=false"))
+            try:
+                vector_projection.index_current(
+                    claim_id="claim-integration", vector=(0.9, 0.1, 0.0, 0.0),
+                    authority=authority,
+                    log=KurrentExperienceLog(scope=scope, client=source_client),
+                    objects=objects, references={raw_second.object_id: raw_second})
+            finally:
+                source_client.close()
+            candidates = vector_projection.query_current(
+                query_vector=(1.0, 0.0, 0.0, 0.0), authority=authority)
+            self.assertEqual([item.claim_version_id for item in candidates],
+                             ["claim-integration-v2"])
             with self.assertRaisesRegex(ValueError, "stale"):
                 authority.put_current(first_projection, expected_previous=first_projection)
 
@@ -639,6 +672,9 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                 authority_namespace_id=namespace,
                 connection=connection,
             )
+            with self.assertRaisesRegex(ValueError, "host scope"):
+                vector_projection.query_current(
+                    query_vector=(1.0, 0.0, 0.0, 0.0), authority=other)
             with self.assertRaises(KeyError):
                 other.load_current(
                     "claim-integration",

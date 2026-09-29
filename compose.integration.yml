@@ -32,8 +32,16 @@ services:
     volumes:
       - nats-data:/data
 
+  qdrant:
+    image: qdrant/qdrant:v1.18.3
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+
 volumes:
   kurrentdb-data:
   kurrentdb-logs:
   xtdb-data:
   nats-data:
+  qdrant-data:
