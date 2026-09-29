@@ -12,6 +12,28 @@ def _scope(host: str) -> ProductHostScope:
 
 
 class SelectedObjectPlaneTest(unittest.TestCase):
+    def test_reference_recovery_authenticates_before_returning_metadata(self):
+        from cryptography.exceptions import InvalidTag
+        with tempfile.TemporaryDirectory() as directory:
+            plane = EncryptedObjectPlane(scope=_scope("host-one"), key=b"a" * 32,
+                backend=LocalObjectBackend(Path(directory) / "objects"))
+            reference = plane.put(b"fictional recovery artifact")
+            self.assertEqual(plane.recover_reference(object_id=reference.object_id,
+                expected_plaintext_sha256=reference.plaintext_sha256), reference)
+            with self.assertRaisesRegex(ValueError, "digest mismatch"):
+                plane.recover_reference(object_id=reference.object_id,
+                    expected_plaintext_sha256="a" * 64)
+            path = plane.backend._path(plane.namespace, reference.object_id)
+            original = path.read_bytes()
+            path.write_bytes(original[:-1] + bytes([original[-1] ^ 1]))
+            with self.assertRaises(InvalidTag):
+                plane.recover_reference(object_id=reference.object_id,
+                    expected_plaintext_sha256=reference.plaintext_sha256)
+            path.write_bytes(b"FBO2" + original[4:])
+            with self.assertRaisesRegex(ValueError, "envelope"):
+                plane.recover_reference(object_id=reference.object_id,
+                    expected_plaintext_sha256=reference.plaintext_sha256)
+
     def test_restart_isolation_and_tamper_detection(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "objects"

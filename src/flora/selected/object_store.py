@@ -121,3 +121,25 @@ class EncryptedObjectPlane:
                 or len(content) != reference.size):
             raise ValueError("object identity or content digest mismatch")
         return content
+
+    def recover_reference(self, *, object_id: str,
+                          expected_plaintext_sha256: str) -> RawObjectReference:
+        """Recover custody metadata only after authenticating canonical bytes.
+
+        A caller must independently establish the expected digest and its right
+        to open the object. Envelope length gives a tentative reference, never
+        verified custody or source permission. AEAD, keyed identity, digest and
+        exact plaintext length must all pass before that reference is returned.
+        """
+        if (not isinstance(object_id, str) or not _OBJECT_ID.fullmatch(object_id)
+                or not isinstance(expected_plaintext_sha256, str)
+                or not _OBJECT_ID.fullmatch(expected_plaintext_sha256)):
+            raise ValueError("object recovery requires canonical identity and expected digest")
+        sealed = self.backend.get_object(self.namespace, object_id)
+        overhead = len(_MAGIC) + 12 + 16
+        if not sealed.startswith(_MAGIC) or len(sealed) < overhead:
+            raise ValueError("invalid encrypted object envelope")
+        tentative = RawObjectReference(self.scope, object_id,
+                                        expected_plaintext_sha256, len(sealed) - overhead)
+        self.get(tentative)
+        return tentative

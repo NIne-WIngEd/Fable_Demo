@@ -117,12 +117,14 @@ class FormationAdmissionIntegrationTest(unittest.TestCase):
             proofs=self.owner_proofs)
         self.raw_refs, self.grants = {}, {}
         self.clock = 0
+        self.last_time = datetime.min.replace(tzinfo=timezone.utc)
         self.artifact = "a" * 64  # Declared fixture artifact, not model qualification.
 
     def _time(self):
         self.clock += 1
-        return normalize_timestamp((datetime(2026, 9, 29, 12, tzinfo=timezone.utc)
-                                    + timedelta(minutes=self.clock)).isoformat())
+        self.last_time = max(datetime.now(timezone.utc),
+                             self.last_time + timedelta(microseconds=1))
+        return normalize_timestamp(self.last_time.isoformat())
 
     def _append(self, payload, *, event_type, parents=(), at=None, provenance="generated_reconstruction"):
         raw = self.objects.put(payload)
