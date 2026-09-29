@@ -40,7 +40,9 @@ from flora.selected.source_native import read_current_sources
 from flora.selected.edge_ingress import EdgePacket, JetStreamEdgeIngress
 from flora.selected.decision_outcome import record_decision, record_outcome_observation
 from flora.selected.vector_recollection import QdrantClaimProjection
-from flora.selected.personal_state import XTDBPersonalStateCandidates
+from flora.selected.personal_state import (
+    XTDBPersonalStateCandidates, activation_request,
+)
 
 
 PROVENANCE_DIGEST = "a" * 64
@@ -791,6 +793,12 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     second_owner, content=second_content, claims=authority,
                     log=state_log, objects=objects, references=source_refs,
                     expected_previous_version_id=first_owner.version_id)
+                with self.assertRaises(KeyError):
+                    state_registry.read_active(
+                        subject_type="owner", subject_id=scope.host_instance_id,
+                        projection_id=first_owner.projection_id,
+                        claims=authority, log=state_log, objects=objects,
+                        references=source_refs, verifier=None)
                 self.assertEqual(state_registry.read_latest_candidate(
                     subject_type="owner", subject_id=scope.host_instance_id,
                     projection_id=first_owner.projection_id, claims=authority,
@@ -803,6 +811,67 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                         log=state_log, objects=objects,
                         references={second_content.object_id: second_content,
                                     raw_first.object_id: raw_first})
+
+                approval_content = activation_request(
+                    second_owner.metadata_record(),
+                    expected_active_version_id=None)
+                approval_raw = objects.put(approval_content)
+                source_refs[approval_raw.object_id] = approval_raw
+                approval_event = ExperienceEvent.create(
+                    event_type="state_activation_approval", scope=scope,
+                    occurred_at="2026-09-18T00:00:00Z",
+                    content_digest=approval_raw.plaintext_sha256,
+                    provenance=ProvenanceReference.create(
+                        provenance_type="derived_inference",
+                        source_reference_ids=(second_event.event_id,),
+                        derivation_activity_id="synthetic-state-approval",
+                        responsible_component="synthetic-test"),
+                    retention_class="ordinary_experience",
+                    storage_tier="raw_buffer",
+                    parent_event_ids=(second_event.event_id,),
+                    payload_reference=approval_raw.object_id,
+                )
+                state_log.append(approval_event, expected_revision=1)
+
+                class SyntheticApprovalVerifier:
+                    def __init__(self, allowed: bool):
+                        self.allowed = allowed
+
+                    def authenticated_approval(self, event, request):
+                        return (self.allowed and event == approval_event
+                                and request["candidate_sha256"]
+                                == second_owner.projection_sha256)
+
+                activation_args = dict(
+                    subject_type="owner", subject_id=scope.host_instance_id,
+                    projection_id=first_owner.projection_id,
+                    approval_event_id=approval_event.event_id,
+                    expected_active_version_id=None,
+                    claims=authority, log=state_log, objects=objects,
+                    references=source_refs,
+                )
+                with self.assertRaisesRegex(ValueError, "independently authorized"):
+                    state_registry.activate(
+                        **activation_args, verifier=SyntheticApprovalVerifier(False))
+                state_registry.activate(
+                    **activation_args, verifier=SyntheticApprovalVerifier(True))
+                state_registry.activate(
+                    **activation_args, verifier=SyntheticApprovalVerifier(True))
+                self.assertEqual(state_registry.read_active(
+                    subject_type="owner", subject_id=scope.host_instance_id,
+                    projection_id=first_owner.projection_id,
+                    claims=authority, log=state_log, objects=objects,
+                    references=source_refs,
+                    verifier=SyntheticApprovalVerifier(True)).content,
+                    b"synthetic revised host state")
+                with self.assertRaisesRegex(ValueError, "private approval content"):
+                    state_registry.read_active(
+                        subject_type="owner", subject_id=scope.host_instance_id,
+                        projection_id=first_owner.projection_id,
+                        claims=authority, log=state_log, objects=objects,
+                        references={key: value for key, value in source_refs.items()
+                                    if key != approval_raw.object_id},
+                        verifier=SyntheticApprovalVerifier(True))
             finally:
                 state_client.close()
             projection_ids = {

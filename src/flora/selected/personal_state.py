@@ -12,10 +12,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import hashlib
 import json
-from typing import Any, Mapping
+from typing import Any, Mapping, Protocol
 
 from cognitive_kernel.canonical import canonical_sha256, require_identifier
 from cognitive_kernel.contracts import ProductHostScope
+from cognitive_kernel.experience import ExperienceEvent
 from cognitive_kernel.projection_contracts import ProjectionVersion
 
 from .claims import (
@@ -28,6 +29,7 @@ from .source_native import read_current_sources
 
 _VERSIONS = "flora_personal_state_versions"
 _HEADS = "flora_personal_state_candidate_heads"
+_ACTIVE = "flora_personal_state_active_heads"
 _TYPE_PAIRS = {
     "owner": "owner_model",
     "relationship": "relationship_model",
@@ -39,6 +41,31 @@ _TYPE_PAIRS = {
 class VerifiedStateCandidate:
     record: dict[str, object]
     content: bytes = field(repr=False)
+
+
+class StateApprovalVerifier(Protocol):
+    """Trusted local policy/authentication adapter, supplied by the product."""
+
+    def authenticated_approval(self, event: ExperienceEvent,
+                               request: dict[str, object]) -> bool: ...
+
+
+def activation_request(record: Mapping[str, object], *,
+                       expected_active_version_id: str | None) -> bytes:
+    """Exact private approval payload; IDs and a digest, never state content."""
+    if expected_active_version_id is not None:
+        require_identifier(expected_active_version_id, "expected_active_version_id")
+    material = {
+        "schema": "flora-state-activation-v1",
+        "subject_type": record["subject_type"],
+        "subject_id": record["subject_id"],
+        "projection_id": record["projection_id"],
+        "candidate_version_id": record["version_id"],
+        "candidate_sha256": record["projection_sha256"],
+        "expected_active_version_id": expected_active_version_id,
+    }
+    return json.dumps(material, sort_keys=True, separators=(",", ":"),
+                      allow_nan=False).encode()
 
 
 class XTDBPersonalStateCandidates:
@@ -220,10 +247,24 @@ class XTDBPersonalStateCandidates:
                                                  projection_id))
         if head is None:
             raise KeyError(projection_id)
-        row = self._fetch(_VERSIONS, self._version_id(str(head["version_id"])),
-                          all_valid=True)
-        if row is None or row["projection_sha256"] != head["projection_sha256"]:
-            raise ValueError("personal-state candidate head is unbound")
+        return self._read_version(
+            version_id=str(head["version_id"]),
+            projection_sha256=str(head["projection_sha256"]),
+            subject_type=subject_type, subject_id=subject_id,
+            projection_id=projection_id, claims=claims, log=log,
+            objects=objects, references=references,
+        )
+
+    def _read_version(
+        self, *, version_id: str, projection_sha256: str,
+        subject_type: str, subject_id: str, projection_id: str,
+        claims: XTDBClaimAuthority, log: KurrentExperienceLog,
+        objects: EncryptedObjectPlane,
+        references: Mapping[str, RawObjectReference],
+    ) -> VerifiedStateCandidate:
+        row = self._fetch(_VERSIONS, self._version_id(version_id), all_valid=True)
+        if row is None or row["projection_sha256"] != projection_sha256:
+            raise ValueError("personal-state version is unbound")
         record = json.loads(str(row["record_json"]))
         if (record.get("projection_sha256") != row["projection_sha256"]
                 or canonical_sha256({key: value for key, value in record.items()
@@ -251,3 +292,128 @@ class XTDBPersonalStateCandidates:
         if hashlib.sha256(plaintext).hexdigest() != record["content_digest"]:
             raise ValueError("personal-state content digest differs")
         return VerifiedStateCandidate(record, plaintext)
+
+    def _check_approval(
+        self, *, approval_event_id: str, candidate: VerifiedStateCandidate,
+        expected_active_version_id: str | None,
+        log: KurrentExperienceLog, objects: EncryptedObjectPlane,
+        references: Mapping[str, RawObjectReference],
+        verifier: StateApprovalVerifier,
+    ) -> ExperienceEvent:
+        if log.scope != self.scope or objects.scope != self.scope:
+            raise ValueError("state approval crosses host scope")
+        event = next((item for item in log.replay()
+                      if item.event_id == approval_event_id), None)
+        if (event is None or event.event_type != "state_activation_approval"
+                or event.payload_reference is None):
+            raise ValueError("state activation lacks an approval event")
+        reference = references.get(event.payload_reference)
+        if reference is None or reference.scope != self.scope:
+            raise ValueError("state activation lacks private approval content")
+        material = activation_request(
+            candidate.record,
+            expected_active_version_id=expected_active_version_id,
+        )
+        if (objects.get(reference) != material
+                or event.content_digest != hashlib.sha256(material).hexdigest()):
+            raise ValueError("state approval does not bind the exact candidate")
+        if (datetime.fromisoformat(event.occurred_at.replace("Z", "+00:00"))
+                < datetime.fromisoformat(candidate.record["produced_at"].replace(
+                    "Z", "+00:00"))):
+            raise ValueError("state approval predates its candidate")
+        if not verifier.authenticated_approval(event, json.loads(material)):
+            raise ValueError("state activation was not independently authorized")
+        return event
+
+    def activate(
+        self, *, subject_type: str, subject_id: str, projection_id: str,
+        approval_event_id: str, expected_active_version_id: str | None,
+        claims: XTDBClaimAuthority, log: KurrentExperienceLog,
+        objects: EncryptedObjectPlane,
+        references: Mapping[str, RawObjectReference],
+        verifier: StateApprovalVerifier,
+    ) -> VerifiedStateCandidate:
+        """Activate a latest candidate after an exact independently verified approval."""
+        candidate = self.read_latest_candidate(
+            subject_type=subject_type, subject_id=subject_id,
+            projection_id=projection_id, claims=claims, log=log,
+            objects=objects, references=references,
+        )
+        event = self._check_approval(
+            approval_event_id=approval_event_id, candidate=candidate,
+            expected_active_version_id=expected_active_version_id,
+            log=log, objects=objects, references=references, verifier=verifier,
+        )
+        head_id = self._head_id(subject_type, subject_id, projection_id)
+        prior = self._fetch(_ACTIVE, head_id)
+        version_id = str(candidate.record["version_id"])
+        if (prior is not None and prior["version_id"] == version_id
+                and prior["approval_event_id"] == event.event_id):
+            return candidate
+        if expected_active_version_id is None:
+            if prior is not None:
+                raise ValueError("active personal state already exists")
+            generation = 1
+        else:
+            if (prior is None or prior["version_id"] != expected_active_version_id
+                    or prior["version_id"] == version_id):
+                raise ValueError("stale active personal-state predecessor")
+            generation = int(prior["activation_generation"]) + 1
+        columns = {
+            "_id": head_id, "scope_digest": self.scope_digest,
+            "subject_type": subject_type, "subject_id": subject_id,
+            "projection_id": projection_id, "version_id": version_id,
+            "projection_sha256": candidate.record["projection_sha256"],
+            "activation_generation": generation,
+            "approval_event_id": event.event_id,
+            "approval_event_sha256": event.event_sha256,
+            "expected_active_version_id": expected_active_version_id,
+        }
+        names = tuple(columns)
+        sql = (f"INSERT INTO {_ACTIVE} ({', '.join(names)}) VALUES ("
+               + ", ".join(_dml_placeholder(columns[name]) for name in names)
+               + ")")
+        with self.connection.transaction():
+            if prior is None:
+                self.connection.execute(
+                    f"ASSERT NOT EXISTS (SELECT 1 FROM {_ACTIVE} WHERE _id = %s::text)",
+                    (head_id,),
+                )
+            else:
+                self.connection.execute(
+                    f"ASSERT EXISTS (SELECT 1 FROM {_ACTIVE} WHERE _id = %s::text "
+                    "AND version_id = %s::text AND approval_event_id = %s::text)",
+                    (head_id, expected_active_version_id,
+                     prior["approval_event_id"]),
+                )
+            self.connection.execute(sql, tuple(columns.values()))
+        return candidate
+
+    def read_active(
+        self, *, subject_type: str, subject_id: str, projection_id: str,
+        claims: XTDBClaimAuthority, log: KurrentExperienceLog,
+        objects: EncryptedObjectPlane,
+        references: Mapping[str, RawObjectReference],
+        verifier: StateApprovalVerifier,
+    ) -> VerifiedStateCandidate:
+        """Revalidate both evidence and approval before a judgment can consume state."""
+        head = self._fetch(_ACTIVE, self._head_id(subject_type, subject_id,
+                                                  projection_id))
+        if head is None:
+            raise KeyError(projection_id)
+        candidate = self._read_version(
+            version_id=str(head["version_id"]),
+            projection_sha256=str(head["projection_sha256"]),
+            subject_type=subject_type, subject_id=subject_id,
+            projection_id=projection_id, claims=claims, log=log,
+            objects=objects, references=references,
+        )
+        event = self._check_approval(
+            approval_event_id=str(head["approval_event_id"]),
+            candidate=candidate,
+            expected_active_version_id=head["expected_active_version_id"],
+            log=log, objects=objects, references=references, verifier=verifier,
+        )
+        if event.event_sha256 != head["approval_event_sha256"]:
+            raise ValueError("active personal-state approval event changed")
+        return candidate
