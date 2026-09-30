@@ -4,6 +4,7 @@ Actual runtime/current lineage readers are exercised, with strict existing
 custody. These cases do not qualify real backend deadlines or model outputs.
 """
 import asyncio
+from copy import copy
 from dataclasses import replace
 import importlib.util
 from pathlib import Path
@@ -417,7 +418,42 @@ class NativeReadOwnershipTest(unittest.IsolatedAsyncioTestCase):
             frame = custody.metadata(run_id, "history:case-one:" + phase)
             for event_id in history.event_ids + (frame.event_id,):
                 grant(event_id, purpose)
-        controllers = []
+        # One lineage call authenticates selected history once. Later actual
+        # producer callbacks must use current metadata and refuse withdrawal,
+        # without reopening the already authenticated originals.
+        authority = SelectedRunEvidencePolicy(custody=custody, run_id=run_id, permissions=policy)
+        lineage = copy(self.f.lineage)
+        lineage.history_authority = authority
+        authenticate = authority.authorize_history
+        raw_read = custody.raw_custody.read
+        initial_calls = []
+        def authenticate_once(**kwargs):
+            custody.raw_custody.read = raw_read
+            initial_calls.append(kwargs["phase"])
+            allowed = authenticate(**kwargs)
+            custody.raw_custody.read = lambda *args: self.fail("lineage reopened held history ciphertext")
+            return allowed
+        authority.authorize_history = authenticate_once
+        try:
+            lineage.context_lineage(case_id="case-one", phase="after",
+                history=self.f.histories[("case-one", "after")], context=self.f.context)
+            self.assertEqual(initial_calls, ["after"])
+            qualifier = runtime.bindings["memory_formation"].qualification_verifier
+            prior_callback = qualifier.callback
+            qualifier.callback = lambda: grant(self.f.histories[("case-one", "after")].event_ids[0],
+                evaluation_purpose(run_id, "case-one", "after"), "revoke")
+            try:
+                with self.assertRaises(PermissionError):
+                    lineage.context_lineage(case_id="case-one", phase="after",
+                        history=self.f.histories[("case-one", "after")], context=self.f.context)
+                self.assertEqual(initial_calls, ["after", "after"])
+            finally:
+                qualifier.callback = prior_callback
+                grant(self.f.histories[("case-one", "after")].event_ids[0],
+                    evaluation_purpose(run_id, "case-one", "after"))
+        finally:
+            custody.raw_custody.read = raw_read
+        controllers, session_authentications = [], []
         def actual_controller(session_runtime, lineage):
             selected_custody = XTDBComparisonCustody(scope=session_runtime.scope,
                 authority_namespace_id=session_runtime.authority_namespace_id,
@@ -425,11 +461,20 @@ class NativeReadOwnershipTest(unittest.IsolatedAsyncioTestCase):
                 objects=session_runtime.objects, log=session_runtime.log)
             lineage.history_authority = SelectedRunEvidencePolicy(custody=selected_custody,
                 run_id=run_id, permissions=session_runtime.source_policy)
+            full_authenticate = lineage.history_authority.authorize_history
+            calls = []
+            session_authentications.append(calls)
+            def authenticate_history(**kwargs):
+                calls.append(kwargs["phase"])
+                return full_authenticate(**kwargs)
+            lineage.history_authority.authorize_history = authenticate_history
             controllers.append((session_runtime, lineage))
         self.f.read_hook = actual_controller
         self.assertEqual(await self.f.reads.prepare_context(self.entry), self.f.context)
+        self.assertEqual(session_authentications, [["after"]])
         self.assertTrue(await self.f.reads.authorize_context(entry=self.entry, request=self.request(),
             context=self.f.context, arm="flora_full"))
+        self.assertEqual(session_authentications, [["after"], ["after", "after"]])
         for session_runtime, lineage in controllers:
             self.assertIsNot(lineage.history_authority.permissions, session_runtime.source_policy)
             self.assertIs(lineage.history_authority.permissions.connection, session_runtime.claims.connection)

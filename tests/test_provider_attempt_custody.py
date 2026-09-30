@@ -87,7 +87,9 @@ def fixture_owner(*, feature_call_budget=1):
     owner._require_final = lambda **kwargs: None
     # This object.__new__ fixture has no selected SQL authority rows. Real
     # terminal row fences are covered separately by test_provider_source_fence.
-    owner._permission_fence = lambda *args: SimpleNamespace(verify_final_current_rows=lambda: None)
+    owner._permission_fence = lambda *args: SimpleNamespace(
+        prime_sources=lambda *args: None, verify_final_current_rows=lambda: None)
+    owner._sampled_permission_reader = lambda sample: owner
     def source(event_id):
         event = event_by_id[event_id]
         raw = SimpleNamespace(object_id="fictional-object:" + canonical_sha256(event_id),

@@ -110,6 +110,7 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
             or not isinstance(permissions, XTDBFormationPermissionPolicy)):
         raise TypeError("history fence requires actual registered selected metadata services")
     registry, log, objects = custody.registry, custody.log, custody.objects
+    canonical_readers = (log.replay, log.replay_committed, custody.metadata)
     run_id, scope, namespace = policy.run_id, custody.scope, custody.authority_namespace_id
     scope_record = canonical_json_bytes(scope.metadata_record())
     purpose = evaluation_purpose(run_id, case_id, phase)
@@ -119,6 +120,7 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
     def bindings():
         if (policy.custody is not custody or policy.permissions is not permissions or policy.run_id != run_id
                 or custody.registry is not registry or custody.log is not log or custody.objects is not objects
+                or (log.replay, log.replay_committed, custody.metadata) != canonical_readers
                 or permissions.registry is not registry
                 or canonical_json_bytes(scope.metadata_record()) != scope_record
                 or not scope == custody.scope == history.scope == registry.scope == log.scope
@@ -142,6 +144,11 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
     if manifest_entry is None or manifest_entry.event.event_sha256 != record["event_sha256"]:
         raise PermissionError("history manifest has no exact canonical commit")
     sampled = OneGuardSelectedMetadata(registry=registry, permissions=permissions)
+    # One finite call-local selected sample for the exact held source DAG.
+    # The manifest reference is metadata only; this does not invent a grant
+    # for its private contents or retain an allow across a later boundary.
+    sampled.prime_sources(history.event_ids, purpose)
+    sampled.prime_raw_references((record["object_id"],))
     local_registry, local_permissions = sampled.local_registry, sampled.local_permissions
     references, captured = [], []
     event_ids = set(history.event_ids)

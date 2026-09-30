@@ -4,6 +4,33 @@ This note is the takeover point after provisioning the first Docker-capable succ
 
 ## Expanded gate status — 2026-09-30 UTC
 
+The repaired checkpoint `950fe8321902b681ae798f455779e281985d04a0`
+passed all 524 component tests in
+[run 36742030115](https://github.com/NIne-WIngEd/FloRA/actions/runs/36742030115).
+Its core group passed 29 of 30 physical cases, including the actual terminal
+XTDB source fence. The comparator's two expected successes instead exceeded
+its **10-second** fixture response budget. Core restart probes were skipped.
+The chronology and native groups reached their one-hour job caps. Chronology
+completed the coordinator case; no internal preregistration stage can be
+established from that cancelled log. Native completed two lineage cases but
+failed comparison and errored in pilot cases before cancellation. Passive-reader
+and writer-fault cases were unreached. Neither group has a qualifying receipt.
+
+The preceding native job reached the one-hour job cap before the final unittest
+summary. Two lineage cases passed, but earlier native and pilot errors had no
+final traceback, and the passive-reader and writer-fault cases were unreached.
+The next runner prints each failure immediately, completed-case durations, and
+stack-only diagnostics for slow cases. Chronology prints fixed-label milestones
+only after their actual stages succeed; these diagnostics contain no host
+payloads or model outputs.
+
+Controlled call-count profiles expose repeated immutable data reopening and
+metadata traversal inside nested fresh authority checks. Repairs authenticate
+held material on entry, then continue to check current permission and source
+metadata at every private boundary. Observations are confined to one guard and
+the terminal current-row check remains mandatory. Lower controlled query counts
+are not physical timing or learned-behavior evidence.
+
 The follow-up [run 36738250266](https://github.com/NIne-WIngEd/FloRA/actions/runs/36738250266)
 at `432e7dbdd08cb0b76864c0351476302b0cf8de4c` passed all 523 component tests.
 Its core group passed 26 of 30 physical tests; four failed because XTDB rejects
@@ -32,15 +59,19 @@ replacement-artifact fixture. Repairs require another exact-commit engine run.
 The current contract reference is
 `research/mfm-foundation-20260923@4f287a488bc908bd04f99255ee01b794bacba50b`
 (formation schema 1.2.0). The workflow now runs component contracts and exhaustive
-`core`, `native` and `history` engine groups in parallel. New integration modules
-default to `core`; long historical/two-stage suites are assigned to `history`.
+`core`, `transport`, `native`, `lineage`, `readers`, `history` and `history-routes`
+engine groups in parallel. This separates the long lineage and chronology cases
+from the passive-reader, writer-fault and restart gates. New integration modules
+default to `core`.
 Discovery rejects duplicate identities or import failures. Every test must run
 exactly once across the groups. The core group also runs actual storage and
 persistent Temporal restart probes. All jobs must pass at the same commit.
 
-The frozen comparison response budget remains 60 seconds. Successful fixture
-wiring cannot replace that timing receipt, actual producer exports or learned
-behavior evidence. No personality or MFM is built by these infrastructure tests.
+Response budgets stay exactly as registered: the standalone comparator fixture
+uses 10 seconds; the newer native/preregistered fixture declares 60 seconds.
+The CI job cap stays one hour. Successful fixture wiring cannot replace a timing
+receipt, actual producer exports or learned behavior evidence. No personality
+or MFM is built by these infrastructure tests.
 
 ## Historical checkpoint — 2026-09-29
 

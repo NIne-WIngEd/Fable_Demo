@@ -42,6 +42,7 @@ def _current_permission_rows(*, registry, permissions, source_ids, purpose):
     """
     from .phase_source_fence import OneGuardSelectedMetadata
     sample = OneGuardSelectedMetadata(registry=registry, permissions=permissions)
+    sample.prime_sources(tuple(source_ids), purpose)
     pending, seen = list(source_ids), set()
     while pending:
         event_id = pending.pop()
@@ -235,9 +236,15 @@ class QdrantOriginalMemory:
         _require_final(self.custody, self.run_id, self.evidence, self.configuration, request, qualified=True)
         evidence = copy(self.evidence)
         evidence.custody = self.custody._authority_fenced_copy(final_current)
+        # Authenticate the actual held originals once for this preparation.
+        # Later operation guards still resolve current source/parent grants
+        # and finish with the terminal selected-row fence; they do not reopen
+        # the same immutable ciphertext after every Qdrant call.
+        if not evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=request.history):
+            raise ArmStopped("refused")
         def current():
             final_current()
-            if not evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=request.history):
+            if not evidence.authorize_history_metadata(case_id=request.case_id, phase=request.phase, history=request.history):
                 raise ArmStopped("refused")
             final_current()
         current()
@@ -345,18 +352,24 @@ class SelectedComparatorDisclosure:
         source_ids = tuple(dict.fromkeys((question.event_id,) + request.context.source_event_ids))
         permission_rows = _current_permission_rows(registry=self.custody.registry,
             permissions=self.permissions, source_ids=source_ids, purpose=purpose)
+        # External callbacks also cannot withdraw a separately required local
+        # evaluation grant after its history check. The final one-basis fence
+        # includes both purposes, without merging or inventing their grants.
+        permission_rows.prime_sources(history.event_ids,
+            evaluation_purpose(self.run_id, request.case_id, request.phase))
+        registry, permissions = permission_rows.local_registry, permission_rows.local_permissions
         markers = []
         for event_id in source_ids:
-            source = self.custody.registry.lookup(event_id)
-            action = self.permissions.current_action(event_id, purpose)
-            if source is None or action is None or not self.permissions.permits(source, purpose):
+            source = registry.lookup(event_id)
+            action = permissions.current_action(event_id, purpose)
+            if source is None or action is None or not permissions.permits(source, purpose):
                 raise PermissionError("external disclosure lacks its own current host authorization")
             markers.append((event_id, source.registration_sha256, action.action_sha256))
         for event_id, registration, action_hash in markers:
-            source = self.custody.registry.lookup(event_id)
-            action = self.permissions.current_action(event_id, purpose)
+            source = registry.lookup(event_id)
+            action = permissions.current_action(event_id, purpose)
             if (source is None or action is None or source.registration_sha256 != registration
-                    or action.action_sha256 != action_hash or not self.permissions.permits(source, purpose)):
+                    or action.action_sha256 != action_hash or not permissions.permits(source, purpose)):
                 raise PermissionError("external disclosure authority changed during verification")
         _require_final(self.custody, self.run_id, self.evidence, self.configuration, request, qualified=True)
         permission_rows.verify_final_current_rows()
@@ -434,10 +447,12 @@ class SelectedComparatorRecorder:
             source_ids = (question.event_id, *request.context.source_event_ids)
             permission_rows = _current_permission_rows(registry=self.custody.registry,
                 permissions=self.disclosure.permissions, source_ids=source_ids, purpose=purpose)
+            permission_rows.prime_sources(history.event_ids,
+                evaluation_purpose(self.run_id, request.case_id, request.phase))
             if not evidence.authorize_history_metadata(case_id=request.case_id, phase=request.phase, history=history):
                 raise PermissionError("comparator result lost current original source authority")
             for event_id in source_ids:
-                if not self.disclosure.permissions.permits(self.custody.registry.lookup(event_id), purpose):
+                if not permission_rows.local_permissions.permits(permission_rows.local_registry.lookup(event_id), purpose):
                     raise PermissionError("comparator result lost current external source authority")
             final_current()
             permission_rows.verify_final_current_rows()

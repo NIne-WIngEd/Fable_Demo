@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from dataclasses import replace
 import unittest
+from unittest.mock import patch
 from cognitive_kernel.canonical import canonical_sha256
 from cognitive_kernel.memory_contracts import MemoryUnitEnvelope
 from cognitive_kernel.projection_contracts import EpisodeRecord, ProjectionVersion
@@ -157,6 +158,34 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "qualified formation and independent"):
             self.episodes.accept(request=request, request_event_id=event.event_id, **self.inputs())
         self.assertIsNone(self.episodes._head("fictional-thread"))
+
+    def test_accepted_read_reuses_authenticated_attachments_and_rechecks_changed_adjudication(self):
+        episode, artifact, summary, content = self.candidate()
+        self.accept(episode, artifact)
+        with patch.object(self.admission, "qualified_formation",
+                wraps=self.admission.qualified_formation) as qualified, patch.object(
+                self.admission, "authenticated_adjudication",
+                wraps=self.admission.authenticated_adjudication) as adjudicated:
+            for changed in (False, True):
+                if changed:
+                    self.admission.adjudicated.clear()
+                opened = []
+                with helpers.observe_private_opens(opened):
+                    if changed:
+                        with self.assertRaisesRegex(ValueError, "qualified formation and independent"):
+                            self.episodes.read_accepted(episode.episode_id, **self.inputs())
+                    else:
+                        accepted = self.episodes.read_accepted(episode.episode_id, **self.inputs())
+                        self.assertEqual(accepted.content, b"supplied fictional episode 1 narrative")
+                self.assertEqual(opened.count(summary.object_id), 1)
+                self.assertEqual(opened.count(content.object_id), 1)
+            self.assertEqual(qualified.call_count, 2)
+            self.assertEqual(adjudicated.call_count, 2)
+            for call in adjudicated.call_args_list:
+                held = call.args[2]
+                self.assertEqual(dict(held.content), {
+                    "summary": b"supplied fictional episode 1 summary",
+                    "content": b"supplied fictional episode 1 narrative"})
 
     def test_permission_denial_precedes_any_derived_private_content_read(self):
         episode, artifact, summary, content = self.candidate()

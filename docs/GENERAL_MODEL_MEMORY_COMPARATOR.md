@@ -47,6 +47,25 @@ claim that BM25 plus dense search is enough for every personal decision. Actual
 embedding relevance, corpus coverage, conflict handling and held-out retrieval
 quality remain measured pilot requirements.
 
+Each preparation authenticates its held original bytes against encrypted
+registered custody on entry. Subsequent guards around embedding and Qdrant
+operations reconstruct that exact history manifest and resolve fresh source,
+ancestor and evaluation grants through the terminal selected-row fence. They do
+not reopen the same original ciphertext after every operation. A later
+preparation authenticates again; an earlier grant is never a permission lease.
+
+The physical run at `950fe8321902b681ae798f455779e281985d04a0` reached the
+comparator but both supplied success attempts exceeded that fixture's frozen 10-second
+response limit. In the same controlled two-original fixture, removing repeated
+private authentication initially reduced preparation from 722 to 326 SQL calls and 28 to
+4 original object opens. Those counts identify redundant work; they do not
+qualify physical latency. The actual engine retry retains the same budget and
+prints each comparator attempt's phase, status and elapsed milliseconds.
+The call-local metadata sampler also batches the finite registered source DAG,
+current purpose heads and immutable actions; its final current-row query and
+actual control callbacks still run at each guard. Physical qualification remains
+pending after those repairs.
+
 ## Configured frontier execution
 
 [comparator.py](../src/flora/comparator.py) defines `GeneralMemoryArmAdapter` and
@@ -95,6 +114,12 @@ phase history and exact context windows. It then checks current
 `comparison_external:<provider_id>` authority for the frozen question and every
 selected source, including full parent closure. Local evaluation permission does
 not imply that external grant.
+
+The terminal metadata statement covers both independently required purposes.
+A late external-permission callback cannot withdraw local evaluation permission
+and still return a dispatch marker or authorize sealing the response context.
+Provider capture and audit keep their separate purposes, so an already observed
+failed call can remain recoverable after evaluation or external use is withdrawn.
 
 The check runs before generation, in the supplied client's actual dispatch
 callback, after generation and at recording. The signed response must bind the

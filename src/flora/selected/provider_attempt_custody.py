@@ -227,9 +227,10 @@ class XTDBProviderAttemptCustody:
         capture_only = purpose in {capture_purpose(self.run_id), audit_purpose(self.run_id)}
         self._require_final(capture_only=capture_only)
         permission_rows = self._permission_fence(source_ids, purpose)
+        reader = self._sampled_permission_reader(permission_rows)
         for event_id in source_ids:
-            source, _, _ = self._source(event_id)
-            if self.permissions.permits(source, purpose) is not True:
+            source, _, _ = reader._source(event_id)
+            if reader.permissions.permits(source, purpose) is not True:
                 raise PermissionError("private provider source is not currently permitted")
         self._require_final(capture_only=capture_only)
         permission_rows.verify_final_current_rows()
@@ -238,6 +239,16 @@ class XTDBProviderAttemptCustody:
         from .comparator_memory import _current_permission_rows
         return _current_permission_rows(registry=self.registry, permissions=self.permissions,
             source_ids=source_ids, purpose=purpose)
+
+    def _sampled_permission_reader(self, sample):
+        """One guard's actual decoded rows; never a stored permission result."""
+        from .phase_source_fence import OneGuardSelectedMetadata
+        if (not isinstance(sample, OneGuardSelectedMetadata)
+                or sample.registry is not self.registry or sample.permissions is not self.permissions):
+            raise TypeError("provider guard requires this actual selected metadata sample")
+        reader = copy(self)
+        reader.registry, reader.permissions = sample.local_registry, sample.local_permissions
+        return reader
 
     def _read_source(self, event_id, purpose):
         source, _, _ = self._source(event_id)
@@ -488,17 +499,25 @@ class XTDBProviderAttemptCustody:
                 raise ValueError("dispatch authorization lacks its immutable independent permission action")
 
     def _verify_task_sources(self, body, purpose):
+        capture_only = purpose in {capture_purpose(self.run_id), audit_purpose(self.run_id)}
+        self._require_final(capture_only=capture_only)
+        source_ids = tuple(binding["event_id"] for binding in body["source_bindings"])
+        permission_rows = self._permission_fence(source_ids, purpose)
+        reader = self._sampled_permission_reader(permission_rows)
         for binding in body["source_bindings"]:
-            source, event, raw = self._source(binding["event_id"])
+            source, event, raw = reader._source(binding["event_id"])
             if (source.registration_sha256 != binding["registration_sha256"]
                     or event.event_sha256 != binding["event_sha256"] or raw.object_id != binding["object_id"]
                     or raw.plaintext_sha256 != binding["content_sha256"]
                     or list(event.parent_event_ids) != binding["parent_event_ids"]):
                 raise ValueError("provider task source registration or exact raw lineage changed")
-            self._require((binding["event_id"],), purpose)
+            if reader.permissions.permits(source, purpose) is not True:
+                raise PermissionError("provider task source lacks its current purpose permission")
         # One binding's late callback can revoke an earlier, unrelated source.
-        # End with the complete task closure, not several individual allows.
-        self._require(tuple(binding["event_id"] for binding in body["source_bindings"]), purpose)
+        # All bindings use one complete call-local source DAG and end with the
+        # actual current-row fence, rather than individually rebuilding it.
+        self._require_final(capture_only=capture_only)
+        permission_rows.verify_final_current_rows()
 
     @staticmethod
     def _task_marker(body, source_marker):
@@ -515,20 +534,27 @@ class XTDBProviderAttemptCustody:
         self._require_final(body=body)
         purpose = "comparison_external:" + body["provider_configuration"]["provider_id"]
         permission_rows = self._permission_fence(body["disclosure_source_ids"], purpose)
+        history = self.comparison.metadata(self.run_id, f"history:{body['case_id']}:{body['phase']}")
+        if (history is None
+                or tuple(history.record["metadata"]["source_event_ids"]) != tuple(body["original_event_ids"])):
+            raise PermissionError("external task lost its exact registered evaluation history")
+        permission_rows.prime_sources(tuple(body["original_event_ids"]) + (history.event_id,),
+            evaluation_purpose(self.run_id, body["case_id"], body["phase"]))
+        reader = self._sampled_permission_reader(permission_rows)
         sources = []
         for event_id in body["disclosure_source_ids"]:
-            source, _, _ = self._source(event_id)
-            action = self.permissions.current_action(event_id, purpose)
-            if action is None or self.permissions.permits(source, purpose) is not True:
+            source, _, _ = reader._source(event_id)
+            action = reader.permissions.current_action(event_id, purpose)
+            if action is None or reader.permissions.permits(source, purpose) is not True:
                 raise PermissionError("actual wire source lacks separate current external consent")
             sources.append({"event_id": event_id, "registration_sha256": source.registration_sha256,
                             "action_sha256": action.action_sha256, "action_id": action.action_id})
         for saved in sources:
-            source, _, _ = self._source(saved["event_id"])
-            action = self.permissions.current_action(saved["event_id"], purpose)
+            source, _, _ = reader._source(saved["event_id"])
+            action = reader.permissions.current_action(saved["event_id"], purpose)
             if (action is None or action.action_sha256 != saved["action_sha256"]
                     or source.registration_sha256 != saved["registration_sha256"]
-                    or self.permissions.permits(source, purpose) is not True):
+                    or reader.permissions.permits(source, purpose) is not True):
                 raise PermissionError("external permission changed while checking exact wire")
         source_marker = canonical_sha256({"provider_configuration_sha256": body["dispatch"]["configuration_sha256"],
             "payload_sha256": body["dispatch"]["payload_sha256"], "purpose": purpose,

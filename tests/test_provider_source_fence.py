@@ -4,6 +4,7 @@ The terminal query runs against a row recorder here. Physical-engine coverage
 is included in test_selected_provider_attempt_ledger; it remains separate.
 """
 import base64
+from copy import copy
 import inspect
 import sys
 import unittest
@@ -13,6 +14,7 @@ from flora.selected.formation_policy import FormationPermissionAction, formation
 from flora.selected.owner_authorization import OwnerActionProof, owner_action_message
 from flora.selected.personal_artifact_custody import _SourceAuthorizedObjectReads
 from flora.selected.provider_attempt_custody import XTDBProviderAttemptCustody, capture_purpose
+from flora.selected.phase_source_fence import OneGuardSelectedMetadata
 import test_history_fence as fixtures
 
 
@@ -92,12 +94,14 @@ class ProviderSourceFenceTest(unittest.TestCase):
 
     def test_external_last_current_action_cannot_revoke_first_before_marker_returns(self):
         body = {"provider_configuration": {"provider_id": "fixture"}, "disclosure_source_ids": list(self.ids),
-            "dispatch": {"configuration_sha256": "a" * 64, "payload_sha256": "b" * 64}}
+            "dispatch": {"configuration_sha256": "a" * 64, "payload_sha256": "b" * 64},
+            "case_id": "case", "phase": "before", "original_event_ids": list(self.ids)}
+        self.h.grant(self.h.custody.metadata("run", "history:case:before").event_id, "before")
         self.owner._external_snapshot(body)
         action, changed = self.permissions.current_action, False
         lines, start = inspect.getsourcelines(XTDBProviderAttemptCustody._external_snapshot)
         final_line = start + next(i for i, line in enumerate(lines)
-            if 'action = self.permissions.current_action(saved["event_id"], purpose)' in line)
+            if 'action = reader.permissions.current_action(saved["event_id"], purpose)' in line)
         def current(event_id, purpose):
             nonlocal changed
             result = action(event_id, purpose)
@@ -150,6 +154,43 @@ class ProviderSourceFenceTest(unittest.TestCase):
         with patch.object(self.permissions, "permits", side_effect=current), self.no_original_cipher():
             with self.assertRaises(PermissionError):
                 self.owner._verify_task_sources({"source_bindings": bindings}, self.capture)
+        self.assertTrue(changed)
+
+    def test_call_local_reader_requires_its_actual_selected_service_sample(self):
+        sample = self.owner._permission_fence(self.ids, self.capture)
+        reader = self.owner._sampled_permission_reader(sample)
+        self.assertIs(reader.registry, sample.local_registry)
+        self.assertIs(reader.permissions, sample.local_permissions)
+        self.assertIsNot(reader.registry, self.owner.registry)
+        with self.assertRaises(TypeError):
+            self.owner._sampled_permission_reader(object())
+        # Same scope, namespace and physical connection still cannot substitute
+        # another scoped service object for the current owner's actual binding.
+        other_registry = copy(self.registry)
+        other_permissions = copy(self.permissions)
+        other_permissions.registry = other_registry
+        other = OneGuardSelectedMetadata(registry=other_registry, permissions=other_permissions)
+        with self.assertRaises(TypeError):
+            self.owner._sampled_permission_reader(other)
+
+    def test_external_last_callback_cannot_withdraw_evaluation_before_dispatch_marker(self):
+        body = {"provider_configuration": {"provider_id": "fixture"}, "disclosure_source_ids": list(self.ids),
+            "dispatch": {"configuration_sha256": "a" * 64, "payload_sha256": "b" * 64},
+            "case_id": "case", "phase": "before", "original_event_ids": list(self.ids)}
+        self.h.grant(self.h.custody.metadata("run", "history:case:before").event_id, "before")
+        self.owner._external_snapshot(body)
+        original, changed = self.permissions.permits, False
+        def permits(source, purpose):
+            nonlocal changed
+            result = original(source, purpose)
+            if (_inside(XTDBProviderAttemptCustody._external_snapshot) and purpose == self.external
+                    and source.evidence.ref_id == self.ids[-1] and not changed):
+                changed = True
+                self.h.grant(self.ids[0], "before", "revoke")
+            return result
+        with patch.object(self.permissions, "permits", side_effect=permits):
+            with self.assertRaisesRegex(PermissionError, "terminal"):
+                self.owner._external_snapshot(body)
         self.assertTrue(changed)
 
 

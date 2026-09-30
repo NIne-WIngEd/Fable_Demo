@@ -45,12 +45,22 @@ class SelectedPhaseSourceFenceIntegrationTest(unittest.TestCase):
             self.assertNotIn(object_id, {first.payload_reference, second.payload_reference},
                 "metadata guard opened original ciphertext")
             return original_read(namespace, object_id)
-        with patch.object(f.objects.backend, "get_object", side_effect=read):
+        actual_execute, guard_statements = f.connection.execute, []
+        def execute(sql, parameters=()):
+            guard_statements.append(sql)
+            return actual_execute(sql, parameters)
+        with patch.object(f.objects.backend, "get_object", side_effect=read), \
+             patch.object(f.connection, "execute", side_effect=execute):
             self.assertTrue(guard())  # Executes real UNION ALL against XTDB.
+        self.assertEqual(len(guard_statements), 4)  # Two batches, current Claim, final fence.
+        self.assertEqual(sum("AS flora_current_metadata_sample LIMIT" in sql
+            for sql in guard_statements), 2)
+        self.assertEqual(sum("AS flora_current_metadata_fence LIMIT" in sql
+            for sql in guard_statements), 1)
         original_action, changed = f.policy.current_action, False
         lines, first_line = inspect.getsourcelines(verify_current_phase_sources)
         final_line = first_line + next(index for index, line in enumerate(lines)
-            if "action = permissions.current_action(event_id, policy.purpose)" in line)
+            if "action = sample.local_permissions.current_action(event_id, policy.purpose)" in line)
         def action(event_id, purpose):
             nonlocal changed
             result = original_action(event_id, purpose)

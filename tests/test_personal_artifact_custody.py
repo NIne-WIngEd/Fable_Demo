@@ -126,6 +126,39 @@ class PersonalArtifactCustodyContractTest(unittest.TestCase):
         self.assertEqual(f.state.read_active(**f.identity(), verifier=self.durable_verifier(),
             **self.inputs()), active)
 
+    def test_read_validates_contract_from_authenticated_attachment_without_reopening(self):
+        f = self.fixture
+        version, raw = f.version(1)
+        recorded = self.record(version, raw)
+        original = f.objects.backend.get_object
+        attachment_fetches = []
+        def fetch(namespace, object_id):
+            if object_id == raw.object_id:
+                attachment_fetches.append(object_id)
+                if len(attachment_fetches) > 2:
+                    raise AssertionError("authenticated attachment was reopened during contract validation")
+            return original(namespace, object_id)
+        with patch.object(f.objects.backend, "get_object", side_effect=fetch):
+            recovered = self.custody.read(recorded.artifact_id, log=f.log, objects=f.objects)
+        self.assertEqual(dict(recovered.content)["content"], b"fictional supplied state 1")
+        self.assertEqual(recovered.contract, version.metadata_record())
+        self.assertEqual(len(attachment_fetches), 2)
+
+    def test_withdrawal_during_held_contract_validation_refuses_return(self):
+        f = self.fixture
+        version, raw = f.version(1)
+        recorded = self.record(version, raw)
+        allowed = [True]
+        def withdraw(record):
+            validated = _version_from_record(record)
+            allowed[0] = False
+            return validated
+        with patch("flora.selected.governed_development._version_from_record", side_effect=withdraw):
+            with self.assertRaises(PermissionError):
+                self.custody.read(recorded.artifact_id, log=f.log, objects=f.objects,
+                                  source_authorizer=lambda: allowed[0])
+        self.assertFalse(allowed[0])
+
     def test_append_before_index_failure_reconciles_from_canonical_event(self):
         f = self.fixture
         version, raw = f.version(1)

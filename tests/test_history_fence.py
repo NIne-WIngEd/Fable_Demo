@@ -290,6 +290,29 @@ class HistoryFenceTest(unittest.TestCase):
                 self.verify()
         self.assertTrue(changed)
 
+    def test_final_grant_callback_cannot_replace_the_actual_canonical_reader(self):
+        original, changed = self.permissions.current_action, False
+        lines, start = inspect.getsourcelines(verify_current_history_metadata)
+        final_line = start + next(i for i, line in enumerate(lines)
+            if "action = permissions.current_action(snapshot.event_id, purpose)" in line)
+        def action(event_id, purpose):
+            nonlocal changed
+            result = original(event_id, purpose)
+            frame, at_final = sys._getframe(1), False
+            while frame is not None:
+                if frame.f_code is verify_current_history_metadata.__code__ and frame.f_lineno == final_line:
+                    at_final = True
+                    break
+                frame = frame.f_back
+            if at_final and event_id == self.before.event_ids[-1] and not changed:
+                changed = True
+                self.f.log.replay_committed = lambda: ()
+            return result
+        with patch.object(self.permissions, "current_action", side_effect=action):
+            with self.assertRaises(PermissionError):
+                self.verify()
+        self.assertTrue(changed)
+
 
 if __name__ == "__main__":
     unittest.main()

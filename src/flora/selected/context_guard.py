@@ -114,7 +114,7 @@ def _binding_guard(*, claims, state, log, objects, policy, purpose):
     return current
 
 
-def _metadata_view(*, claims, state, log, policy):
+def _metadata_view(*, claims, state, log, policy, source_sample=None):
     """One guard's sampled actual rows; every view is discarded before a fence.
 
     Only metadata readers are memoized. No connection, plaintext reader, owner
@@ -141,10 +141,14 @@ def _metadata_view(*, claims, state, log, policy):
         local_claims = sampled(claims, ("_fetch_record",))
     else:  # Explicit contract fixtures still resolve actual supplied reader ports.
         local_claims = sampled(claims, ("load_current", "load_version", "load_evidence_relation"))
-    registry = (sampled(policy.registry, ("_fetch",))
-        if callable(getattr(policy.registry, "_fetch", None))
-        else sampled(policy.registry, ("lookup", "raw_metadata", "raw_reference")))
-    permissions = sampled(policy.permissions, ("_fetch",))
+    if source_sample is not None:
+        registry = source_sample.local_registry
+    else:
+        registry = (sampled(policy.registry, ("_fetch",))
+            if callable(getattr(policy.registry, "_fetch", None))
+            else sampled(policy.registry, ("lookup", "raw_metadata", "raw_reference")))
+    permissions = (source_sample.local_permissions if source_sample is not None
+        else sampled(policy.permissions, ("_fetch",)))
     permissions.registry = registry
     local_state = sampled(state, ("_fetch",))
     local_state.registry, local_state.policy = registry, permissions
@@ -325,11 +329,48 @@ class PreparedCurrentContext:
 
     def metadata_current(self) -> None:
         """No raw read, owner proof or external semantic call occurs here."""
+        from .claims import XTDBClaimAuthority
+        from .formation_policy import XTDBFormationPermissionPolicy
+        from .formation_registry import XTDBFormationSourceRegistry
+        from .phase_source_fence import OneGuardSelectedMetadata
+        controllers = tuple(getattr(self, name) for name in
+            ("claims", "state", "log", "objects", "references", "policy"))
+        phase_guard, actual_bindings = self.authority_guard, self._bindings_current
+        methods = [(self.policy, name, getattr(self.policy, name))
+            for name in ("allow_event", "allow_claim", "allow_state")]
+        methods += [(self.log, name, getattr(self.log, name, None))
+            for name in ("replay", "replay_committed")]
+        def bindings():
+            if (any(getattr(self, name) is not value for name, value in zip(
+                    ("claims", "state", "log", "objects", "references", "policy"), controllers))
+                    or self.authority_guard != phase_guard or self._bindings_current != actual_bindings
+                    or any(getattr(service, name, None) != method for service, name, method in methods)):
+                raise PermissionError("prepared current-context controller/callback binding changed")
+            actual_bindings()
+        bindings()
         self._phase()
+        bindings()
         if canonical_json_bytes(self.context.receipt_record()) != self._context_record:
             raise ValueError("prepared private context was changed")
+        source_sample = None
+        if (isinstance(self.policy.registry, XTDBFormationSourceRegistry)
+                and isinstance(self.policy.permissions, XTDBFormationPermissionPolicy)
+                and (self.source_authorities or self.claim_authorities)):
+            if self.claim_authorities and not isinstance(self.claims, XTDBClaimAuthority):
+                raise TypeError("selected current-context Claim fence needs actual selected Claim authority")
+            source_sample = OneGuardSelectedMetadata(registry=self.policy.registry,
+                permissions=self.policy.permissions,
+                claims=self.claims if isinstance(self.claims, XTDBClaimAuthority) else None)
+            if self.source_authorities:
+                source_sample.prime_sources(tuple(captured.event_id for captured in self.source_authorities),
+                    self.context.plan.purpose)
+            for captured in self.claim_authorities:
+                current = source_sample.local_claims.load_current(captured.claim_id)
+                _require_available(current, captured.claim_id)
+                if canonical_json_bytes(current) != captured.current_record:
+                    raise ValueError("prepared Claim changed before terminal metadata observation")
         claims, state, log, policy = _metadata_view(claims=self.claims, state=self.state,
-            log=self.log, policy=self.policy)
+            log=self.log, policy=self.policy, source_sample=source_sample)
         events = {event.event_id: event for event in log.replay()}
         for captured in self.claim_authorities:
             current = claims.load_current(captured.claim_id)
@@ -381,15 +422,22 @@ class PreparedCurrentContext:
             if policy.allow_claim(captured.claim_id, self.context.plan.purpose) is not True:
                 raise PermissionError("prepared Claim use was withdrawn")
         self._phase()
-        self._metadata_fence()
+        self._metadata_fence(source_sample=source_sample)
         self._phase()
         # A final external phase callback may perform slow metadata work.
         # Current original/control consent must still follow that work, before
         # the caller's inner ciphertext result can reach decryption.
-        self._source_fence()
-        self._bindings_current()
+        self._source_fence(source_sample=source_sample)
+        bindings()
+        if source_sample is not None:
+            # Last grant/phase callbacks can withdraw an earlier source or
+            # quarantine an already checked Claim. One actual selected basis
+            # observes every sampled source/raw/action/head/current-Claim row
+            # together after those callbacks, before private bytes can return.
+            source_sample.verify_final_current_rows()
+        bindings()
 
-    def _metadata_fence(self) -> None:
+    def _metadata_fence(self, *, source_sample=None) -> None:
         """Final narrow exact fence after potentially slow policy lookups."""
         # Episode metadata can involve multiple dependent service calls. Do not
         # leave it after the current original/control permission fence.
@@ -418,27 +466,29 @@ class PreparedCurrentContext:
                     or any(canonical_json_bytes(self.state._history(projection, version)) != record
                            for projection, version, record in captured.rollback_activation_records)):
                 raise ValueError("prepared state changed during metadata verification")
-        self._source_fence()
+        self._source_fence(source_sample=source_sample)
 
-    def _source_fence(self) -> None:
-        """Fresh actual originals/controls after all slower dependent callbacks."""
+    def _source_fence(self, *, source_sample=None) -> None:
+        """Exact source/control checks before the terminal current-row fence."""
         events = {event.event_id: event for event in self.log.replay()}
+        registry = self.policy.registry if source_sample is None else source_sample.local_registry
+        permissions = self.policy.permissions if source_sample is None else source_sample.local_permissions
         current_sources = {}
         for captured in self.source_authorities:
-            source = self.policy.registry.lookup(captured.event_id)
+            source = registry.lookup(captured.event_id)
             event = events.get(captured.event_id)
             if (source is None or event is None or event.event_sha256 != captured.event_sha256
                     or _source_record(source) != captured.source_record
-                    or canonical_json_bytes(self.policy.registry.raw_metadata(source.object_ref)) != captured.raw_record):
+                    or canonical_json_bytes(registry.raw_metadata(source.object_ref)) != captured.raw_record):
                 raise PermissionError("prepared source changed during metadata verification")
             current_sources[captured.event_id] = source
         for captured in self.source_authorities:
-            current_action = getattr(self.policy.permissions, "current_action", None)
+            current_action = getattr(permissions, "current_action", None)
             if captured.grant_record is not None:
                 grant = current_action(captured.event_id, self.context.plan.purpose)
                 if grant is None or canonical_json_bytes(grant.metadata_record()) != captured.grant_record:
                     raise PermissionError("prepared grant changed during metadata verification")
-            elif self.policy.permissions.permits(current_sources[captured.event_id], self.context.plan.purpose) is not True:
+            elif permissions.permits(current_sources[captured.event_id], self.context.plan.purpose) is not True:
                 raise PermissionError("prepared source permission changed during metadata verification")
 
     def revalidate(self) -> None:

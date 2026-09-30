@@ -19,7 +19,8 @@ def install_current_metadata_batch(connection):
     if getattr(connection, "_flora_metadata_batch_recorder", False):
         return
     def execute(sql, parameters):
-        if not sql.startswith("SELECT * FROM (SELECT '") or ") AS flora_current_metadata_fence LIMIT" not in sql:
+        if not sql.startswith("SELECT * FROM (SELECT '") or not any(
+                f") AS flora_current_metadata_{kind} LIMIT" in sql for kind in ("fence", "sample")):
             return original(sql, parameters)
         connection.calls.append((sql, parameters))
         clauses = re.findall(r"SELECT '([^']+)' AS fence_kind, _id, scope_digest, "
@@ -27,7 +28,7 @@ def install_current_metadata_batch(connection):
             r"WHERE scope_digest = %s AND _id IN \(([^)]+)\)", sql)
         if not clauses:
             raise AssertionError("unrecognized finite terminal metadata SQL shape")
-        limit_match = re.search(r" AS flora_current_metadata_fence LIMIT ([1-9][0-9]*)$", sql)
+        limit_match = re.search(r" AS flora_current_metadata_(?:fence|sample) LIMIT ([1-9][0-9]*)$", sql)
         if limit_match is None:
             raise AssertionError("finite metadata LIMIT must be an XTDB-compatible integer literal")
         row_limit = int(limit_match.group(1))

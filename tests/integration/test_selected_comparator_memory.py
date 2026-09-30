@@ -197,7 +197,10 @@ class SelectedComparatorIntegrationTest(unittest.TestCase):
                     grant(event_id, "comparison_external:fixture-provider")
                 completed = asyncio.run(run())
                 successes = [a for a in completed.attempts if a.arm == "general_model_memory"]
-                self.assertEqual([a.status for a in successes], ["success", "success"])
+                timing = [{"phase": a.phase, "status": a.status, "elapsed_ms": a.elapsed_ms}
+                    for a in successes]
+                print("Selected comparator attempt timing:", json.dumps(timing, sort_keys=True), flush=True)
+                self.assertEqual([a.status for a in successes], ["success", "success"], timing)
                 self.assertEqual(supplied.calls, 2)
                 self.assertTrue(all(a.usage.cost_microunits is None for a in successes))
                 custody.save_run(run_id="run", run=completed, occurred_at=now())

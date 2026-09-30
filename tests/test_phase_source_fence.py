@@ -20,7 +20,7 @@ from flora.selected.formation_policy import FormationPermissionAction, formation
 from flora.selected.judgment_context import RegisteredJudgmentContextPolicy
 from flora.selected.owner_authorization import OwnerActionProof, owner_action_message
 from flora.selected.personal_artifact_custody import _SourceAuthorizedObjectReads
-from flora.selected.phase_source_fence import verify_current_phase_sources
+from flora.selected.phase_source_fence import OneGuardSelectedMetadata, verify_current_phase_sources
 import test_history_fence as fixtures
 from metadata_batch_fixture import _Cursor
 
@@ -90,6 +90,10 @@ class PhaseSourceFenceTest(unittest.TestCase):
         calls = self.f.connection.calls[before:]
         batches = [sql for sql, _ in calls if "AS flora_current_metadata_fence LIMIT" in sql]
         self.assertEqual(len(batches), 1)
+        # Native selected decoders/predicates use actual finite row batches.
+        # Source count cannot produce one reader round-trip per authority row.
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(sum("AS flora_current_metadata_sample LIMIT" in sql for sql, _ in calls), 2)
         source_reads = [(re.search(r"FROM (\w+)", sql).group(1), parameters[0])
             for sql, parameters in calls if sql.startswith("SELECT * FROM flora_formation_")
             and "FOR VALID_TIME ALL" in sql and "permission" not in sql]
@@ -98,6 +102,47 @@ class PhaseSourceFenceTest(unittest.TestCase):
         self.grant(self.h.before.event_ids[0], "revoke")
         with self.assertRaises(PermissionError):
             self.original_cipher_guard(self.verify)
+
+    def test_batch_discovers_real_registered_ancestors_without_authorizing_later_calls(self):
+        last_id = self.h.materials[-1].event.event_id
+        sample = OneGuardSelectedMetadata(registry=self.registry, permissions=self.permissions)
+        discovered = self.original_cipher_guard(lambda: sample.prime_sources((last_id,), "personal_judgment"))
+        self.assertEqual(set(discovered), {last_id, self.h.before.event_ids[0]})
+        sample.verify_final_current_rows()
+        self.grant(self.h.before.event_ids[0], "revoke")
+        fresh = OneGuardSelectedMetadata(registry=self.registry, permissions=self.permissions)
+        with self.assertRaises(PermissionError):
+            self.original_cipher_guard(lambda: fresh.prime_sources((last_id,), "personal_judgment"))
+
+    def test_batch_preserves_custom_actual_reader_callbacks_and_their_denials(self):
+        for service in (self.registry, self.permissions):
+            with self.subTest(service=type(service).__name__):
+                with patch.object(service, "_fetch", return_value=None) as denial:
+                    with self.assertRaises(PermissionError):
+                        self.original_cipher_guard(self.verify)
+                    self.assertGreater(denial.call_count, 0)
+
+    def test_initial_batch_missing_duplicate_unexpected_and_scope_rows_fail_closed(self):
+        original = self.f.connection.execute
+        for corruption in ("missing", "duplicate", "unexpected", "scope"):
+            def execute(sql, parameters):
+                cursor = original(sql, parameters)
+                if "AS flora_current_metadata_sample LIMIT" not in sql:
+                    return cursor
+                names = [value.name for value in cursor.description]
+                rows = [dict(zip(names, values)) for values in cursor.fetchall()]
+                if corruption == "missing":
+                    rows.pop()
+                elif corruption == "duplicate":
+                    rows[-1] = deepcopy(rows[0])
+                elif corruption == "unexpected":
+                    rows[-1]["_id"] = "f"*64
+                else:
+                    rows[-1]["scope_digest"] = "f"*64
+                return _Cursor(rows)
+            with self.subTest(corruption=corruption), patch.object(self.f.connection, "execute", side_effect=execute):
+                with self.assertRaises(PermissionError):
+                    self.original_cipher_guard(self.verify)
 
     def test_actual_instance_mutated_source_and_permission_predicates_are_preserved(self):
         for service, name in ((self.policy, "allow_event"), (self.permissions, "permits")):
@@ -152,7 +197,7 @@ class PhaseSourceFenceTest(unittest.TestCase):
         original = self.permissions.current_action
         lines, first = inspect.getsourcelines(verify_current_phase_sources)
         final_line = first + next(i for i, line in enumerate(lines)
-            if "action = permissions.current_action(event_id, policy.purpose)" in line)
+            if "action = sample.local_permissions.current_action(event_id, policy.purpose)" in line)
         changed = False
         def action(event_id, purpose):
             nonlocal changed

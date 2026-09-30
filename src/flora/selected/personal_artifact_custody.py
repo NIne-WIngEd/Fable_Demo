@@ -258,10 +258,23 @@ class XTDBPersonalArtifactCustody:
 
     def _validate_contract(self, kind: str, contract: dict[str, object],
                            attachments: tuple[tuple[str, RawObjectReference], ...],
-                           objects: EncryptedObjectPlane) -> None:
+                           objects: EncryptedObjectPlane, *,
+                           authenticated_content: tuple[tuple[str, bytes], ...] | None = None) -> None:
         references = dict(attachments)
         if len(references) != len(attachments):
             raise ValueError("private artifact attachment roles are duplicated")
+        held_content = None if authenticated_content is None else dict(authenticated_content)
+        if held_content is not None and (len(held_content) != len(authenticated_content)
+                or set(held_content) != set(references)):
+            raise ValueError("private artifact authenticated attachment roles differ")
+        def plaintext(role):
+            if held_content is None:
+                return objects.get(references[role])
+            material, raw = held_content[role], references[role]
+            if (not isinstance(material, bytes) or len(material) != raw.size
+                    or hashlib.sha256(material).hexdigest() != raw.plaintext_sha256):
+                raise ValueError("private artifact authenticated attachment content differs")
+            return material
         if kind == "projection":
             from .governed_development import _version_from_record
             version = _version_from_record(contract)
@@ -283,16 +296,16 @@ class XTDBPersonalArtifactCustody:
                     or contract.get("scope") != self.scope.metadata_record()
                     or set(references) != {"proof"}):
                 raise ValueError("private owner proof binding differs")
-            proof = OwnerActionProof(**json.loads(objects.get(references["proof"])))
+            proof = OwnerActionProof(**json.loads(plaintext("proof")))
             if (proof.action != contract["action"] or proof.event_id != contract["event_id"]
                     or proof.event_sha256 != contract["event_sha256"]):
                 raise ValueError("private owner proof differs from its event binding")
         else:
             raise ValueError("private artifact contract kind is unsupported")
-        for raw in references.values():
+        for role, raw in references.items():
             if raw.scope != self.scope:
                 raise ValueError("private artifact content crosses host scope")
-            objects.get(raw)
+            plaintext(role)
 
     def register_approval(self, *, approval_event_id: str, candidate: ProjectionVersion,
                           expected_active_version_id: str | None, raw: RawObjectReference,
@@ -441,6 +454,8 @@ class XTDBPersonalArtifactCustody:
         contract = index["contract"]
         if canonical_sha256(contract) != index["contract_sha256"]:
             raise ValueError("private artifact contract digest differs")
+        if source_authorizer is not None:
+            objects._check()
         if index["kind"] == "state_activation_approval":
             from .governed_development import _version_from_record
             candidate = _version_from_record(contract["candidate"])
@@ -467,7 +482,13 @@ class XTDBPersonalArtifactCustody:
                 "attachments": index["attachments"]})
             if entry.event.event_type != "private_personal_artifact" or material != expected:
                 raise ValueError("private artifact typed manifest changed")
-            self._validate_contract(index["kind"], contract, tuple(references), objects)
+            # Each held attachment was authenticated by _read_raw above. Reuse
+            # those exact bytes for typed validation, retaining current source
+            # checks around validation instead of reopening immutable content.
+            self._validate_contract(index["kind"], contract, tuple(references), objects,
+                                    authenticated_content=tuple(content))
+        if source_authorizer is not None:
+            objects._check()
         return RecoveredPersonalArtifact(artifact_id, index["kind"], contract, entry.event,
                                         tuple(references), tuple(content))
 

@@ -10,6 +10,7 @@ from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
+import time
 import unittest
 import psycopg
 
@@ -124,6 +125,15 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
         f.runtime.bindings[role] = f.bindings[role]
 
     def test_anchor_before_seal_actual_head_update_after_capture_final_seal_and_four_routes(self):
+        started = time.monotonic()
+        def completed(label):
+            print(f"[history-preregistration] {label}: elapsed={time.monotonic() - started:.3f}s", flush=True)
+        phase_labels = {
+            ("before", "flora_full"): "before-full",
+            ("before", "same_evidence_ablation"): "before-ablation",
+            ("after", "flora_full"): "after-full",
+            ("after", "same_evidence_ablation"): "after-ablation",
+        }
         f, run_id, exp = self.f, "preregistered-phase-run", "preregistered-phase-exp"
         original = f.fabric._source(b"fictional two-stage before evidence")
         correction = f.fabric._source(b"fictional two-stage corrected evidence", correction_parent=original.event_id)
@@ -140,6 +150,7 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
         f._artifact("personality_judgment")
         old_bindings = dict(f.bindings)
         old_state = f._state_activation(accepted, original)
+        completed("source-and-baseline-setup-complete")
         context_plan = ContextPlan("preregistered-exact-selection", "personal_judgment",
             exact_claim_ids=(accepted.claim_id,), minimum_claims=1,
             state_routes=(StateRoute("owner", f.scope.host_instance_id, old_state.projection_id),))
@@ -176,11 +187,13 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
             "cohort_sha256": canonical_sha256(cohort_body)}
         cohort = manifests.register_cohort(cohort_id="cohort", entries=entries, rules=rules,
             lineage_claim=claim, lineage_proof=lineage_key.sign(encoded(claim)))
+        completed("cohort-registered")
         self.grant(cohort["event_id"], manifest_purpose(exp, "read"))
         recipe = manifests.register_recipe(recipe_id="recipe", cohort_id="cohort",
             code_files=(("tests/integration/test_selected_experiment_preregistration.py", Path(__file__).read_bytes()),),
             dependency_lock=b"fictional fixture lock: no model training", role_contracts=(("personality", b"supplied producer port"),),
             source_choices=(("entry-0", "eligible"),), stop_defer_contract=b"supplied fixture stop/defer contract")
+        completed("recipe-registered")
         self.grant(recipe["event_id"], manifest_purpose(exp, "read"))
         comparison = XTDBComparisonCustody(scope=f.scope, authority_namespace_id=f.namespace,
             connection=f.connection, registry=f.registry, objects=f.objects, log=f.log)
@@ -208,11 +221,13 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
             for operation in ("capture", "read"):
                 self.grant(record["event_id"], preregistration_purpose(run_id, operation))
         anchor = store.register(spec=spec, histories=histories, questions={"case": question})
+        completed("anchor-registered")
         self.control_grants(store)
         self.assertIsNone(store._metadata("final_seal"))
         self.assertNotIn("phase_bindings", store.recover_control(kind="anchor"))
         self.assertNotIn("run_plan_sha256", store.recover_control(kind="anchor"))
         store.register_original_inputs(occurred_at=f.fabric._time())
+        completed("original-inputs-registered")
         for phase in ("before", "after"):
             self.grant(comparison.metadata(run_id, "history:case:" + phase).event_id,
                 evaluation_purpose(run_id, "case", phase))
@@ -239,6 +254,7 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
                 self.grant(event_id, preregistration_purpose(run_id, operation))
             store.publish_capture(snapshot_id=slot.snapshot_id)
             self.control_grants(store)
+            completed(phase_labels[(slot.phase, slot.arm)] + "-capture-published")
             return snapshot
         after_slot = next(slot for slot in slots if slot.phase == "after")
         with self.assertRaisesRegex(PermissionError, "before seal"):
@@ -255,6 +271,7 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
                 with self.assertRaisesRegex(PermissionError, "capture-only"):
                     route.runtime.judge(plan=context_plan, task=question, invocation_id=slot.evaluation_invocation_id)
         before_seal = store.seal_before()
+        completed("before-seal-committed")
         self.control_grants(store)
         probe = archive.before_probe_route(snapshot_id=captured[("before", "flora_full")].snapshot_id,
             case_id="case", historical_bindings=old_bindings)
@@ -267,7 +284,9 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
         self.assertEqual(len(probe_adapter.invocations), probe_count)
         probe_run = probe.runtime.judge(plan=context_plan, task=question, invocation_id="before-separate-probe")
         self.assertEqual(probe_run.execution.invocation.invocation_id, "before-separate-probe")
+        completed("before-probe-complete")
         gate = store.begin_update()
+        completed("update-gate-committed")
         self.control_grants(store)
         with self.assertRaises(PermissionError):
             probe.runtime.judge(plan=context_plan, task=question, invocation_id="before-separate-probe")
@@ -284,6 +303,7 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
         updated = f.fabric._admit(changed, decision, changed_candidates, expected_previous=previous, conflict=conflict)
         new_state = self.base.next_state(old_state, updated, correction)
         self.replace_personality()
+        completed("selected-head-replacement-complete")
         raw = f.objects.put(b"fictional receipt identifies these real moved heads; no learned model claim")
         update_event = ExperienceEvent.create(event_type="observation", scope=f.scope, occurred_at=f.fabric._time(),
             content_digest=raw.plaintext_sha256, provenance=ProvenanceReference.create(provenance_type="derived_inference",
@@ -308,6 +328,7 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
             "qualifier_id": spec.baseline_roles[role].qualifier_id, "allowed": True,
             "authorized_before_execution": True}) for role in old_bindings}
         store.record_update(update_event_ids=(update_event.event_id,), receipts=receipts)
+        completed("qualified-update-recorded")
         self.control_grants(store)
         for slot in slots:
             if slot.phase != "after":
@@ -344,8 +365,10 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
         self.assertEqual(encoded(archive.recover(snapshot_id=captured[("before", "flora_full")].snapshot_id,
             history=histories[("case", "before")], history_authority=authority).record), original_before_bytes)
         final = store.finalize()
+        completed("final-seal-committed")
         self.control_grants(store)
         store.register_final_inputs(final_authority=final, occurred_at=f.fabric._time())
+        completed("final-inputs-registered")
         self.assertEqual(final.plan.preregistration_sha256, anchor.preregistration_sha256)
         snapshots = {(slot.case_id, slot.phase, slot.arm): final.native_plans[slot.arm].entry(slot.case_id, slot.phase).phase_snapshot
             for slot in slots}
@@ -386,12 +409,14 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
                 route.check_live()
                 comparison.register_recorded(record)
             requests[(slot.phase, slot.arm)], results[(slot.phase, slot.arm)] = request, result
+            completed(phase_labels[(slot.phase, slot.arm)] + "-result-qualified")
         for binding in f.bindings.values():
             binding.adapter.invoke = lambda *_: self.fail("passive final recovery invoked a model")
         canonical_before_recovery = tuple(f.log.replay())
         for key, request in requests.items():
             _validate_result(results[key], request, native_policy, arm=key[1])
         self.assertEqual(tuple(f.log.replay()), canonical_before_recovery)
+        completed("passive-result-recovery-complete")
         # Exercise production fresh owned SELECT-only readers on actual v2
         # archives/final seals. Initialized codecs/producers are still supplied
         # fictional ports; no inference or index repair can run in the reader.
@@ -468,6 +493,7 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
         self.assertEqual(len(opened), 8)
         self.assertTrue(all(connection.closed for connection in opened))
         self.assertEqual(tuple(f.log.replay()), canonical_before_recovery)
+        completed("owned-passive-readers-complete")
         self.assertEqual(f.claims.load_current(accepted.claim_id)["current_claim_version_id"], updated.claim_version_id)
         from flora.selected.personal_state import _ACTIVE
         self.assertEqual(f.state._fetch(_ACTIVE, f.state._head_id("owner", f.scope.host_instance_id,
@@ -483,6 +509,7 @@ class SelectedPreregisteredPhaseRoutesTest(unittest.TestCase):
                 with self.assertRaises((ValueError, PermissionError)):
                     router.route_for(case_id="case", phase=slot.phase, arm=slot.arm)
             self.assertEqual(calls, [])
+            completed("withdrawal-denial-complete")
         finally:
             f.objects.backend.get_object = original_get
 

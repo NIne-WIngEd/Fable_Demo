@@ -2,20 +2,66 @@
 from __future__ import annotations
 
 import argparse
+import faulthandler
 from pathlib import Path
 import sys
+import time
 import unittest
 
 
-NATIVE = frozenset({
-    "test_selected_native_comparison", "test_selected_native_lineage_backend",
-    "test_selected_native_pilot_backend", "test_selected_native_read_sessions",
-    "test_selected_native_writer_faults",
-})
-HISTORY = frozenset({
-    "test_selected_phase_history_routes", "test_selected_experiment_coordinator",
-    "test_selected_experiment_preregistration",
-})
+SHARDS = ("core", "transport", "native", "lineage", "readers", "history", "history-routes")
+MODULE_SHARDS = {
+    "test_selected_comparator_memory": "transport",
+    "test_selected_provider_attempt_ledger": "transport",
+    "test_selected_native_comparison": "native",
+    "test_selected_native_pilot_backend": "native",
+    "test_selected_native_lineage_backend": "lineage",
+    "test_selected_native_read_sessions": "readers",
+    "test_selected_native_writer_faults": "readers",
+    "test_selected_experiment_coordinator": "history",
+    "test_selected_experiment_preregistration": "history",
+    "test_selected_phase_history_routes": "history-routes",
+}
+
+
+class LiveIntegrationResult(unittest.TextTestResult):
+    """Retain failed-case diagnostics even if a later case hits the job cap.
+
+    Only fixed test identities, timings, and Python stacks are added. The stack
+    dump has no local values and imposes no new product or test time budget.
+    """
+
+    def startTest(self, test):
+        self._started_at = time.monotonic()
+        super().startTest(test)
+        faulthandler.dump_traceback_later(120, repeat=True, file=sys.stderr)
+
+    def stopTest(self, test):
+        faulthandler.cancel_dump_traceback_later()
+        elapsed = time.monotonic() - self._started_at
+        self.stream.writeln(f"[completed {test.id()} in {elapsed:.3f}s]")
+        self.stream.flush()
+        super().stopTest(test)
+
+    def addError(self, test, err):
+        super().addError(test, err)
+        self._print_immediate(self.errors[-1])
+
+    def addFailure(self, test, err):
+        super().addFailure(test, err)
+        self._print_immediate(self.failures[-1])
+
+    def addSubTest(self, test, subtest, err):
+        super().addSubTest(test, subtest, err)
+        if err is not None:
+            entries = self.failures if issubclass(err[0], test.failureException) else self.errors
+            self._print_immediate(entries[-1])
+
+    def _print_immediate(self, entry):
+        test, formatted_error = entry
+        self.stream.writeln(f"\n[immediate failure {test.id()}]")
+        self.stream.writeln(formatted_error)
+        self.stream.flush()
 
 
 def cases(suite):
@@ -28,7 +74,7 @@ def cases(suite):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--shard", choices=("core", "native", "history"), required=True)
+    parser.add_argument("--shard", choices=SHARDS, required=True)
     parser.add_argument("--list", action="store_true", help="Discover only; do not claim backend execution")
     arguments = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
@@ -37,7 +83,7 @@ def main():
     if failed_imports:
         unittest.TextTestRunner(verbosity=2).run(unittest.TestSuite(failed_imports))
         return 1
-    groups = {name: [] for name in ("core", "native", "history")}
+    groups = {name: [] for name in SHARDS}
     identities = set()
     for test in discovered:
         identity = test.id()
@@ -45,7 +91,7 @@ def main():
             raise RuntimeError("integration discovery produced a duplicate test identity")
         identities.add(identity)
         module = identity.split(".")[0]
-        group = "native" if module in NATIVE else "history" if module in HISTORY else "core"
+        group = MODULE_SHARDS.get(module, "core")
         groups[group].append(test)
     if not discovered or sum(map(len, groups.values())) != len(discovered):
         raise RuntimeError("selected-engine partition must include every discovered test exactly once")
@@ -58,7 +104,8 @@ def main():
         for test in selected:
             print(test.id())
         return 0
-    return 0 if unittest.TextTestRunner(verbosity=2).run(unittest.TestSuite(selected)).wasSuccessful() else 1
+    return 0 if unittest.TextTestRunner(verbosity=2, resultclass=LiveIntegrationResult).run(
+        unittest.TestSuite(selected)).wasSuccessful() else 1
 
 
 if __name__ == "__main__":

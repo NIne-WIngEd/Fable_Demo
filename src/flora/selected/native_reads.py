@@ -451,9 +451,17 @@ class SelectedNativeReadServices:
         if binding is None:
             if not self.manifest.allow_current_fixture_route or session.phase_route_for is not None:
                 raise PermissionError("native production reads require an exact selected phase snapshot route")
+            authority = session.lineage.history_authority
             def fixture_guard():
                 self._require_owned_final(session, entry, request)
-                if session.lineage.history_authority.authorize_history(case_id=entry.case_id,
+                if session.lineage.history_authority is not authority:
+                    raise PermissionError("native fixture phase authority changed during owned read")
+                # This owned operation already authenticated actual originals.
+                # Every later private boundary still resolves current consent
+                # against those exact held bytes and their selected manifest.
+                authorize = (authority.authorize_history_metadata
+                    if isinstance(authority, SelectedRunEvidencePolicy) else authority.authorize_history)
+                if authorize(case_id=entry.case_id,
                         phase=entry.phase, history=history) is not True:
                     raise PermissionError("native fixture phase permission changed before private I/O")
             return session, history, fixture_guard, arm or "flora_full", None

@@ -25,7 +25,7 @@ The phase path now has [historical selected snapshots](docs/SELECTED_PHASE_SNAPS
 
 The [registered experiment coordinator](docs/EXPERIMENT_COORDINATOR.md) connects prepared cohorts, frozen native arms, comparator custody and sealed assessment while retaining incomplete attempts. [Two-stage preregistration](docs/EXPERIMENT_PREREGISTRATION.md) now separates the declared experiment from its observed captures: freeze the protocol, capture before, authorize and record the update, capture after, then seal the complete plan before evaluation. No after checkpoint or context digest is required before it exists. Contract checks exercise this workflow; physical qualification and real producer exports remain pending.
 
-[Current metadata fences](docs/PHASE_SOURCE_METADATA_FENCE.md) remove duplicate row reads within one guard and check the selected permission heads together after callbacks. They do not cache an allow across private reads. The response budget remains unchanged. CI runs component checks and exhaustive core/native/history engine groups in parallel; core also checks actual service and persistent Temporal restarts. All groups must pass at the same commit.
+[Current metadata fences](docs/PHASE_SOURCE_METADATA_FENCE.md) remove duplicate row reads within one guard and check the selected permission heads together after callbacks. They do not cache an allow across private reads. The response budget remains unchanged. CI runs component checks and exhaustive core, transport, native, lineage, readers, history and history-route groups in parallel; core also checks actual service and persistent Temporal restarts. Slow suites cannot hide the independent reader and writer-fault results. All groups must pass at the same commit.
 
 ## Architecture boundary
 

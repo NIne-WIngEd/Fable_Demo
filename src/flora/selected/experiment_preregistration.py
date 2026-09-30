@@ -24,7 +24,10 @@ from .artifact_registry import RuntimeWiringManifest
 from .comparison_custody import ComparisonArtifact, SelectedRunEvidencePolicy, XTDBComparisonCustody, evaluation_purpose
 from .context import ContextPlan
 from .experiment_coordinator import _GuardedLog, _attach_private_fence
-from .experiment_manifests import XTDBExperimentManifestCustody, _GuardedObjects, manifest_purpose
+from .experiment_manifests import SelectedSourceAuthority, XTDBExperimentManifestCustody, _GuardedObjects, manifest_purpose
+from .formation_policy import XTDBFormationPermissionPolicy
+from .formation_registry import XTDBFormationSourceRegistry
+from .phase_source_fence import OneGuardSelectedMetadata
 from .formation_registry import RegisteredEncryptedFormationCustody
 from .native_arm import FrozenNativeArmPlan, NativeInvocationEntry, NativePhaseSnapshotBinding
 from .native_worker import NativeWorkerManifest
@@ -500,16 +503,106 @@ class XTDBExperimentPreregistrationCustody:
                 or self.comparison.registry is not local.registry or self.comparison.log is not local.log
                 or self.comparison.objects is not local.objects or self.permissions is not local.permissions):
             raise PermissionError("preregistration actual controller identity changed")
+        with self._current_observations(operation=operation, parents=parents,
+                include_evaluation=include_evaluation) as (manifests, permissions):
+            self._check_current(manifests=manifests, permissions=permissions,
+                operation=operation, parents=parents, include_evaluation=include_evaluation)
+        local = self.manifests.local
+        if (self._controllers != (local.registry, local.log, local.objects, self.permissions, self.comparison.connection)
+                or self.comparison.registry is not local.registry or self.comparison.log is not local.log
+                or self.comparison.objects is not local.objects or self.permissions is not local.permissions):
+            raise PermissionError("preregistration actual controller identity changed during current guard")
+
+    @contextmanager
+    def _current_observations(self, *, operation, parents, include_evaluation):
+        """Share metadata inside this call, never an answer across private I/O."""
+        manifests = copy(self.manifests)
+        manifests.authorities = dict(self.manifests.authorities)
+        purposes = {}
+        for frozen in self.dependencies.values():
+            for gate in frozen["source_gates"]:
+                purposes.setdefault((gate["authority_id"], gate["purpose"]), set()).add(gate["event_id"])
+            purposes.setdefault((self.manifests.local.authority_id,
+                manifest_purpose(self.manifests.experiment_id, "read")), set()).add(frozen["event_id"])
+        if include_evaluation:
+            for gate in self._source_gates:
+                purposes.setdefault((gate["authority_id"], gate["purpose"]), set()).add(gate["event_id"])
+        if operation is not None and parents:
+            purposes.setdefault((self.manifests.local.authority_id,
+                preregistration_purpose(self.run_id, operation)), set()).update(parents)
+        observed = []
+        for authority_id in sorted({key[0] for key in purposes}):
+            authority = self.manifests.authorities.get(authority_id)
+            if authority is None:
+                raise PermissionError("source authority is no longer enrolled")
+            if (not isinstance(authority, SelectedSourceAuthority)
+                    or not isinstance(authority.registry, XTDBFormationSourceRegistry)
+                    or not isinstance(authority.permissions, XTDBFormationPermissionPolicy)):
+                # Existing explicitly fictional ports keep their original
+                # checks. Only actual selected services get the SQL sampler.
+                continue
+            sample = OneGuardSelectedMetadata(registry=authority.registry, permissions=authority.permissions)
+            actual_log = authority.log
+            replay, committed_replay = actual_log.replay, actual_log.replay_committed
+            source_methods = authority.binding, authority.gate
+            source_class_methods = type(authority).binding, type(authority).gate
+            committed = tuple(committed_replay())
+            selected_log = copy(actual_log)
+            selected_log.replay = lambda entries=committed: [entry.event for entry in entries]
+            selected_log.replay_committed = lambda entries=committed: entries
+            for (current_id, purpose), event_ids in sorted(purposes.items()):
+                if current_id == authority_id:
+                    sample.prime_sources(tuple(sorted(event_ids)), purpose)
+            selected = copy(authority)
+            object.__setattr__(selected, "registry", sample.local_registry)
+            object.__setattr__(selected, "permissions", sample.local_permissions)
+            object.__setattr__(selected, "log", selected_log)
+            manifests.authorities[authority_id] = selected
+            observed.append((authority_id, authority, sample, actual_log, replay, committed_replay,
+                committed, source_methods, source_class_methods))
+        manifests.local = manifests.authorities[self.manifests.local.authority_id]
+        yield manifests, manifests.local.permissions
+        def bindings():
+            # Pure identity comparisons follow every actual callback. The
+            # callback itself can replace a later reader while returning the
+            # previously observed entries or rows unchanged.
+            for (authority_id, authority, sample, actual_log, replay, committed_replay,
+                    committed, source_methods, source_class_methods) in observed:
+                if (self.manifests.authorities.get(authority_id) is not authority
+                        or authority.registry is not sample.registry or authority.permissions is not sample.permissions
+                        or authority.log is not actual_log or actual_log.replay != replay
+                        or actual_log.replay_committed != committed_replay
+                        or (authority.binding, authority.gate) != source_methods
+                        or (type(authority).binding, type(authority).gate) != source_class_methods):
+                    raise PermissionError("preregistration canonical reader changed during current guard")
+                sample._bindings()
+        # Every original callback ran. Observe all sampled current heads and
+        # exact immutable rows together after the last callback and slow actual
+        # canonical replay. New appends do not change prior authority.
+        bindings()
+        for (authority_id, authority, sample, actual_log, replay, committed_replay,
+                committed, source_methods, source_class_methods) in observed:
+            fresh = tuple(committed_replay())
+            if fresh[:len(committed)] != committed:
+                raise PermissionError("preregistration canonical observations changed during current guard")
+        bindings()
+        for (authority_id, authority, sample, actual_log, replay, committed_replay,
+                committed, source_methods, source_class_methods) in observed:
+            sample.verify_final_current_rows()
+            bindings()
+
+    def _check_current(self, *, manifests, permissions, operation, parents, include_evaluation):
+        local = manifests.local
         for kind, frozen in self.dependencies.items():
-            current = self.manifests.metadata(kind, frozen["manifest_id"])
+            current = manifests.metadata(kind, frozen["manifest_id"])
             if current != frozen:
                 raise PermissionError("preregistration dependency changed")
-            self.manifests._check_gates(current["source_gates"])
-            self.manifests._check_dependencies(current["dependencies"])
-            if self.permissions.permits(local.registry.lookup(current["event_id"]), manifest_purpose(self.manifests.experiment_id, "read")) is not True:
+            manifests._check_gates(current["source_gates"])
+            manifests._check_dependencies(current["dependencies"])
+            if permissions.permits(local.registry.lookup(current["event_id"]), manifest_purpose(manifests.experiment_id, "read")) is not True:
                 raise PermissionError("preregistration dependency read was withdrawn")
         if include_evaluation:
-            self.manifests._check_gates(self._source_gates)
+            manifests._check_gates(self._source_gates)
         if self.spec is not None and (self.spec.record() != self._spec_record
                 or {key: history.digest() for key, history in self.histories.items()} != self._histories_record
                 or {key: sha(value) for key, value in self.questions.items()} != self._questions_record):
@@ -518,12 +611,12 @@ class XTDBExperimentPreregistrationCustody:
             raise PermissionError("canonical preregistration anchor changed")
         if operation is not None:
             for event_id in parents:
-                if self.permissions.permits(local.registry.lookup(event_id), preregistration_purpose(self.run_id, operation)) is not True:
+                if permissions.permits(local.registry.lookup(event_id), preregistration_purpose(self.run_id, operation)) is not True:
                     raise PermissionError("preregistration control purpose is not currently allowed")
         for frozen in self.dependencies.values():
-            self.manifests._check_gates(frozen["source_gates"])
+            manifests._check_gates(frozen["source_gates"])
         if include_evaluation:
-            self.manifests._check_gates(self._source_gates)
+            manifests._check_gates(self._source_gates)
 
     def _guarded_comparison(self, check):
         selected = copy(self.comparison)

@@ -273,19 +273,22 @@ class NativeJudgmentLineageVerifier:
                         context: LocalContext,
                         authority_guard: Callable[[], None] | None = None) -> JudgmentContextLineage:
         runtime = self.runtime
+        history_authority = self.history_authority
         def guard():
             from .comparison_custody import SelectedRunEvidencePolicy
-            authorize = (self.history_authority.authorize_history_metadata
-                         if isinstance(self.history_authority, SelectedRunEvidencePolicy)
-                         else self.history_authority.authorize_history)
+            if self.history_authority is not history_authority:
+                raise PermissionError("native phase history authority changed during verification")
+            authorize = (history_authority.authorize_history_metadata
+                         if isinstance(history_authority, SelectedRunEvidencePolicy)
+                         else history_authority.authorize_history)
             if authorize(case_id=case_id, phase=phase, history=history) is not True:
-                raise PermissionError("native phase history was withdrawn before private I/O")
+                raise PermissionError("native phase history authority changed or was withdrawn before private I/O")
             if authority_guard is not None:
                 authority_guard()
         from .experiment_runtime import _AuthorizedRuntimeReads
         if (phase not in PHASES or history.scope != runtime.scope
                 or context.plan.purpose != "personal_judgment"
-                or self.history_authority.authorize_history(case_id=case_id, phase=phase, history=history) is not True):
+                or history_authority.authorize_history(case_id=case_id, phase=phase, history=history) is not True):
             raise PermissionError("native lineage lacks independently authorized phase history")
         history_digest = history.digest()
         history_events = {item.event.event_id: item.event for item in history.sources}
@@ -435,8 +438,10 @@ class NativeJudgmentLineageVerifier:
                 raise TypeError("actual artifact qualifier returned no bound phase snapshot")
             verified.validate(request, opaque_receipt)
             snapshots.append(verified)
-            if self.history_authority.authorize_history(case_id=case_id, phase=phase, history=history) is not True:
-                raise PermissionError("frozen phase history authority changed during producer verification")
+            # This call already authenticated the exact held original bytes.
+            # After each actual producer callback, resolve fresh selected
+            # metadata/consent without reopening the same immutable history.
+            guard()
         # Phase verification may involve slow producer I/O. Current context,
         # original registration/permission and artifact generation are fresh.
         prepared.revalidate()
@@ -449,8 +454,7 @@ class NativeJudgmentLineageVerifier:
                 raise PermissionError("original source authority changed during lineage verification")
         if tuple(runtime._resolve(artifact.role, authority_guard=guard)[1] for artifact in artifacts) != artifacts:
             raise ValueError("artifact role changed during phase snapshot verification")
-        if self.history_authority.authorize_history(case_id=case_id, phase=phase, history=history) is not True:
-            raise PermissionError("frozen phase history authority changed before lineage return")
+        guard()
         return JudgmentContextLineage(**{**vars(lineage), "phase_snapshots": tuple(snapshots)})
 
     def authorize_context(self, *, case_id: str, phase: str, history: Any,

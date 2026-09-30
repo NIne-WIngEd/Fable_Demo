@@ -1,5 +1,5 @@
 """Actual private assembly with controlled metadata engines, not a latency claim."""
-from copy import deepcopy
+from copy import copy, deepcopy
 from collections import Counter
 import json
 import re
@@ -13,8 +13,11 @@ from flora.selected.judgment_context import RegisteredJudgmentContextPolicy
 from flora.selected.formation_policy import FormationPermissionAction
 from flora.selected.governed_development import XTDBGovernedPersonalDevelopment
 from flora.selected.personal_state import _ACTIVE, _VERSIONS
+from flora.selected.formation_context import register_experience_source
+from flora.selected import claims as claim_tables
 import test_governed_development as helpers
 import test_governed_episodes as episode_helpers
+import test_phase_source_fence as selected_helpers
 
 
 class CurrentContextGuardTest(unittest.TestCase):
@@ -343,6 +346,135 @@ class CurrentContextGuardTest(unittest.TestCase):
         with patch.object(f.objects.backend, "get_object", side_effect=AssertionError("raw forbidden")):
             with self.assertRaises(ValueError):
                 prepared.revalidate()
+
+
+class SelectedCurrentContextTerminalFenceTest(unittest.TestCase):
+    """Actual selected sources/grants; controlled SQL/log and supplied state.
+
+    Claim rows below are explicit custody fixtures, not independently admitted
+    learned judgments. These tests qualify callback ordering and exact current
+    metadata checks, never physical latency or learned companion behavior.
+    """
+    def setUp(self):
+        self.h = selected_helpers.PhaseSourceFenceTest()
+        self.h.setUp()
+        self.addCleanup(self.h.doCleanups)
+        self.f = self.h.f
+        version, content = self.f.version(1)
+        self.f.put(version, content)
+        _, approval = self.f.activate(version)
+        register_experience_source(event_id=approval.event_id,
+            raw=self.f.references[approval.payload_reference], registry=self.h.registry,
+            log=self.f.log, objects=self.f.objects, role="historical_experience", modality="text")
+        self.h.grant(approval.event_id)
+        self.state = copy(self.f.state)
+        self.state.registry, self.state.policy = self.h.registry, self.h.permissions
+
+    def prepare(self, *, claims=None, plan=None):
+        claims = self.f.claims if claims is None else claims
+        policy = RegisteredJudgmentContextPolicy(claims=claims, state=self.state,
+            log=self.f.log, registry=self.h.registry, permissions=self.h.permissions)
+        return prepare_current_context(plan=plan or ContextPlan("selected-terminal-context", "personal_judgment",
+            state_routes=(StateRoute(**self.f.identity()),)), claims=claims, state=self.state,
+            log=self.f.log, objects=self.f.objects, references=self.f.references, policy=policy,
+            approval_verifier_factory=lambda _: self.f.verifier)
+
+    def last_grant_callback(self, prepared, change):
+        phase_calls, changed = 0, False
+        actual = self.h.permissions.current_action
+        last_id = prepared.source_authorities[-1].event_id
+        def phase():
+            nonlocal phase_calls
+            phase_calls += 1
+        def action(event_id, purpose):
+            nonlocal changed
+            result = actual(event_id, purpose)
+            if phase_calls == 3 and event_id == last_id and not changed:
+                changed = True
+                change()
+            return result
+        prepared.authority_guard = phase
+        actual_read = self.f.objects.backend.get_object
+        private_ids = {source.event.payload_reference for source in self.h.h.materials}
+        private_ids.update(json.loads(captured.version_row)["content_object_id"]
+            for captured in prepared.state_authorities)
+        def read(namespace, object_id):
+            self.assertNotIn(object_id, private_ids, "metadata reopened original private bytes")
+            return actual_read(namespace, object_id)
+        with patch.object(self.h.permissions, "current_action", side_effect=action), \
+             patch.object(self.f.objects.backend, "get_object", side_effect=read):
+            with self.assertRaises(PermissionError):
+                prepared.metadata_current()
+        self.assertTrue(changed)
+        self.assertEqual(phase_calls, 3)
+
+    def test_last_source_callback_withdraws_earlier_source_before_private_return(self):
+        prepared = self.prepare()
+        first_id = prepared.source_authorities[0].event_id
+        self.last_grant_callback(prepared, lambda: self.h.grant(first_id, "revoke"))
+        self.assertEqual(self.h.permissions.current_action(first_id, "personal_judgment").decision, "revoke")
+
+    def claim_fixture(self):
+        claims = self.h.claims
+        claim_id, version_id, relation_id = "selected-callback-claim", "selected-callback-version", "selected-callback-relation"
+        envelope = {"scope": self.f.scope.metadata_record(), "authority_namespace_id": self.f.namespace,
+            "source_records": [self.f.source_one.event_id]}
+        version = {"claim_id": claim_id, "claim_version_id": version_id, "adjudication_state": "accepted",
+            "evidence_relation_ids": [relation_id], "value": {"fictional": "supplied fact"},
+            "version_sha256": "a"*64, "envelope": envelope}
+        current = {"claim_id": claim_id, "current_claim_version_id": version_id,
+            "projection_id": "selected-current-projection", "projection_sha256": "b"*64,
+            "validity_state": "current", "deletion_state": "active", "conflict_state": "none",
+            "adjudication_state": "accepted", "envelope": envelope}
+        relation = {"evidence_record_id": self.f.source_one.event_id, "target_record_id": version_id,
+            "target_record_type": "claim_version"}
+        for table, identifier, record in ((claim_tables._CURRENT, claim_id, current),
+                (claim_tables._VERSIONS, version_id, version), (claim_tables._EVIDENCE, relation_id, relation)):
+            key = claims._row_id(identifier)
+            self.f.connection.rows[(table, key)] = {"_id": key, "scope_digest": claims.scope_digest,
+                "projection_sha256": current["projection_sha256"], "record_json": json.dumps(record)}
+        return claims, claim_id, current
+
+    def test_last_source_callback_quarantines_checked_claim_before_private_return(self):
+        claims, claim_id, current = self.claim_fixture()
+        prepared = self.prepare(claims=claims, plan=ContextPlan("selected-claim-terminal", "personal_judgment",
+            exact_claim_ids=(claim_id,), minimum_claims=1))
+        def quarantine():
+            changed = deepcopy(current)
+            changed["deletion_state"] = "pending_delete"
+            self.f.connection.rows[(claim_tables._CURRENT, claims._row_id(claim_id))]["record_json"] = json.dumps(changed)
+        self.last_grant_callback(prepared, quarantine)
+
+    def test_final_phase_callback_cannot_replace_policy_or_canonical_reader(self):
+        for kind in ("source_predicate", "canonical_reader", "phase_guard"):
+            with self.subTest(kind=kind):
+                prepared = self.prepare()
+                calls = 0
+                original = (prepared.policy.allow_event, self.f.log.replay)
+                def phase():
+                    nonlocal calls
+                    calls += 1
+                    if calls == 3:
+                        if kind == "source_predicate":
+                            prepared.policy.allow_event = lambda *_: False
+                        elif kind == "canonical_reader":
+                            self.f.log.replay = lambda: []
+                        else:
+                            prepared.authority_guard = lambda: None
+                prepared.authority_guard = phase
+                try:
+                    with self.assertRaises(PermissionError):
+                        prepared.metadata_current()
+                finally:
+                    prepared.policy.allow_event, self.f.log.replay = original
+
+    def test_native_selected_guard_has_two_batches_and_one_terminal_query(self):
+        prepared = self.prepare()
+        start = len(self.f.connection.calls)
+        prepared.metadata_current()
+        calls = self.f.connection.calls[start:]
+        self.assertEqual(sum("AS flora_current_metadata_sample LIMIT" in sql for sql, _ in calls), 2)
+        self.assertEqual(sum("AS flora_current_metadata_fence LIMIT" in sql for sql, _ in calls), 1)
 
 
 class CurrentEpisodeContextGuardTest(unittest.TestCase):

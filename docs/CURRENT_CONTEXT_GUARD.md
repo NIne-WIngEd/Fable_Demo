@@ -74,10 +74,17 @@ table/record arguments and valid-time options. Connections are retained, not
 modified. Derived policy checks still run; owner proof and external semantic
 checks are never cached. Raw object plaintext is never memoized here.
 
-The entire view is discarded before a final fence through the original readers.
-That fence rechecks the exact heads, versions, evidence, source registrations,
-raw metadata and grant generations. A second guard starts fresh. There is no
-TTL, global cache, captured positive allow bit or inherited connection patch.
+For actual registered source and permission services, one pass batches the
+finite source, ancestor, raw-reference and grant rows. The selected decoders and
+actual permission callbacks still run. One terminal XTDB statement observes all
+of those rows and the nominated current Claims together after the last phase
+and grant callbacks. This catches a late callback withdrawing an earlier grant
+or quarantining an already checked Claim. Pure identity checks also follow the
+terminal query, so replacing a policy or canonical reader cannot escape it.
+
+State, episode, activation and rollback metadata retain their exact checks.
+Every view is discarded at guard return; a second guard starts fresh. There is
+no TTL, global cache, captured positive allow bit or inherited connection patch.
 The phase authority callback runs after potentially slow metadata work and
 again after the uncached fence. Fresh original/control source and grant
 checks then follow the final phase callback; accepted-episode metadata also

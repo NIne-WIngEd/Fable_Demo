@@ -10,6 +10,7 @@ from __future__ import annotations
 from copy import copy, deepcopy
 from dataclasses import dataclass
 import json
+from types import MethodType
 
 from cognitive_kernel.canonical import canonical_json_bytes, require_identifier
 
@@ -56,6 +57,7 @@ class OneGuardSelectedMetadata:
         self.scope_record = canonical_json_bytes(registry.scope.metadata_record())
         self.namespace = registry.authority_namespace_id
         self._observations = {}
+        self._sampled_rows = {}
         self._methods = [(registry, name, getattr(registry, name))
             for name in ("_fetch", "lookup", "raw_metadata", "raw_reference")]
         self._methods += [(permissions, name, getattr(permissions, name))
@@ -95,8 +97,6 @@ class OneGuardSelectedMetadata:
             cache_key = (args, tuple(sorted(kwargs.items())))
             if cache_key not in sampled:
                 self._bindings()
-                row = actual(*args, **kwargs)
-                sampled[cache_key] = deepcopy(row)
                 if kind == "claim":
                     table, key = kwargs["table"], kwargs["row_id"]
                     if kwargs.get("valid_time") is not None:
@@ -113,24 +113,163 @@ class OneGuardSelectedMetadata:
                 if table not in allowed:
                     raise PermissionError("metadata fence cannot sample an undeclared table")
                 identity = (kind, table, key, immutable)
+                row = self._sampled_rows.get(identity)
                 if row is None:
-                    raise PermissionError("metadata fence source/authority row is absent")
-                record = json.loads(str(row["record_json"]))
-                envelope = record.get("envelope", {})
-                if (row["_id"] != key or row["scope_digest"] != service.scope_digest
-                        or canonical_json_bytes(record.get("scope", envelope.get("scope"))) != self.scope_record
-                        or record.get("authority_namespace_id", envelope.get("authority_namespace_id")) != self.namespace):
-                    raise PermissionError("metadata fence row crosses exact key/scope")
-                observation = _Row(kind, table, key, immutable, service.scope_digest,
-                    digest_column, canonical_json_bytes(record), row[digest_column])
-                if identity in self._observations and self._observations[identity] != observation:
-                    raise PermissionError("metadata fence sampled row changed during this guard")
-                self._observations[identity] = observation
-                if len(self._observations) > self.maximum_rows:
-                    raise PermissionError("metadata fence exceeds its explicit finite row cap")
+                    row = actual(*args, **kwargs)
+                self._remember(kind, table, key, immutable, service, digest_column, row)
+                sampled[cache_key] = deepcopy(row)
             return deepcopy(sampled[cache_key])
         setattr(local, name, fetch)
         return local
+
+    def _remember(self, kind, table, key, immutable, service, digest_column, row):
+        if row is None:
+            raise PermissionError("metadata fence source/authority row is absent")
+        record = json.loads(str(row["record_json"]))
+        envelope = record.get("envelope", {})
+        if (row["_id"] != key or row["scope_digest"] != service.scope_digest
+                or canonical_json_bytes(record.get("scope", envelope.get("scope"))) != self.scope_record
+                or record.get("authority_namespace_id", envelope.get("authority_namespace_id")) != self.namespace):
+            raise PermissionError("metadata fence row crosses exact key/scope")
+        identity = (kind, table, key, immutable)
+        observation = _Row(kind, table, key, immutable, service.scope_digest,
+            digest_column, canonical_json_bytes(record), row[digest_column])
+        if identity in self._observations and self._observations[identity] != observation:
+            raise PermissionError("metadata fence sampled row changed during this guard")
+        self._observations[identity] = observation
+        if len(self._observations) > self.maximum_rows:
+            raise PermissionError("metadata fence exceeds its explicit finite row cap")
+        self._sampled_rows[identity] = deepcopy(row)
+
+    def _prime_rows(self, requests):
+        """Read a finite nominated row set once; no authority answer is cached."""
+        self._bindings()
+        pending = {request for request in requests if request not in self._sampled_rows}
+        if not pending:
+            return
+        if len(self._observations) + len(pending) > self.maximum_rows:
+            raise PermissionError("metadata fence exceeds its explicit finite row cap")
+        services = {"registry": self.registry, "permission": self.permissions, "claim": self.claims}
+        allowed = {("registry", source_tables._SOURCES, True),
+            ("registry", source_tables._OBJECTS, True),
+            ("permission", permission_tables._CURRENT, False),
+            ("permission", permission_tables._ACTIONS, True),
+            ("claim", claim_tables._CURRENT, False), ("claim", claim_tables._HEAD, True)}
+        grouped, expected = {}, {}
+        for kind, table, key, immutable in pending:
+            if (kind, table, immutable) not in allowed or services[kind] is None:
+                raise PermissionError("metadata batch cannot nominate an undeclared table")
+            if require_identifier(key, "metadata row key") != key:
+                raise PermissionError("metadata batch key is noncanonical")
+            grouped.setdefault((kind, table, immutable), []).append(key)
+        # Custom instance readers are actual callbacks too. Invoke them rather
+        # than hiding their denial or side effects behind a direct batch query.
+        # Native selected class readers are exactly the algorithms whose row
+        # requests this finite batch replaces.
+        native_classes = {"registry": XTDBFormationSourceRegistry,
+            "permission": XTDBFormationPermissionPolicy, "claim": XTDBClaimAuthority}
+        for group in tuple(grouped):
+            kind, table, immutable = group
+            service = services[kind]
+            name = "_fetch_record" if kind == "claim" else "_fetch"
+            reader = getattr(service, name)
+            if (isinstance(reader, MethodType) and reader.__self__ is service
+                    and reader.__func__ is getattr(native_classes[kind], name)):
+                continue
+            local = {"registry": self.local_registry, "permission": self.local_permissions,
+                "claim": self.local_claims}[kind]
+            for key in grouped.pop(group):
+                if kind == "registry":
+                    local._fetch(table, key)
+                elif kind == "permission":
+                    local._fetch(table, key, immutable=immutable)
+                else:
+                    local._fetch_record(table=table, row_id=key, all_valid=immutable)
+        if not grouped:
+            self._bindings()
+            return
+        terms, parameters = [], []
+        for (kind, table, immutable), keys in sorted(grouped.items()):
+            keys.sort()
+            service = services[kind]
+            column = "projection_sha256" if kind == "claim" else "record_sha256"
+            tag = kind + ":" + table + (":all" if immutable else ":current")
+            temporal = " FOR VALID_TIME ALL" if immutable else ""
+            terms.append(f"SELECT '{tag}' AS fence_kind, _id, scope_digest, "
+                f"{column} AS fence_sha256, record_json FROM {table}{temporal} "
+                "WHERE scope_digest = %s AND _id IN (" + ", ".join("%s::text" for _ in keys) + ")")
+            parameters.extend((service.scope_digest, *keys))
+            for key in keys:
+                expected[(tag, key)] = (kind, table, key, immutable, service, column)
+        sql = "SELECT * FROM (" + " UNION ALL ".join(terms) + f") AS flora_current_metadata_sample LIMIT {len(expected) + 1}"
+        rows = _rows(self.connection.execute(sql, tuple(parameters)))
+        if len(rows) != len(expected):
+            raise PermissionError("metadata batch has missing/ambiguous rows")
+        seen = set()
+        for row in rows:
+            identity = (row.get("fence_kind"), row.get("_id"))
+            request = expected.get(identity)
+            if request is None or identity in seen:
+                raise PermissionError("metadata batch has unexpected/duplicate rows")
+            seen.add(identity)
+            kind, table, key, immutable, service, column = request
+            actual = {"_id": row["_id"], "scope_digest": row["scope_digest"],
+                column: row["fence_sha256"], "record_json": row["record_json"]}
+            self._remember(kind, table, key, immutable, service, column, actual)
+        self._bindings()
+
+    def prime_sources(self, source_event_ids, purpose):
+        """Batch actual source/ancestor/raw/action/head rows within this guard.
+
+        Every copied selected decoder and purpose predicate still runs. Source
+        parents are discovered from digest-checked immutable registration;
+        callers must separately check the actual canonical event closure. The
+        terminal current-row fence remains mandatory after all callbacks.
+        """
+        if (not isinstance(source_event_ids, tuple) or not source_event_ids
+                or len(set(source_event_ids)) != len(source_event_ids)):
+            raise PermissionError("metadata source batch needs unique finite source IDs")
+        if require_identifier(purpose, "metadata purpose") != purpose:
+            raise PermissionError("metadata source batch purpose is noncanonical")
+        pending, seen = source_event_ids, set()
+        while pending:
+            requests = []
+            for event_id in pending:
+                if require_identifier(event_id, "metadata source ID") != event_id:
+                    raise PermissionError("metadata source batch ID is noncanonical")
+                requests.extend((("registry", source_tables._SOURCES, self.registry._key("source", event_id), True),
+                    ("permission", permission_tables._CURRENT, self.permissions._key("head", event_id, purpose), False)))
+            self._prime_rows(requests)
+            dependencies = []
+            for event_id in pending:
+                source_key = self.registry._key("source", event_id)
+                source = self.registry._decode(self._sampled_rows[("registry", source_tables._SOURCES, source_key, True)],
+                    expected_key=source_key)
+                if source.get("schema") != "flora-registered-formation-source-v1":
+                    raise PermissionError("metadata source batch registration schema changed")
+                head_key = self.permissions._key("head", event_id, purpose)
+                head = self.permissions._decode(self._sampled_rows[("permission", permission_tables._CURRENT, head_key, False)], key=head_key)
+                if (head.get("schema") != "flora-current-formation-permission-v1"
+                        or head["source_ref_id"] != event_id or head["purpose"] != purpose):
+                    raise PermissionError("metadata source batch head differs from its exact lookup")
+                dependencies.extend((("registry", source_tables._OBJECTS, self.registry._key("raw", source["object_ref"]), True),
+                    ("permission", permission_tables._ACTIONS, self.permissions._key("action", head["action_id"]), True)))
+            self._prime_rows(dependencies)
+            ancestors = []
+            for event_id in pending:
+                source, _ = self.observe_source(event_id, purpose)
+                seen.add(event_id)
+                ancestors.extend(parent for parent in source.evidence.parent_refs if parent not in seen)
+            pending = tuple(dict.fromkeys(parent for parent in ancestors if parent not in seen))
+        return tuple(sorted(seen))
+
+    def prime_raw_references(self, object_ids):
+        """Nominate only raw-reference metadata, granting no source use/read."""
+        if (not isinstance(object_ids, tuple) or not object_ids
+                or len(set(object_ids)) != len(object_ids)):
+            raise PermissionError("metadata raw batch needs unique finite object IDs")
+        self._prime_rows(tuple(("registry", source_tables._OBJECTS,
+            self.registry._key("raw", object_id), True) for object_id in object_ids))
 
     def observe_source(self, event_id, purpose):
         """Bind all real source/raw/action/head rows even with patched predicates."""
@@ -233,6 +372,19 @@ def verify_current_phase_sources(*, policy, source_event_ids, claim_ids=(),
     by_id = {event.event_id: event for event in events}
     if len(by_id) != len(events):
         raise PermissionError("phase canonical events are ambiguous")
+    canonical_ids, pending = set(), list(source_event_ids)
+    while pending:
+        event_id = pending.pop()
+        if event_id in canonical_ids:
+            continue
+        event = by_id.get(event_id)
+        if event is None or event.scope != registry.scope:
+            raise PermissionError("phase source has no actual scoped canonical ancestor")
+        canonical_ids.add(event_id)
+        if len(canonical_ids) > maximum_rows:
+            raise PermissionError("phase canonical source closure exceeds its finite row cap")
+        pending.extend(event.parent_event_ids)
+    sample.prime_sources(tuple(sorted(canonical_ids)), policy.purpose)
     local_log, local_state, local_policy = copy(log), copy(state), copy(policy)
     local_log.replay = lambda: list(events)
     local_state.registry, local_state.policy = sample.local_registry, sample.local_permissions
@@ -262,7 +414,7 @@ def verify_current_phase_sources(*, policy, source_event_ids, claim_ids=(),
     # Execute fresh real grant callbacks after traversal; a LAST callback can
     # withdraw an earlier grant or quarantine a Claim. Terminal SQL catches both.
     for event_id, source in captured.items():
-        action = permissions.current_action(event_id, policy.purpose)
+        action = sample.local_permissions.current_action(event_id, policy.purpose)
         head = sample.local_permissions._head(event_id, policy.purpose)
         if (action is None or action.decision != "allow"
                 or action.source_registration_sha256 != source.registration_sha256

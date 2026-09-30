@@ -77,22 +77,32 @@ class ProviderFinalBindingTest(unittest.TestCase):
         def fictional_rows(*, registry, permissions, source_ids, purpose):
             # Explicit shape-only registry port: production uses the actual
             # single selected SQL fence, tested in test_provider_source_fence.
-            pending, sources = list(source_ids), {}
-            while pending:
-                event_id = pending.pop()
-                if event_id in sources:
-                    continue
-                source = registry.lookup(event_id)
-                if source is None or permissions.permits(source, purpose) is not True:
-                    raise PermissionError("fictional current source denied")
-                sources[event_id] = source
-                pending.extend(source.evidence.parent_refs)
+            sources = {}
+            def prime(ids, selected_purpose):
+                pending = list(ids)
+                while pending:
+                    event_id = pending.pop()
+                    if (event_id, selected_purpose) in sources:
+                        continue
+                    source = registry.lookup(event_id)
+                    if source is None or permissions.permits(source, selected_purpose) is not True:
+                        raise PermissionError("fictional current source denied")
+                    sources[(event_id, selected_purpose)] = source
+                    pending.extend(source.evidence.parent_refs)
+            prime(source_ids, purpose)
             def verify():
-                if any(registry.lookup(event_id) != source or (event_id, purpose) not in permissions.allowed
-                       for event_id, source in sources.items()):
+                if any(registry.lookup(event_id) != source or (event_id, selected_purpose) not in permissions.allowed
+                       for (event_id, selected_purpose), source in sources.items()):
                     raise PermissionError("fictional terminal grant changed")
-            return SimpleNamespace(verify_final_current_rows=verify)
+            return SimpleNamespace(local_registry=registry, local_permissions=permissions,
+                prime_sources=prime, verify_final_current_rows=verify)
         selected = patch("flora.selected.comparator_memory._current_permission_rows", new=fictional_rows)
+        selected.start()
+        self.addCleanup(selected.stop)
+        # This registry fixture is explicitly not the selected XTDB sampler.
+        # The real call-local reader's strict bindings have separate coverage.
+        selected = patch("flora.selected.provider_attempt_custody.XTDBProviderAttemptCustody._sampled_permission_reader",
+            new=lambda owner, sample: owner)
         selected.start()
         self.addCleanup(selected.stop)
         connection = self.p.f.f.connection
