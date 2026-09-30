@@ -1,5 +1,8 @@
 # FloRA readiness re-audit — 2026-09-29
 
+This is the historical starting audit. Later repairs and exact-commit engine
+receipts are recorded in the [September 30 verification checkpoint](VERIFICATION_CHECKPOINT_2026-09-30.md).
+
 **Verdict: FloRA has not exhausted the work that can proceed without the personality model and MFM. The previous model-only stopping conclusion was premature.** The selected-backend foundation is useful, but tested components are not yet a connected experiment.
 
 This audit rechecked FloRA's source, tests and CI, the live A.L.I.C.E. architecture and relevant model/builder branches, Fable Sleight's live product documents, and the five uploaded source-chat PDFs. No personality substitute, MFM substitute, new judgment model, or behavioral win was introduced.

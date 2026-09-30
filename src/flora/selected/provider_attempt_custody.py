@@ -348,11 +348,24 @@ class XTDBProviderAttemptCustody:
         return record
 
     def _phase_history(self, request):
+        issued_proof = getattr(request, "authenticated_history", None)
         history_artifact = self.comparison.metadata(self.run_id, f"history:{request.case_id}:{request.phase}")
         if history_artifact is None:
             raise ValueError("provider task phase history is unregistered")
         gate_ids = request.authorized_event_ids + (history_artifact.event_id,)
         purpose = evaluation_purpose(self.run_id, request.case_id, request.phase)
+        from .authenticated_history import request_authenticated_history
+        if issued_proof is not None:
+            from .authenticated_history import require_authenticated_request_bindings
+            require_authenticated_request_bindings(request, policy=self.evidence, expected_proof=issued_proof)
+        held = request_authenticated_history(request, policy=self.evidence)
+        if held is not None:
+            # This is still the same manifest/source purpose boundary as the
+            # full recovery route; only already authenticated bytes are reused.
+            self._require(gate_ids, purpose)
+            from .authenticated_history import require_authenticated_request_bindings
+            require_authenticated_request_bindings(request, policy=self.evidence, expected_proof=issued_proof)
+            return held, self.evidence
         reader = copy(self.comparison)
         reader._physical_custody = getattr(self.comparison, "_physical_custody", self.comparison)
         reader.objects = _CheckedObjects(self.objects, lambda: self._require(gate_ids, purpose))
@@ -364,16 +377,26 @@ class XTDBProviderAttemptCustody:
         return history, checked_evidence
 
     def _authorized_history(self, arm, request):
+        issued_proof = getattr(request, "authenticated_history", None)
         self._require_final(request=request)
+        if issued_proof is not None:
+            from .authenticated_history import require_authenticated_request_bindings
+            require_authenticated_request_bindings(request, policy=self.evidence, expected_proof=issued_proof)
         history, checked_evidence = self._phase_history(request)
+        extra = {} if getattr(request, "authenticated_history", None) is None else dict(
+            authenticated_history=request.authenticated_history, plan=request.plan, question=request.question)
         if (history.digest() != request.authorized_history_sha256 or history.event_ids != request.authorized_event_ids
                 or not checked_evidence.authorize_context(case_id=request.case_id, phase=request.phase,
-                    history=history, context=request.context, arm=arm)):
+                    history=history, context=request.context, arm=arm, **extra)):
             raise PermissionError("provider task lacks current independent phase context lineage")
         self._require_final(request=request)
+        if issued_proof is not None:
+            from .authenticated_history import require_authenticated_request_bindings
+            require_authenticated_request_bindings(request, policy=self.evidence, expected_proof=issued_proof)
         return history
 
     def _live_input(self, arm, request, provider_request):
+        issued_proof = getattr(request, "authenticated_history", None)
         history = self._authorized_history(arm, request)
         if self.input_verifier.artifact_sha256 != self._input_artifact:
             raise ValueError("provider input verifier changed its qualified artifact")
@@ -386,6 +409,9 @@ class XTDBProviderAttemptCustody:
             raise ValueError("independent wire verification differs from actual source/context input")
         # An independent verifier can take time. Its receipt is not a cached
         # permission grant and cannot survive withdrawal during verification.
+        if issued_proof is not None:
+            from .authenticated_history import require_authenticated_request_bindings
+            require_authenticated_request_bindings(request, policy=self.evidence, expected_proof=issued_proof)
         self._authorized_history(arm, request)
         if self.input_verifier.artifact_sha256 != self._input_artifact:
             raise ValueError("provider input verifier changed during verification")

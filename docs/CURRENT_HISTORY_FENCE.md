@@ -47,10 +47,15 @@ it does not substitute outer metadata for the encrypted manifest's digest.
 
 Only actual metadata rows may be sampled within this one call. The original
 connections are retained and never patched. Actual permission closure checks
-still run, and fresh original readers fence every captured source and grant
-afterward. No ciphertext, plaintext object, permission result or semantic verdict
-is memoized. The already held original bytes are hashed locally, not retrieved
-again.
+still run. The second source/raw/grant pass can use those same row decoders only
+when the source registry and permission policy are exact native classes with
+unmodified reader, key and decoder functions. Genuine functions are captured at
+module load, and eligibility is checked again after the second real artifact
+read and canonical replay. Instance overrides, subclasses, class patches and
+module decoder callbacks retain the complete uncached second pass. Both actual
+artifact reads, both canonical replays and all causal/content comparisons remain.
+No ciphertext, plaintext object, permission result or semantic verdict is
+memoized. Held original bytes are hashed locally, not retrieved again.
 
 After all actual grant callbacks, one finite selected XTDB statement checks all
 sampled source/raw/action/current-head rows together. This catches a callback on
@@ -70,7 +75,7 @@ add a new grant for opening a manifest, because it opens no manifest bytes.
 
 ## Evidence and limits
 
-Fourteen tests pass with the real selected registry, comparison custody and purpose
+Twenty-five tests pass with the real selected registry, comparison custody and purpose
 policy implementations, real encrypted initial custody and Ed25519 permission
 authentication, using controlled SQL/log ports. Tests cover no private byte I/O,
 reordered and after-in-before histories, forged manifest content metadata, held
@@ -80,6 +85,13 @@ work, consent withdrawal during the final uncached raw-reference read, and
 withdrawal specifically during the last callback of the final grant pass,
 initial private authentication followed by that final metadata fence, and
 withdrawal during the final permission-marker callback.
+The native second-pass fixtures fall from 24 to 10 SQL calls for two originals,
+and from 31 to 10 for three. They retain both real artifact reads and both
+canonical replays. Additional regressions cover owner withdrawal and raw-row
+mutation during the second replay, decoder rebinding, live custom callback
+denial, and subclass/instance fallback, including a late alias of an equal bound
+native function. The count and decoder-rebinding regressions fail against the
+published prior implementation.
 The terminal current-row query follows every slower source/raw-reference and
 grant callback. It grants no authority after the query's snapshot.
 

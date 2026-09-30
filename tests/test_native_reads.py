@@ -25,6 +25,10 @@ from flora.selected.phase_routes import SelectedPhaseRoute
 from flora.selected.phase_snapshots import XTDBPhaseSnapshotCustody
 from flora.selected.comparison_custody import XTDBComparisonCustody, SelectedRunEvidencePolicy, evaluation_purpose
 from flora.selected.formation_policy import FormationPermissionAction, XTDBFormationPermissionPolicy, formation_permission_payload
+from flora.selected.context_guard import _metadata_view
+from flora.selected.experiment_runtime import _AuthorizedRuntimeReads
+from flora.selected.judgment_context import RegisteredJudgmentContextPolicy
+from flora.selected.phase_source_fence import OneGuardSelectedMetadata
 from cognitive_kernel.contracts import ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
 
@@ -371,8 +375,8 @@ class NativeReadOwnershipTest(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(revoked[0])
             self.assertEqual(reads, [])
 
-    async def test_actual_selected_history_controller_uses_separate_policy_without_recursion(self):
-        """Actual custody/controller/current grants on explicit fictional SQL."""
+    def _actual_selected_history_fixture(self):
+        """Actual authority classes; SQL and independent grant proof stay fictional."""
         runtime, run_id = self.f.runtime, "native-fixture-run"
         install_current_metadata_batch(runtime.claims.connection)
         policy = XTDBFormationPermissionPolicy(scope=runtime.scope,
@@ -418,6 +422,146 @@ class NativeReadOwnershipTest(unittest.IsolatedAsyncioTestCase):
             frame = custody.metadata(run_id, "history:case-one:" + phase)
             for event_id in history.event_ids + (frame.event_id,):
                 grant(event_id, purpose)
+        return runtime, run_id, policy, custody, grant
+
+    def _phase_gated_selected_runtime(self, configure_policy=None):
+        runtime, run_id, policy, custody, grant = self._actual_selected_history_fixture()
+        if configure_policy is not None:
+            configure_policy(policy)
+        lineage = copy(self.f.lineage)
+        lineage.history_authority = SelectedRunEvidencePolicy(custody=custody,
+            run_id=run_id, permissions=policy)
+        session = SimpleNamespace(runtime=runtime, lineage=lineage)
+        SelectedNativeReadServices._install_phase_source_gate(session, self.entry,
+            self.f.histories[("case-one", "after")])
+        return runtime, lineage.history_authority, policy, grant
+
+    async def test_native_phase_predicates_use_sampled_owner_and_keep_controller_live(self):
+        runtime, authority, original_policy, _ = self._phase_gated_selected_runtime()
+        history = self.f.histories[("case-one", "after")]
+        model_owner = runtime.source_policy
+        self.assertIsNot(authority.permissions, model_owner)
+        self.assertIs(original_policy.permits.__func__, XTDBFormationPermissionPolicy.permits)
+        self.assertIs(authority.permissions.permits.__func__, XTDBFormationPermissionPolicy.permits)
+        original_metadata = authority.authorize_history_metadata
+        phase_calls = []
+        def phase_now(**kwargs):
+            phase_calls.append(kwargs["phase"])
+            return original_metadata(**kwargs)
+        authority.authorize_history_metadata = phase_now
+        original_fetch = XTDBFormationPermissionPolicy._fetch
+        model_reads = []
+        watched_owners = {id(model_owner)}
+        def fetch(owner, *args, **kwargs):
+            if id(owner) in watched_owners:
+                model_reads.append(args)
+            return original_fetch(owner, *args, **kwargs)
+        def sampled(policy):
+            sample = OneGuardSelectedMetadata(registry=runtime.sources, permissions=policy.permissions)
+            sample.prime_sources(history.event_ids, "personal_judgment")
+            _, _, _, local = _metadata_view(claims=runtime.claims, state=runtime.state,
+                log=runtime.log, policy=policy, source_sample=sample)
+            return sample, local
+        with patch.object(XTDBFormationPermissionPolicy, "_fetch", new=fetch):
+            sample, local = sampled(runtime.context_policy)
+            self.assertIs(local.allow_event.__self__, local)
+            self.assertIs(local.permissions.permits.__self__, local.permissions)
+            source = local.registry.lookup(history.event_ids[-1])
+            model_reads.clear()
+            before = len(phase_calls)
+            for _ in range(2):
+                self.assertTrue(local.allow_event(source.evidence.ref_id, "personal_judgment"))
+            self.assertEqual(model_reads, [])
+            self.assertGreater(len(phase_calls), before)
+            sample.verify_final_current_rows()
+
+            # Recreate the old closure only in another fixture view. Its bound
+            # delegate still uses the prior owner despite sampled _fetch rows.
+            legacy_owner, legacy_context = copy(model_owner), copy(runtime.context_policy)
+            legacy_context.permissions = legacy_owner
+            legacy_permits = XTDBFormationPermissionPolicy.permits.__get__(legacy_owner)
+            legacy_allow = RegisteredJudgmentContextPolicy.allow_event.__get__(legacy_context)
+            legacy_owner.permits = lambda source, purpose: (
+                phase_now(case_id="case-one", phase="after", history=history)
+                and legacy_permits(source, purpose))
+            legacy_context.allow_event = lambda event_id, purpose: (
+                phase_now(case_id="case-one", phase="after", history=history)
+                and legacy_allow(event_id, purpose))
+            watched_owners.add(id(legacy_owner))
+            legacy_sample, legacy_local = sampled(legacy_context)
+            model_reads.clear()
+            self.assertTrue(legacy_local.allow_event(source.evidence.ref_id, "personal_judgment"))
+            self.assertGreater(len(model_reads), 0)
+            legacy_sample.verify_final_current_rows()
+        self.assertIsNot(authority.permissions, runtime.source_policy)
+        self.assertIs(authority.permissions.registry, runtime.sources)
+
+    async def test_native_phase_sampled_grant_withdrawal_blocks_original_ciphertext(self):
+        runtime, authority, policy, grant = self._phase_gated_selected_runtime()
+        history = self.f.histories[("case-one", "after")]
+        def phase_guard():
+            if authority.authorize_history_metadata(case_id="case-one", phase="after", history=history) is not True:
+                raise PermissionError("native fixture phase consent changed")
+        prepared = runtime._prepare_current_context(self.entry.context_plan, authority_guard=phase_guard)
+        event_id = self.f.histories[("case-one", "after")].event_ids[0]
+        source = runtime.sources.lookup(event_id)
+        raw = runtime.sources.raw_reference(source.object_ref)
+        in_final_fence, withdrew = [False], [False]
+        metadata_fence = prepared._metadata_fence
+        def final_fence(**kwargs):
+            in_final_fence[0] = True
+            return metadata_fence(**kwargs)
+        phase_metadata = authority.authorize_history_metadata
+        def withdraw_after_sample(**kwargs):
+            allowed = phase_metadata(**kwargs)
+            if in_final_fence[0] and not withdrew[0]:
+                withdrew[0] = True
+                grant(event_id, "personal_judgment", "revoke")
+            return allowed
+        authority.authorize_history_metadata = withdraw_after_sample
+        opened = []
+        backend, get_object = runtime.objects.backend, runtime.objects.backend.get_object
+        def observe(namespace, object_id):
+            if object_id == raw.object_id:
+                opened.append(object_id)
+            return get_object(namespace, object_id)
+        with patch.object(prepared, "_metadata_fence", side_effect=final_fence), patch.object(
+                backend, "get_object", side_effect=observe):
+            with self.assertRaises((PermissionError, ValueError)):
+                _AuthorizedRuntimeReads(runtime.objects, prepared.metadata_current).get(raw)
+        self.assertTrue(withdrew[0])
+        self.assertEqual(opened, [])
+        self.assertEqual(policy.current_action(event_id, "personal_judgment").decision, "revoke")
+
+    async def test_native_phase_custom_predicate_remains_live_and_changed_wrapper_is_denied(self):
+        allowed, custom_calls = [True], []
+        def configure(policy):
+            original = policy.permits
+            def custom(source, purpose):
+                custom_calls.append(purpose)
+                return original(source, purpose) and (purpose != "personal_judgment" or allowed[0])
+            policy.permits = custom
+        runtime, authority, _, _ = self._phase_gated_selected_runtime(configure)
+        history = self.f.histories[("case-one", "after")]
+        sample = OneGuardSelectedMetadata(registry=runtime.sources, permissions=runtime.source_policy)
+        sample.prime_sources(history.event_ids, "personal_judgment")
+        _, _, _, local = _metadata_view(claims=runtime.claims, state=runtime.state,
+            log=runtime.log, policy=runtime.context_policy, source_sample=sample)
+        source = local.registry.lookup(history.event_ids[0])
+        self.assertTrue(local.permissions.permits(source, "personal_judgment"))
+        before = custom_calls.count("personal_judgment")
+        allowed[0] = False
+        self.assertFalse(local.permissions.permits(source, "personal_judgment"))
+        self.assertGreater(custom_calls.count("personal_judgment"), before)
+        allowed[0] = True
+        runtime.source_policy.permits = lambda *args: True
+        with self.assertRaisesRegex(PermissionError, "predicate binding changed"):
+            local.permissions.permits(source, "personal_judgment")
+        self.assertIsNot(authority.permissions, runtime.source_policy)
+
+    async def test_actual_selected_history_controller_uses_separate_policy_without_recursion(self):
+        """Actual custody/controller/current grants on explicit fictional SQL."""
+        runtime, run_id, policy, custody, grant = self._actual_selected_history_fixture()
         # One lineage call authenticates selected history once. Later actual
         # producer callbacks must use current metadata and refuse withdrawal,
         # without reopening the already authenticated originals.

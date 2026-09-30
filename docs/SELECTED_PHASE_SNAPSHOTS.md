@@ -188,6 +188,12 @@ slow qualification, after inference and before accepting the codec's decision.
 Nested ciphertext/AEAD guards stay metadata-only so proof recovery does not
 recursively recover itself. Passive recovery never repairs invocation custody.
 
+Copying a phase object facade preserves its installed guard chain without
+installing the same source guard again. Each copy owns its plane and top backend
+wrapper, and keeps distinct later guards. The installed authorizer binding is
+immutable; its callback still checks current permission before and after every
+private fetch, including the nested reads in put and reference recovery.
+
 The legacy final-plan V1 route remains for explicit mechanics/pilot contracts.
 Unregistered fictional permissions require
 `allow_unregistered_fixture_route=True`; this is rejected for actual selected

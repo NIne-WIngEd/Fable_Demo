@@ -1,5 +1,8 @@
 # FloRA experiment readiness audit — 2026-09-29
 
+This describes the audited starting tree. For later repairs and observed
+engine results, see the [September 30 verification checkpoint](VERIFICATION_CHECKPOINT_2026-09-30.md).
+
 **Conclusion:** the experiment goal is coherent, and the selected-backend work is useful. The repository has not exhausted the work possible before personality and MFM are ready. It has input fixtures and fairness validators, rather than an executable comparison and assessment pipeline.
 
 ## Why this lane exists

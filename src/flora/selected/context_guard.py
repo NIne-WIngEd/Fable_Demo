@@ -120,8 +120,9 @@ def _metadata_view(*, claims, state, log, policy, source_sample=None):
     Only metadata readers are memoized. No connection, plaintext reader, owner
     verifier, external semantic verifier or allow decision is copied/cached.
     """
+    from .native_phase_gate import copy_native_phase_view
     def sampled(service, names):
-        result = copy(service)
+        result = copy_native_phase_view(service)
         for name in names:
             method = getattr(result, name, None)
             if not callable(method):
@@ -156,7 +157,7 @@ def _metadata_view(*, claims, state, log, policy, source_sample=None):
         local_state.episodes = sampled(state.episodes, ("_fetch",))
         local_state.episodes.registry, local_state.episodes.policy = registry, permissions
         local_state.episodes.custody = sampled(state.episodes.custody, ("_fetch",))
-    local_policy = copy(policy)
+    local_policy = copy_native_phase_view(policy)
     local_policy.claims, local_policy.state, local_policy.log = local_claims, local_state, local_log
     local_policy.registry, local_policy.permissions = registry, permissions
     return local_claims, local_state, local_log, local_policy

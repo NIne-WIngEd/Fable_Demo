@@ -1,6 +1,8 @@
 """Intake/causal boundary mechanics, not model qualification or a behavioral run."""
 import asyncio
+import ast
 from dataclasses import replace
+import inspect
 import json
 from pathlib import Path
 import tempfile
@@ -18,6 +20,8 @@ from flora.selected.pilot_lifecycle import (
     NativeBeforeReference, VerifiedNativePilotBefore, apply_native_intervention,
     run_native_pilot_transition, verify_native_before,
 )
+from flora.selected import pilot_lifecycle
+from flora.selected.context_guard import _invoke_guard
 
 FIXTURE = Path(__file__).resolve().parents[1] / "data/synthetic_pilot/v1.json"
 
@@ -127,6 +131,38 @@ class NativePilotLifecycleMechanicsTest(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "persisted stage references"):
             asyncio.run(run_native_pilot_transition(path=FIXTURE, checkpoint=checkpoint, runtime=runtime,
                 lineage=lineage, before_executor=text_only, occurred_at=lambda: "2026-09-29T14:01:00Z"))
+
+    def test_actual_before_guard_obeys_void_context_contract_and_rechecks_withdrawal(self):
+        """Exercise the real nested guard and context contract, with fixture ports."""
+        checkpoint, runtime, lineage, _ = self.fixture("pilot-coffee-correction")
+        history = lineage.history_for(checkpoint.case_id, "before")
+        phase_allowed, source_allowed, calls = [True], [True], []
+        def authorize_history(**kwargs):
+            calls.append(kwargs["phase"])
+            return phase_allowed[0]
+        lineage.history_authority.authorize_history = authorize_history
+        runtime.source_policy.permits = lambda *_: source_allowed[0]
+        # Select the actual callback body rather than copy its implementation
+        # or mock away the current-context authority_guard return contract.
+        parsed = ast.parse(inspect.getsource(verify_native_before))
+        guard_node = next(node for node in parsed.body[0].body
+                          if isinstance(node, ast.FunctionDef) and node.name == "guard")
+        module = ast.Module(body=[guard_node], type_ignores=[])
+        namespace = dict(vars(pilot_lifecycle), checkpoint=checkpoint, runtime=runtime,
+            lineage=lineage, history=history, phase=None, permission_snapshots=[])
+        exec(compile(ast.fix_missing_locations(module), inspect.getsourcefile(verify_native_before), "exec"), namespace)
+        guard = namespace["guard"]
+        self.assertIsNone(_invoke_guard(guard))
+        self.assertEqual(calls, ["before"])
+        phase_allowed[0] = False
+        with self.assertRaisesRegex(PermissionError, "phase permission was withdrawn"):
+            _invoke_guard(guard)
+        phase_allowed[0], source_allowed[0] = True, False
+        with self.assertRaisesRegex(PermissionError, "original source is no longer permitted"):
+            _invoke_guard(guard)
+        source_allowed[0] = True
+        self.assertIsNone(_invoke_guard(guard))
+        self.assertEqual(calls, ["before"] * 4)
 
     def test_phase_withdrawal_during_payload_write_stops_intervention_append(self):
         checkpoint, runtime, lineage, verified = self.fixture("pilot-coffee-correction")

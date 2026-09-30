@@ -31,6 +31,7 @@ from .comparison_custody import SelectedRunEvidencePolicy, XTDBComparisonCustody
 from .context import ContextPlan, LocalContext, LocalContextItem
 from .decision_outcome import RecordedEvent, record_decision
 from .formation_policy import XTDBFormationPermissionPolicy
+from .authenticated_history import request_authenticated_history, require_authenticated_request_bindings
 
 
 def _current_permission_rows(*, registry, permissions, source_ids, purpose):
@@ -72,6 +73,29 @@ def _require_final(custody, run_id, evidence, configuration, request, *, qualifi
     method(plan=request.plan, case_id=request.case_id, phase=request.phase,
         arm="general_model_memory", invocation_id=task_id)
     return authority
+
+
+def _held_or_recovered_history(*, custody, evidence, permissions, run_id, request, final_current):
+    issued_proof = getattr(request, "authenticated_history", None)
+    held = request_authenticated_history(request, policy=evidence)
+    if held is None:
+        return custody._authority_fenced_copy(final_current).recover_history(
+            run_id=run_id, case_id=request.case_id, phase=request.phase, permissions=permissions)
+    # Reusing held bytes does not drop the manifest's independently granted
+    # evaluation purpose from the previous recovery route.
+    artifact = custody.metadata(run_id, f"history:{request.case_id}:{request.phase}")
+    if artifact is None:
+        raise PermissionError("held comparator history lost its registered manifest")
+    purpose = evaluation_purpose(run_id, request.case_id, request.phase)
+    rows = _current_permission_rows(registry=custody.registry, permissions=permissions,
+        source_ids=(artifact.event_id,), purpose=purpose)
+    source = rows.local_registry.lookup(artifact.event_id)
+    if rows.local_permissions.permits(source, purpose) is not True:
+        raise PermissionError("held comparator history lost current manifest authority")
+    final_current()
+    rows.verify_final_current_rows()
+    require_authenticated_request_bindings(request, policy=evidence, expected_proof=issued_proof)
+    return held
 
 
 @dataclass(frozen=True)
@@ -230,20 +254,28 @@ class QdrantOriginalMemory:
 
     async def prepare(self, request: PreparationRequest) -> OriginalWindowContext:
         config = self.configuration.memory
+        issued_proof = request.authenticated_history
         def final_current():
             _require_final(self.custody, self.run_id, self.evidence, self.configuration, request)
             return True
         _require_final(self.custody, self.run_id, self.evidence, self.configuration, request, qualified=True)
+        require_authenticated_request_bindings(request, policy=self.evidence, expected_proof=issued_proof)
         evidence = copy(self.evidence)
         evidence.custody = self.custody._authority_fenced_copy(final_current)
         # Authenticate the actual held originals once for this preparation.
         # Later operation guards still resolve current source/parent grants
         # and finish with the terminal selected-row fence; they do not reopen
         # the same immutable ciphertext after every Qdrant call.
-        if not evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=request.history):
+        held = request_authenticated_history(request, policy=self.evidence)
+        if held is None and not evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=request.history):
             raise ArmStopped("refused")
         def current():
             final_current()
+            require_authenticated_request_bindings(request, policy=self.evidence, expected_proof=issued_proof)
+            if held is not None:
+                if request_authenticated_history(request, policy=self.evidence) is not held:
+                    raise PermissionError("preparation lost its issued original history")
+                return
             if not evidence.authorize_history_metadata(case_id=request.case_id, phase=request.phase, history=request.history):
                 raise ArmStopped("refused")
             final_current()
@@ -329,7 +361,9 @@ class SelectedComparatorDisclosure:
         self.wire_compiler = wire_compiler
 
     def authorize(self, *, request: ExecutionRequest, provider_request: ProviderRequest) -> str:
+        issued_proof = request.authenticated_history
         _require_final(self.custody, self.run_id, self.evidence, self.configuration, request, qualified=True)
+        require_authenticated_request_bindings(request, policy=self.evidence, expected_proof=issued_proof)
         def final_current():
             _require_final(self.custody, self.run_id, self.evidence, self.configuration, request)
             return True
@@ -338,11 +372,12 @@ class SelectedComparatorDisclosure:
                     context=request.context, response_token_budget=request.plan.protocol.response_token_budget,
                     wire_compiler=self.wire_compiler)):
             raise PermissionError("provider request differs from the exact authorized input")
-        reader = self.custody._authority_fenced_copy(final_current)
-        history = reader.recover_history(run_id=self.run_id, case_id=request.case_id,
-                                               phase=request.phase, permissions=self.permissions)
+        require_authenticated_request_bindings(request, policy=self.evidence, expected_proof=issued_proof)
+        history = _held_or_recovered_history(custody=self.custody, evidence=self.evidence,
+            permissions=self.permissions, run_id=self.run_id, request=request, final_current=final_current)
         if (history.digest() != request.authorized_history_sha256 or history.event_ids != request.authorized_event_ids
-                or not self.evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=history)):
+                or (getattr(request, "authenticated_history", None) is None
+                    and not self.evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=history))):
             raise PermissionError("comparator source history changed or lost local permission")
         verify_window_context(request.context, history, self.configuration)
         purpose = "comparison_external:" + self.configuration.provider.provider_id
@@ -373,6 +408,7 @@ class SelectedComparatorDisclosure:
                 raise PermissionError("external disclosure authority changed during verification")
         _require_final(self.custody, self.run_id, self.evidence, self.configuration, request, qualified=True)
         permission_rows.verify_final_current_rows()
+        require_authenticated_request_bindings(request, policy=self.evidence, expected_proof=issued_proof)
         return canonical_sha256({"provider_configuration_sha256": provider_request.configuration.digest(),
             "payload_sha256": sha(provider_request.payload), "purpose": purpose, "sources": markers})
 
@@ -422,6 +458,7 @@ class SelectedComparatorRecorder:
     def record(self, *, request: ExecutionRequest, provider_request: ProviderRequest,
                response: ProviderResponse, token_count: TokenCount,
                authorization_marker: str) -> ArmResult:
+        issued_proof = request.authenticated_history
         if (request.binding.model_artifact_sha256 != self.configuration.provider.digest()
                 or request.binding.lineage_sha256 != self.configuration.digest()
                 or request.binding.producer_component != self.configuration.producer_component
@@ -431,18 +468,21 @@ class SelectedComparatorRecorder:
         evidence = self.disclosure.evidence
         _require_final(self.custody, self.run_id, evidence, self.configuration, request, qualified=True)
         self.exchange_verifier.verify(request=provider_request, response=response)
+        require_authenticated_request_bindings(request, policy=evidence, expected_proof=issued_proof)
         self.disclosure.authorize(request=request, provider_request=provider_request)
+        require_authenticated_request_bindings(request, policy=evidence, expected_proof=issued_proof)
         def final_current():
             _require_final(self.custody, self.run_id, evidence, self.configuration, request)
             return True
-        reader = self.custody._authority_fenced_copy(final_current)
-        history = reader.recover_history(run_id=self.run_id, case_id=request.case_id,
-            phase=request.phase, permissions=self.disclosure.permissions)
+        history = _held_or_recovered_history(custody=self.custody, evidence=evidence,
+            permissions=self.disclosure.permissions, run_id=self.run_id,
+            request=request, final_current=final_current)
         question = self.custody.metadata(self.run_id, "question:" + request.case_id)
         if question is None or question.record["content_sha256"] != sha(request.question):
             raise ValueError("comparator exchange lost its exact frozen question custody")
         def current():
             final_current()
+            require_authenticated_request_bindings(request, policy=evidence, expected_proof=issued_proof)
             purpose = "comparison_external:" + self.configuration.provider.provider_id
             source_ids = (question.event_id, *request.context.source_event_ids)
             permission_rows = _current_permission_rows(registry=self.custody.registry,
@@ -456,6 +496,7 @@ class SelectedComparatorRecorder:
                     raise PermissionError("comparator result lost current external source authority")
             final_current()
             permission_rows.verify_final_current_rows()
+            require_authenticated_request_bindings(request, policy=evidence, expected_proof=issued_proof)
             return True
         selected = self.custody._authority_fenced_copy(current)
         _require_final(self.custody, self.run_id, evidence, self.configuration, request, qualified=True)

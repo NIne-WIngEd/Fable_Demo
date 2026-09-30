@@ -786,14 +786,24 @@ class SelectedRunEvidencePolicy:
             final_authority=getattr(self, "final_authority", None))
 
     def authorize_context(self, *, case_id: str, phase: str, history: HistorySnapshot,
-                          context: LocalContext, arm: str) -> bool:
-        self.require_final_authority()
-        if not self.authorize_history(case_id=case_id, phase=phase, history=history):
-            return False
+                          context: LocalContext, arm: str, authenticated_history=None,
+                          plan=None, question=None) -> bool:
+        if authenticated_history is None:
+            self.require_final_authority()
+            if not self.authorize_history(case_id=case_id, phase=phase, history=history):
+                return False
+        else:
+            from .authenticated_history import current_authenticated_history
+            current_authenticated_history(authenticated_history, policy=self, plan=plan,
+                case_id=case_id, phase=phase, question=question, history=history)
         if arm == "general_model_memory" or self.native_lineage is None:
             return set(context.source_event_ids).issubset(history.event_ids)
-        return self.native_lineage.authorize_context(case_id=case_id, phase=phase,
+        authorized = self.native_lineage.authorize_context(case_id=case_id, phase=phase,
             history=history, context=context, arm=arm)
+        if authenticated_history is not None:
+            current_authenticated_history(authenticated_history, policy=self, plan=plan,
+                case_id=case_id, phase=phase, question=question, history=history)
+        return authorized
 
     def verify_native_result(self, request, result, *, arm: str = "flora_full") -> RecordedEvent:
         self.require_final_authority(plan=request.plan)

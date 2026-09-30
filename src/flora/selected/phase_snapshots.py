@@ -155,10 +155,27 @@ def plan_from_record(record):
 
 class PhaseAuthorizedObjectReads(_SourceAuthorizedObjectReads):
     """Keep the phase barrier around put/recovery's own nested decrypts too."""
+
+    @property
+    def source_authorizer(self):
+        return self._phase_source_authorizer
+
+    @source_authorizer.setter
+    def source_authorizer(self, value):
+        if "_phase_source_authorizer" in self.__dict__:
+            raise AttributeError("the installed phase source authorizer is immutable")
+        self._phase_source_authorizer = value
+
     def __copy__(self):
         # Runtime guards wrap a shallow copy's ciphertext backend. Preserve
-        # that wrapper inside delegated get() without mutating the live plane.
-        return type(self)(copy(self.objects), self.source_authorizer)
+        # the installed guard chain without installing the same guard again.
+        # Each facade owns its plane and top wrapper; all retained callbacks
+        # still check current authority around their own private I/O.
+        copied = object.__new__(type(self))
+        copied.__dict__.update(self.__dict__)
+        copied.objects = copy(self.objects)
+        copied.objects.backend = copy(self.objects.backend)
+        return copied
 
     @property
     def backend(self):

@@ -121,6 +121,18 @@ and still return a dispatch marker or authorize sealing the response context.
 Provider capture and audit keep their separate purposes, so an already observed
 failed call can remain recoverable after evaluation or external use is withdrawn.
 
+For an ordinary selected paired run, actual registered AEAD custody authenticates
+each case/phase's original bytes before an adapter receives them. An opaque local
+issuance then retains those exact bytes for that actual policy, custody, plan,
+question and phase. Preparation, disclosure and provider input verification can
+reuse the authenticated bytes while checking fresh current metadata and final
+authority. The issuance contains no cached permission answer, has no wire or
+serialization format, and cannot cross an independent policy or custody owner.
+Every operation pins its issuance: clearing or replacing it during a callback
+is a denial. Direct calls without it still authenticate originals normally.
+Coordinator paths using guarded custody/policy copies retain their full-auth
+route; this optimization neither unwraps those guards nor shares native proof.
+
 The check runs before generation, in the supplied client's actual dispatch
 callback, after generation and at recording. The signed response must bind the
 marker produced by the dispatch callback. Revocation blocks new disclosure and
@@ -147,7 +159,9 @@ baseline; it is not evidence of native personal judgment.
   is prepared for real KurrentDB, XTDB, Qdrant and encrypted objects. It exercises
   denied disclosure despite local grants, phase-isolated projection, canonical
   exchange/output custody, failure-inclusive run recovery and disclosure
-  revocation. **Its CI result is pending.** Its supplied fixtures qualify mechanics
+  revocation. The published `5cc36c6` run exceeded its frozen **10,000 ms** budget
+  in both phases (41,877/69,269 ms). The issued-byte repair's physical retry is
+  pending. Its supplied fixtures qualify mechanics
   only; there is no actual frontier call, real tokenizer/embedding quality or
   prediction in that test.
 - Required production components remain externally supplied and unqualified

@@ -208,6 +208,7 @@ class PreparationRequest:
     question: bytes = field(repr=False)
     history: HistorySnapshot = field(repr=False)
     plan: PairedRunPlan = field(repr=False)
+    authenticated_history: object | None = field(default=None, repr=False, compare=False)
 
 
 @dataclass(frozen=True)
@@ -221,6 +222,7 @@ class ExecutionRequest:
     context: LocalContext = field(repr=False)
     binding: ArmBinding
     plan: PairedRunPlan = field(repr=False)
+    authenticated_history: object | None = field(default=None, repr=False, compare=False)
 
 
 @dataclass(frozen=True)
@@ -301,7 +303,8 @@ def _context_bytes(context: LocalContext) -> bytes:
 
 
 def _authorize_context(*, policy: RunEvidencePolicy, case_id: str, phase: str,
-                       history: HistorySnapshot, context: LocalContext, arm: str) -> None:
+                       history: HistorySnapshot, context: LocalContext, arm: str,
+                       authenticated_history=None, plan=None, question=None) -> None:
     if not isinstance(context, LocalContext):
         raise ValueError("prepared context is not a selected context")
     originals_only = set(context.source_event_ids).issubset(history.event_ids)
@@ -310,7 +313,9 @@ def _authorize_context(*, policy: RunEvidencePolicy, case_id: str, phase: str,
         raise ValueError("baseline context exceeds original phase evidence")
     authorize = getattr(policy, "authorize_context", None)
     if callable(authorize):
-        if authorize(case_id=case_id, phase=phase, history=history, context=context, arm=arm) is not True:
+        extra = {} if authenticated_history is None else dict(
+            authenticated_history=authenticated_history, plan=plan, question=question)
+        if authorize(case_id=case_id, phase=phase, history=history, context=context, arm=arm, **extra) is not True:
             raise PermissionError("prepared context lacks current independent phase lineage")
     elif not originals_only:
         raise ValueError("internal native context requires independent phase lineage")
@@ -400,6 +405,10 @@ async def run_paired(
     if set(histories) != expected or set(questions) != {case.case_id for case in plan.protocol.cases}:
         raise ValueError("inputs differ from frozen case/phase matrix")
     # Validate every original before any adapter sees plaintext.
+    from .selected.comparison_custody import SelectedRunEvidencePolicy
+    from .selected.object_store import EncryptedObjectPlane
+    from .selected.authenticated_history import AuthenticatedSelectedHistory, current_authenticated_history
+    authenticated_histories = {}
     for case in plan.protocol.cases:
         if not isinstance(questions[case.case_id], bytes) or not questions[case.case_id]:
             raise ValueError("case needs common question bytes")
@@ -413,15 +422,24 @@ async def run_paired(
                 or case.intervention_event_id in before.event_ids):
             raise ValueError("before/after original event lineage differs from intervention")
         for phase, history in (("before", before), ("after", after)):
-            if (history.digest() != getattr(case, f"{phase}_history_sha256")
-                    or not evidence_policy.authorize_history(
-                        case_id=case.case_id, phase=phase, history=history)):
+            if history.digest() != getattr(case, f"{phase}_history_sha256"):
+                raise PermissionError("original history is changed or independently unauthorized")
+            # Coordinators can deliberately supply guarded shallow copies
+            # with independent controllers. Keep their full-auth route; an
+            # adapter owned by the original policy cannot consume that copy's
+            # issuance or unwrap its private-I/O guards.
+            if (isinstance(evidence_policy, SelectedRunEvidencePolicy)
+                    and type(evidence_policy.custody.objects) is EncryptedObjectPlane):
+                authenticated_histories[(case.case_id, phase)] = AuthenticatedSelectedHistory(
+                    policy=evidence_policy, plan=plan, case_id=case.case_id, phase=phase, history=history)
+            elif not evidence_policy.authorize_history(case_id=case.case_id, phase=phase, history=history):
                 raise PermissionError("original history is changed or independently unauthorized")
     attempts = []
     for case in plan.protocol.cases:
         for phase in ("before", "after"):
             history = histories[(case.case_id, phase)]
             question = questions[case.case_id]
+            authenticated_history = authenticated_histories.get((case.case_id, phase))
             shared_context = None
             for arm in ("flora_full", "general_model_memory", "same_evidence_ablation"):
                 started = time.monotonic()
@@ -436,9 +454,12 @@ async def run_paired(
                 def authorize_live() -> None:
                     if (plan.digest() != digest
                             or _sha(question) != plan.question_sha256_by_case[case.case_id]
-                            or history.digest() != getattr(case, f"{phase}_history_sha256")
-                            or not evidence_policy.authorize_history(
-                                case_id=case.case_id, phase=phase, history=history)):
+                            or history.digest() != getattr(case, f"{phase}_history_sha256")):
+                        raise ArmStopped("refused")
+                    if authenticated_history is not None:
+                        current_authenticated_history(authenticated_history, policy=evidence_policy,
+                            plan=plan, case_id=case.case_id, phase=phase, question=question, history=history)
+                    elif not evidence_policy.authorize_history(case_id=case.case_id, phase=phase, history=history):
                         raise ArmStopped("refused")
 
                 try:
@@ -452,9 +473,10 @@ async def run_paired(
                             context = shared_context
                         else:
                             context = await adapter.prepare(PreparationRequest(
-                                case.case_id, phase, question, history, plan))
+                                case.case_id, phase, question, history, plan, authenticated_history))
                         _authorize_context(policy=evidence_policy, case_id=case.case_id, phase=phase,
-                                           history=history, context=context, arm=arm)
+                                           history=history, context=context, arm=arm,
+                                           authenticated_history=authenticated_history, plan=plan, question=question)
                         material = _context_bytes(context)
                         if len(material) > plan.context_byte_budget:
                             raise ValueError("prepared context violates byte budget")
@@ -466,7 +488,7 @@ async def run_paired(
                             shared_context = context
                         return await adapter.execute(ExecutionRequest(
                             case.case_id, phase, question, history.scope,
-                            history.digest(), history.event_ids, context, binding, plan))
+                            history.digest(), history.event_ids, context, binding, plan, authenticated_history))
 
                     result = await asyncio.wait_for(
                         operation(), timeout=plan.protocol.wall_time_budget_ms / 1000)
@@ -477,9 +499,10 @@ async def run_paired(
                     authorize_live()
                     request = ExecutionRequest(case.case_id, phase, question, history.scope,
                                                history.digest(), history.event_ids,
-                                               context, binding, plan)
+                                               context, binding, plan, authenticated_history)
                     _authorize_context(policy=evidence_policy, case_id=case.case_id, phase=phase,
-                                       history=history, context=context, arm=arm)
+                                       history=history, context=context, arm=arm,
+                                       authenticated_history=authenticated_history, plan=plan, question=question)
                     _validate_result(result, request, evidence_policy, arm=arm)
                     status = "success"
                     if (usage.output_tokens > plan.protocol.response_token_budget

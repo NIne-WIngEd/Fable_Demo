@@ -29,6 +29,9 @@ from .native_worker import _await_owned_read
 from .phase_routes import SelectedPhaseRoute
 from .comparison_custody import SelectedRunEvidencePolicy
 from .personal_artifact_custody import DurableOwnerProofLookup
+from .formation_policy import XTDBFormationPermissionPolicy
+from .judgment_context import RegisteredJudgmentContextPolicy
+from .native_phase_gate import install_native_phase_gate
 
 
 def _positive(value, name):
@@ -416,14 +419,12 @@ class SelectedNativeReadServices:
             state.episodes.policy = policy
         runtime.source_policy, runtime.state, runtime.context_policy = policy, state, context_policy
         context_policy.permissions, context_policy.state = policy, state
-        permits, allow_event = policy.permits, context_policy.allow_event
-        def phase_permits(source, purpose):
-            return (phase_now()
-                    and phase_member(source.evidence.ref_id) and permits(source, purpose) is True)
-        def phase_allow_event(event_id, purpose):
-            return phase_now() and phase_member(event_id) and allow_event(event_id, purpose) is True
-        policy.permits = phase_permits
-        context_policy.allow_event = phase_allow_event
+        install_native_phase_gate(policy, "permits",
+            canonical_predicate=XTDBFormationPermissionPolicy.permits,
+            phase_now=phase_now, phase_member=phase_member)
+        install_native_phase_gate(context_policy, "allow_event",
+            canonical_predicate=RegisteredJudgmentContextPolicy.allow_event,
+            phase_now=phase_now, phase_member=phase_member)
 
     def _phase_session(self, session, entry, request=None, *, arm=None):
         """Resolve the exact archive on this freshly owned read connection.

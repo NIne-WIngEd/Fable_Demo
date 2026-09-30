@@ -22,6 +22,7 @@ from .formation_policy import XTDBFormationPermissionPolicy
 from .formation_registry import XTDBFormationSourceRegistry
 from .judgment_context import RegisteredJudgmentContextPolicy
 from .source_native import _require_available
+from .native_phase_gate import copy_native_phase_view
 
 
 @dataclass(frozen=True)
@@ -89,7 +90,7 @@ class OneGuardSelectedMetadata:
             raise PermissionError("metadata fence Claim authority crosses actual selected connection/scope")
 
     def _sample(self, service, kind):
-        local = copy(service)
+        local = copy_native_phase_view(service)
         name = "_fetch_record" if kind == "claim" else "_fetch"
         actual = getattr(local, name)
         sampled = {}
@@ -385,7 +386,7 @@ def verify_current_phase_sources(*, policy, source_event_ids, claim_ids=(),
             raise PermissionError("phase canonical source closure exceeds its finite row cap")
         pending.extend(event.parent_event_ids)
     sample.prime_sources(tuple(sorted(canonical_ids)), policy.purpose)
-    local_log, local_state, local_policy = copy(log), copy(state), copy(policy)
+    local_log, local_state, local_policy = copy(log), copy(state), copy_native_phase_view(policy)
     local_log.replay = lambda: list(events)
     local_state.registry, local_state.policy = sample.local_registry, sample.local_permissions
     local_policy.registry, local_policy.permissions = sample.local_registry, sample.local_permissions
@@ -404,8 +405,8 @@ def verify_current_phase_sources(*, policy, source_event_ids, claim_ids=(),
             raise PermissionError("phase source lacks exact current canonical ancestor closure")
         captured[event_id] = source
         pending.extend(source.evidence.parent_refs)
-    # Copy preserves actual instance-mutated predicates. Their closure may
-    # retain an original service and run more reads; correctness precedes speed.
+    # Known internal native gates use this sampled owner. Arbitrary supplied
+    # predicates keep their live original owner and are never cached.
     for event_id in source_event_ids:
         if local_policy.allow_event(event_id, policy.purpose) is not True:
             raise PermissionError("phase actual source/control predicate denied use")

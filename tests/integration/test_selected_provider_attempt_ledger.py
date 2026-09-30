@@ -247,7 +247,7 @@ class SelectedProviderAttemptLedgerIntegrationTest(unittest.TestCase):
                 original_action, changed = policy.current_action, False
                 lines, first_line = inspect.getsourcelines(XTDBProviderAttemptCustody._external_snapshot)
                 final_line = first_line + next(i for i, line in enumerate(lines)
-                    if 'action = self.permissions.current_action(saved["event_id"], purpose)' in line)
+                    if 'action = reader.permissions.current_action(saved["event_id"], purpose)' in line)
                 external_ids = after.body["disclosure_source_ids"]
                 for event_id in external_ids:
                     grant(event_id, "comparison_external:fixture-provider")

@@ -13,6 +13,13 @@ The synthetic probe:
 5. Sends the signal and runs the pending second activity.
 6. Requires one invocation of each activity. A completed first activity must not run again during replay.
 
-Probe material is a fictional marker. This checks orchestration continuity, not learned memory, native judgment, complete cross-plane recovery or the correctness of index cleanup. Real cleanup adapters retain their separate integration checks. The new persistent probe remains unqualified until its selected-backend CI run succeeds.
+Probe material is a fictional marker. This checks orchestration continuity, not learned memory, native judgment, complete cross-plane recovery or the correctness of index cleanup. Real cleanup adapters retain their separate integration checks.
+
+The persistent probe passed at `5cc36c6754df5e6dcdf99d0581a3f042fcd73077`
+in [run 36755050656](https://github.com/NIne-WIngEd/FloRA/actions/runs/36755050656),
+core job `110023050041`. The workflow restarted both PostgreSQL and Temporal,
+then recovered and resumed the existing waiting workflow without repeating its
+completed first activity. This receipt qualifies that exact probe and
+implementation; a later change needs its own run.
 
 `scripts/temporal_schema_setup.sh` initializes fresh CI volumes. Restarts retain the existing databases. It is not a general schema-upgrade, backup/restore, failover or key-custody tool. All fixture credentials are confined to this local Docker integration setup.

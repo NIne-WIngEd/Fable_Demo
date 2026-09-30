@@ -215,7 +215,6 @@ def verify_native_before(*, path, checkpoint: PilotCheckpoint,
                     claims=runtime.claims, log=runtime.log)
                 if live[4]["record_sha256"] != episode.publication_record_sha256:
                     raise PermissionError("native pilot episode changed during private recovery")
-        return True
     guard()
     known = set(original_ids)
     for supplied in reference.formations:

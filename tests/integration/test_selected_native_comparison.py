@@ -12,6 +12,7 @@ import importlib.util
 from pathlib import Path
 import sys
 import tempfile
+import traceback
 from types import SimpleNamespace
 import unittest
 import uuid
@@ -216,6 +217,22 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
         codec = Codec(SimpleNamespace())
         native = NativeArmAdapter(run_id="native-run", run_plan=plan, frozen=frozen, custody=custody,
             worker=worker, codec=codec, reads=reads, meter=meter, writer_guard=writer_guard)
+        def traced_boundary(original, stage):
+            async def traced(*args, **kwargs):
+                try:
+                    return await original(*args, **kwargs)
+                except (Exception, asyncio.CancelledError) as error:
+                    # Structural diagnostics only: no exception message, local
+                    # values, request data, context, output or proof payloads.
+                    frames = [{"file": frame.filename, "function": frame.name, "line": frame.lineno}
+                              for frame in traceback.extract_tb(error.__traceback__)]
+                    print(canonical_json_bytes({"native_fixture_stage": stage,
+                        "exception_class": type(error).__name__, "traceback": frames}).decode(),
+                        file=sys.stderr, flush=True)
+                    raise
+            return traced
+        native.prepare = traced_boundary(native.prepare, "prepare")
+        native.execute = traced_boundary(native.execute, "execute")
         async def exercise():
             try:
                 return await run_paired(plan=plan, histories=histories, questions={"case": question},
@@ -224,7 +241,10 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
                 await reads.aclose()
         run = asyncio.run(exercise())
         executions = native.execution_records
-        self.assertEqual([attempt.status for attempt in run.attempts if attempt.arm == "flora_full"], ["success"] * 2)
+        native_attempts = [attempt for attempt in run.attempts if attempt.arm == "flora_full"]
+        self.assertEqual([attempt.status for attempt in native_attempts], ["success"] * 2,
+            [{"phase": attempt.phase, "status": attempt.status, "elapsed_ms": attempt.elapsed_ms}
+             for attempt in native_attempts])
         self.assertEqual(sum(attempt.status == "unavailable" for attempt in run.attempts), 4)
         for request, result in executions.values():
             self.assertNotIn(request.context.items[1].approval_event_id, request.authorized_event_ids)

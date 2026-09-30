@@ -10,13 +10,45 @@ from __future__ import annotations
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
 import hashlib
+from types import MethodType
 from typing import Any
 
 from cognitive_kernel.canonical import canonical_json_bytes, normalize_timestamp
 from ..comparison_run import HistorySnapshot
+from . import formation_policy as permission_readers
+from . import formation_registry as source_readers
 from .formation_policy import XTDBFormationPermissionPolicy
 from .formation_registry import XTDBFormationSourceRegistry
 from .phase_source_fence import OneGuardSelectedMetadata
+
+
+# Capture genuine functions once. A later class patch is a callback, not a new
+# definition of the native reader eligible for the terminal-row optimization.
+_NATIVE_SOURCE_READERS = tuple((name, getattr(XTDBFormationSourceRegistry, name))
+    for name in ("_key", "_fetch", "_decode", "lookup", "raw_metadata", "raw_reference"))
+_NATIVE_PERMISSION_READERS = tuple((name, getattr(XTDBFormationPermissionPolicy, name))
+    for name in ("_key", "_fetch", "_decode", "_head", "_stored_action", "current_action"))
+_NATIVE_DECODERS = ((source_readers, "_evidence_from_record", source_readers._evidence_from_record),
+    (permission_readers, "_action_from_record", permission_readers._action_from_record))
+
+
+def _second_pass_readers(registry, permissions):
+    """Capture actual delegates; only unmodified native readers can sample."""
+    delegates = tuple((service, name, getattr(service, name))
+        for service, readers in ((registry, _NATIVE_SOURCE_READERS),
+                                 (permissions, _NATIVE_PERMISSION_READERS))
+        for name, _ in readers)
+    decoders = tuple((module, name, getattr(module, name)) for module, name, _ in _NATIVE_DECODERS)
+    native = (type(registry) is XTDBFormationSourceRegistry
+        and type(permissions) is XTDBFormationPermissionPolicy
+        and all(name not in vars(service) and isinstance(getattr(service, name), MethodType)
+            and getattr(service, name).__self__ is service
+            and getattr(service, name).__func__ is function
+            for service, readers in ((registry, _NATIVE_SOURCE_READERS),
+                                     (permissions, _NATIVE_PERMISSION_READERS))
+            for name, function in readers)
+        and all(getattr(module, name) is function for module, name, function in _NATIVE_DECODERS))
+    return native, delegates, decoders
 
 
 @dataclass(frozen=True)
@@ -110,6 +142,7 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
             or not isinstance(permissions, XTDBFormationPermissionPolicy)):
         raise TypeError("history fence requires actual registered selected metadata services")
     registry, log, objects = custody.registry, custody.log, custody.objects
+    native_second_pass, reader_delegates, decoder_delegates = _second_pass_readers(registry, permissions)
     canonical_readers = (log.replay, log.replay_committed, custody.metadata)
     run_id, scope, namespace = policy.run_id, custody.scope, custody.authority_namespace_id
     scope_record = canonical_json_bytes(scope.metadata_record())
@@ -126,7 +159,9 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
                 or not scope == custody.scope == history.scope == registry.scope == log.scope
                     == objects.scope == permissions.scope
                 or not namespace == custody.authority_namespace_id == registry.authority_namespace_id
-                    == permissions.authority_namespace_id):
+                    == permissions.authority_namespace_id
+                or any(getattr(service, name) != method for service, name, method in reader_delegates)
+                or any(getattr(module, name) is not decoder for module, name, decoder in decoder_delegates)):
             raise PermissionError("history current selected authority crosses scope or changed")
     bindings()
     artifact = custody.metadata(run_id, artifact_id)
@@ -204,8 +239,10 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
             or manifest_raw.plaintext_sha256 != body_digest or manifest_raw.size != len(body_bytes)):
         raise PermissionError("history reconstructed manifest lacks exact durable raw-reference metadata")
 
-    # Discard sampled readers. These actual uncached services fence any change
-    # during the potentially slow complete source/grant traversal above.
+    # Keep both real artifact reads and canonical replays. Native metadata
+    # decoders can reuse this call's observed rows for the redundant second
+    # pass: the terminal SQL below checks every row together after callbacks.
+    # Any custom delegate retains the original uncached second pass.
     bindings()
     current_artifact = custody.metadata(run_id, artifact_id)
     if current_artifact is None or canonical_json_bytes(current_artifact.record) != artifact_record:
@@ -214,14 +251,19 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
     current_manifest_entry = current_entries.get(artifact.event_id)
     if current_manifest_entry is None or _committed_record(current_manifest_entry) != _committed_record(manifest_entry):
         raise PermissionError("history manifest canonical authority changed during current verification")
+    bindings()
+    # Adding an instance alias of the same bound native function compares
+    # equal, but it is still an override and must retain the uncached pass.
+    native_second_pass = native_second_pass and _second_pass_readers(registry, permissions)[0]
+    current_registry = local_registry if native_second_pass else registry
     for snapshot in captured:
-        source = registry.lookup(snapshot.event_id)
+        source = current_registry.lookup(snapshot.event_id)
         entry = current_entries.get(snapshot.event_id)
         if (source is None or entry is None
                 or canonical_json_bytes(_source_record(source)) != snapshot.source_metadata
                 or canonical_json_bytes(_committed_record(entry)) != snapshot.committed_metadata
-                or canonical_json_bytes(registry.raw_metadata(source.object_ref)) != snapshot.raw_metadata
-                or canonical_json_bytes(_reference_record(registry.raw_reference(source.object_ref))) != snapshot.raw_reference):
+                or canonical_json_bytes(current_registry.raw_metadata(source.object_ref)) != snapshot.raw_metadata
+                or canonical_json_bytes(_reference_record(current_registry.raw_reference(source.object_ref))) != snapshot.raw_reference):
             raise PermissionError("history source/parent current authority changed during verification")
     if history.digest() != history_digest:
         raise PermissionError("held history changed during current verification")
@@ -229,7 +271,10 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
     # Current grants follow all potentially slow artifact/source/raw-reference
     # reads above. A denial introduced by those reads cannot precede acceptance.
     for snapshot in captured:
-        action = permissions.current_action(snapshot.event_id, purpose)
+        if native_second_pass:
+            action = local_permissions.current_action(snapshot.event_id, purpose)
+        else:
+            action = permissions.current_action(snapshot.event_id, purpose)
         if (action is None or action.decision != "allow"
                 or canonical_json_bytes(action.metadata_record()) != snapshot.grant_metadata):
             raise PermissionError("history source/parent grant changed after current metadata verification")

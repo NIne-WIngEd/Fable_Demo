@@ -4,6 +4,16 @@ This note is the takeover point after provisioning the first Docker-capable succ
 
 ## Expanded gate status — 2026-09-30 UTC
 
+The latest [verification checkpoint](VERIFICATION_CHECKPOINT_2026-09-30.md)
+records the successful component, core, storage-restart, persistent Temporal
+and guarded-reader gates at `5cc36c6754df5e6dcdf99d0581a3f042fcd73077`.
+The two native lineage cases also passed at that exact implementation.
+Transport still fails its deadline. Native completed with two failures and
+three errors, including a pilot boolean/void guard mismatch. Both history
+groups reached their unchanged one-hour cap; preregistration reached original
+registration but published no first BEFORE capture. Historical results below
+qualify only their named checkpoints.
+
 The repaired checkpoint `950fe8321902b681ae798f455779e281985d04a0`
 passed all 524 component tests in
 [run 36742030115](https://github.com/NIne-WIngEd/FloRA/actions/runs/36742030115).
@@ -33,7 +43,7 @@ establish no result for their unfinished cases or response budgets. Chronology
 completed cohort, recipe, anchor and original-input registration, but published
 no BEFORE capture and reached no later seal, update or final binding. Timed
 stack dumping has been removed for the retry; causation remains unproven.
-the selected backends were still healthy after the transport crash. The actual
+The selected backends were still healthy after the transport crash. The actual
 PGconn watchdog case passed in 0.866 seconds. The passive-reader case stopped
 on a missing `preregistration_sha256` field in its explicitly unanchored fixture;
 that fixture now supplies `None`. Fresh final-authority checks remain intact.

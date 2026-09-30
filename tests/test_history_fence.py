@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import hashlib
 import inspect
 import sys
+from types import MethodType
 import unittest
 from unittest.mock import patch
 
@@ -21,6 +22,7 @@ from flora.selected.formation_context import register_experience_source
 from flora.selected.formation_policy import FormationPermissionAction, XTDBFormationPermissionPolicy, formation_permission_payload
 from flora.selected.formation_registry import XTDBFormationSourceRegistry
 from flora.selected.history_fence import authorize_history_metadata, verify_current_history_metadata
+from flora.selected import formation_registry as source_readers
 from flora.selected.owner_authorization import OwnerActionProof, owner_action_message
 import test_governed_development as helpers
 from metadata_batch_fixture import install_current_metadata_batch
@@ -106,6 +108,146 @@ class HistoryFenceTest(unittest.TestCase):
             self.assertEqual(proof.history_sha256, self.before.digest())
             self.assertEqual(len(proof.sources), 2)
             self.verify("after", self.after)
+
+    def test_native_second_pass_has_constant_sql_and_keeps_both_canonical_reads(self):
+        for phase, history in (("before", self.before), ("after", self.after)):
+            with self.subTest(phase=phase), \
+                 patch.object(self.custody, "metadata", wraps=self.custody.metadata) as metadata, \
+                 patch.object(self.f.log, "replay_committed", wraps=self.f.log.replay_committed) as replay:
+                self.f.connection.calls.clear()
+                self.verify(phase, history)
+                self.assertEqual(len(self.f.connection.calls), 10)
+                self.assertEqual(metadata.call_count, 2)
+                self.assertEqual(replay.call_count, 2)
+                self.assertIn("AS flora_current_metadata_fence", self.f.connection.calls[-1][0])
+
+    def test_native_terminal_fence_denies_revoke_from_second_canonical_replay(self):
+        actual, calls = self.f.log.replay_committed, 0
+        def replay():
+            nonlocal calls
+            entries = actual()
+            calls += 1
+            if calls == 2:
+                self.grant(self.before.event_ids[0], "before", "revoke")
+            return entries
+        with patch.object(self.f.log, "replay_committed", side_effect=replay):
+            with self.assertRaises(PermissionError):
+                self.verify()
+        self.assertEqual(calls, 2)
+
+    def test_native_terminal_fence_denies_raw_row_change_from_second_replay(self):
+        actual, calls = self.f.log.replay_committed, 0
+        key = self.registry._key("raw", self.before.sources[0].event.payload_reference)
+        def replay():
+            nonlocal calls
+            entries = actual()
+            calls += 1
+            if calls == 2:
+                self.f.connection.rows[("flora_formation_raw_references", key)]["record_sha256"] = "8" * 64
+            return entries
+        with patch.object(self.f.log, "replay_committed", side_effect=replay):
+            with self.assertRaisesRegex(PermissionError, "terminal current"):
+                self.verify()
+        self.assertEqual(calls, 2)
+
+    def test_second_canonical_callback_cannot_rebind_a_native_decoder(self):
+        actual, calls = self.f.log.replay_committed, 0
+        decoder = self.registry._decode
+        def replay():
+            nonlocal calls
+            entries = actual()
+            calls += 1
+            if calls == 2:
+                self.registry._decode = lambda *args, **kwargs: decoder(*args, **kwargs)
+            return entries
+        with patch.object(self.f.log, "replay_committed", side_effect=replay):
+            with self.assertRaisesRegex(PermissionError, "authority crosses scope or changed"):
+                self.verify()
+        self.assertEqual(calls, 2)
+
+    def test_instance_grant_callback_keeps_live_second_pass_denial(self):
+        actual_replay, actual_action = self.f.log.replay_committed, self.permissions.current_action
+        replays, late_actions = 0, []
+        def replay():
+            nonlocal replays
+            replays += 1
+            return actual_replay()
+        def action(event_id, purpose):
+            result = actual_action(event_id, purpose)
+            if replays == 2:
+                late_actions.append(event_id)
+                return None
+            return result
+        with patch.object(self.f.log, "replay_committed", side_effect=replay), \
+             patch.object(self.permissions, "current_action", side_effect=action):
+            with self.assertRaisesRegex(PermissionError, "grant changed after current metadata"):
+                self.verify()
+        self.assertTrue(late_actions)
+
+    def test_class_patched_decoder_keeps_live_second_pass_denial(self):
+        actual_replay, actual_decoder = self.f.log.replay_committed, XTDBFormationSourceRegistry._decode
+        replays, late_decodes = 0, []
+        def replay():
+            nonlocal replays
+            replays += 1
+            return actual_replay()
+        def decode(service, *args, **kwargs):
+            if replays == 2 and service is self.registry:
+                late_decodes.append(True)
+                raise PermissionError("custom native-class decoder denied the late read")
+            return actual_decoder(service, *args, **kwargs)
+        with patch.object(self.f.log, "replay_committed", side_effect=replay), \
+             patch.object(XTDBFormationSourceRegistry, "_decode", new=decode):
+            with self.assertRaisesRegex(PermissionError, "custom native-class decoder"):
+                self.verify()
+        self.assertTrue(late_decodes)
+
+    def test_module_decoder_callback_keeps_live_second_pass_denial(self):
+        actual_replay, actual_decoder = self.f.log.replay_committed, source_readers._evidence_from_record
+        replays, late_decodes = 0, []
+        def replay():
+            nonlocal replays
+            replays += 1
+            return actual_replay()
+        def decode(record):
+            if replays == 2:
+                late_decodes.append(True)
+                raise PermissionError("custom source decoder denied the late read")
+            return actual_decoder(record)
+        with patch.object(self.f.log, "replay_committed", side_effect=replay), \
+             patch.object(source_readers, "_evidence_from_record", new=decode):
+            with self.assertRaisesRegex(PermissionError, "custom source decoder"):
+                self.verify()
+        self.assertTrue(late_decodes)
+
+    def test_same_native_function_instance_override_still_uses_uncached_second_pass(self):
+        self.registry.raw_reference = MethodType(XTDBFormationSourceRegistry.raw_reference, self.registry)
+        self.f.connection.calls.clear()
+        self.verify()
+        self.assertGreaterEqual(len(self.f.connection.calls), 24)
+
+    def test_late_same_function_override_still_uses_uncached_second_pass(self):
+        actual, calls = self.f.log.replay_committed, 0
+        def replay():
+            nonlocal calls
+            entries = actual()
+            calls += 1
+            if calls == 2:
+                self.registry.raw_reference = self.registry.raw_reference
+            return entries
+        with patch.object(self.f.log, "replay_committed", side_effect=replay):
+            self.f.connection.calls.clear()
+            self.verify()
+            self.assertEqual(len(self.f.connection.calls), 24)
+        self.assertEqual(calls, 2)
+
+    def test_registry_subclass_still_uses_uncached_second_pass(self):
+        class CustomRegistry(XTDBFormationSourceRegistry):
+            pass
+        self.registry.__class__ = CustomRegistry
+        self.f.connection.calls.clear()
+        self.verify()
+        self.assertEqual(len(self.f.connection.calls), 24)
 
     def test_reordered_history_is_not_the_registered_phase(self):
         history = replace(self.before, sources=tuple(reversed(self.before.sources)))
