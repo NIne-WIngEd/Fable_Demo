@@ -5,6 +5,7 @@ registered custody, canonical contracts and local AES-GCM objects are real.
 No formation model, learned selector or alternative database is supplied.
 """
 
+from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import json
@@ -12,6 +13,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from cryptography.exceptions import InvalidTag
 
@@ -115,6 +117,7 @@ class SelectedFormationCandidatesTest(unittest.TestCase):
         self.registry = self._registry()
         self.log = _RecordedLog(self.scope)
         self.permitted = [True]
+        self.denied_sources = set()
         self.source_raw = self.objects.put(b"fictional source secret one")
         first = self._source(self.source_raw, "fictional-original-one", ())
         self.log.append(first, expected_revision=-1)
@@ -138,7 +141,8 @@ class SelectedFormationCandidatesTest(unittest.TestCase):
                 as_of="2026-09-29T12:02:00.000000Z",
             ),
             registry=self.registry, objects=self.objects,
-            permits=lambda *_: self.permitted[0],
+            permits=lambda source, _: (self.permitted[0]
+                and source.evidence.ref_id not in self.denied_sources),
         )
         self.delivery = record_selected_formation_delivery(
             prepared=self.prepared, log=self.log, objects=self.objects,
@@ -345,13 +349,26 @@ class SelectedFormationCandidatesTest(unittest.TestCase):
 
     def test_current_policy_is_rechecked_for_record_and_read(self):
         self.permitted[0] = False
-        with self.assertRaises(ValueError):
-            self._record()
+        before = deepcopy(self.connection.rows)
+        with patch.object(self.backend, "get_object", side_effect=AssertionError("denied formation opened bytes")):
+            with self.assertRaisesRegex(PermissionError, "permission.*withdrawn"):
+                self._record()
+        self.assertEqual(self.connection.rows, before)
         self.permitted[0] = True
         self._record()
         self.permitted[0] = False
-        with self.assertRaises(ValueError):
-            self._read()
+        before = deepcopy(self.connection.rows)
+        source_objects = {self.registry.lookup(ref.ref_id).object_ref
+                          for ref in self.prepared.assembled.packet.evidence}
+        original_read = self.backend.get_object
+        def read(namespace, object_id):
+            self.assertNotIn(object_id, source_objects,
+                             "denied original entered candidate recovery ciphertext read")
+            return original_read(namespace, object_id)
+        with patch.object(self.backend, "get_object", side_effect=read):
+            with self.assertRaisesRegex(PermissionError, "permission.*withdrawn"):
+                self._read()
+        self.assertEqual(self.connection.rows, before)
 
     def test_delivery_purpose_and_historical_cutoff_remain_bound(self):
         self._record()
@@ -384,28 +401,36 @@ class SelectedFormationCandidatesTest(unittest.TestCase):
     def test_revocation_of_one_source_while_another_is_read_rejects_whole_operation(self):
         packet = self.prepared.assembled.packet
         first_ref, second_ref = packet.evidence
-        allowed = {first_ref.ref_id: True, second_ref.ref_id: True}
-        self.prepared.store.permits = lambda source, _: allowed[source.evidence.ref_id]
-        original = self.prepared.store.custody
-
-        class RevokingCustody:
-            def read(inner, scope, object_ref):
-                content = original.read(scope, object_ref)
-                if object_ref == self.second_raw.object_id:
-                    allowed[first_ref.ref_id] = False
-                return content
-
-        self.prepared.store.custody = RevokingCustody()
+        # Keep the original predicate's identity unchanged. Withdraw a source
+        # while the actual ciphertext backend reads another source instead of
+        # replacing the captured policy/custody and testing that earlier gate.
+        original_read = self.backend.get_object
+        observed = []
+        self.assertEqual(self.registry.lookup(second_ref.ref_id).object_ref,
+                         self.second_raw.object_id)
+        def read(namespace, object_id):
+            content = original_read(namespace, object_id)
+            if object_id == self.second_raw.object_id:
+                observed.append(object_id)
+                self.denied_sources.add(first_ref.ref_id)
+            return content
         before = len(self.log.append_calls)
-        with self.assertRaises(ValueError):
-            self._record()
+        rows = deepcopy(self.connection.rows)
+        with patch.object(self.backend, "get_object", side_effect=read):
+            with self.assertRaisesRegex(PermissionError, "permission.*withdrawn"):
+                self._record()
+        self.assertEqual(observed, [self.second_raw.object_id])
         self.assertEqual(len(self.log.append_calls), before)
-        allowed[first_ref.ref_id] = True
-        self.prepared.store.custody = original
+        self.assertEqual(self.connection.rows, rows)
+        self.denied_sources.clear()
         self._record()
-        self.prepared.store.custody = RevokingCustody()
-        with self.assertRaises(ValueError):
-            self._read()
+        observed.clear()
+        rows = deepcopy(self.connection.rows)
+        with patch.object(self.backend, "get_object", side_effect=read):
+            with self.assertRaisesRegex(PermissionError, "permission.*withdrawn"):
+                self._read()
+        self.assertEqual(observed, [self.second_raw.object_id])
+        self.assertEqual(self.connection.rows, rows)
 
     def test_current_source_bytes_are_reopened_after_delivery_and_on_recovery(self):
         original_custody = self.prepared.store.custody

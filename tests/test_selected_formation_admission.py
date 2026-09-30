@@ -14,6 +14,7 @@ import re
 import sys
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -270,9 +271,10 @@ class SelectedFormationAdmissionTest(unittest.TestCase):
             adapter=adapter or FixtureSemanticAdapter(), log=self.log, objects=self.objects,
             source_store=self.store)
 
-    def _admit(self, bound, adjudication, **kwargs):
+    def _admit(self, bound, adjudication, *, source_store=None, **kwargs):
         return self.gateway.admit(bound, adjudication=adjudication, verifier=self.verifier,
-            log=self.log, objects=self.objects, source_store=self.store, **kwargs)
+            log=self.log, objects=self.objects,
+            source_store=self.store if source_store is None else source_store, **kwargs)
 
     def test_signed_semantic_admission_is_atomic_idempotent_and_has_separate_sequences(self):
         bound = self._bound()
@@ -313,8 +315,18 @@ class SelectedFormationAdmissionTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self._admit(wrong, decision)
         self.permitted[0] = False
-        with self.assertRaisesRegex(ValueError, "permission revoked|revoked"):
-            self._admit(bound, decision)
+        before = deepcopy(self.connection.rows)
+        source_objects = {self.registry.lookup(ref.ref_id).object_ref
+                          for ref in self.prepared.assembled.packet.evidence}
+        original_read = self.objects.backend.get_object
+        def read(namespace, object_id):
+            self.assertNotIn(object_id, source_objects,
+                             "denied original entered candidate admission ciphertext read")
+            return original_read(namespace, object_id)
+        with patch.object(self.objects.backend, "get_object", side_effect=read):
+            with self.assertRaisesRegex(PermissionError, "permission.*withdrawn"):
+                self._admit(bound, decision)
+        self.assertEqual(self.connection.rows, before)
 
     def test_derived_child_cannot_launder_synthetic_parent_into_owner_truth(self):
         parent = self.log.replay()[1]
@@ -476,9 +488,26 @@ class SelectedFormationAdmissionTest(unittest.TestCase):
                                                   conflict_id="fixture-correction-conflict")
         conflict = fixture_conflict(corrected, corrected_decision, previous)
         self.verifier.approve_fixture(corrected_decision, corrected)
+        # A preparation is an exact source closure, not a reusable permission
+        # wrapper for another candidate. The earlier store must refuse this
+        # correction even though all sources remain registered and permitted.
+        before = deepcopy(self.connection.rows)
+        original_ids = {ref.ref_id for ref in self.prepared.assembled.packet.evidence}
+        source_objects = {self.registry.lookup(ref.ref_id).object_ref
+                          for ref in packet.evidence if ref.ref_id not in original_ids}
+        original_read = self.objects.backend.get_object
+        def read(namespace, object_id):
+            self.assertNotIn(object_id, source_objects,
+                             "foreign closure entered candidate admission ciphertext read")
+            return original_read(namespace, object_id)
+        with patch.object(self.objects.backend, "get_object", side_effect=read):
+            with self.assertRaisesRegex(PermissionError, "outside actual upstream resolved closure"):
+                self._admit(corrected, corrected_decision)
+        self.assertEqual(self.connection.rows, before)
         with self.assertRaisesRegex(ValueError, "exact available predecessor"):
-            self._admit(corrected, corrected_decision)
+            self._admit(corrected, corrected_decision, source_store=prepared.store)
         correction_receipt = self._admit(corrected, corrected_decision,
+                                         source_store=prepared.store,
                                          expected_previous=previous, conflict=conflict)
         self.assertEqual((correction_receipt.store_sequence, correction_receipt.version_sequence), (2, 2))
         self.assertNotEqual(correction_receipt.event_stream_position, correction_receipt.store_sequence)
