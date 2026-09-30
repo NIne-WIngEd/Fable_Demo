@@ -138,6 +138,52 @@ final canonical and metadata fences still reject withdrawal, new stage or
 evaluation evidence, previously absent keys and changed frozen inputs. These
 counts do not establish physical latency or a completed BEFORE capture.
 
+## Second combined repair — partial receipts
+
+Implementation: `8a8f41e26163aeb48f9b871fea6c198204a4d38e`.
+Tree: `cf2fc78ea271eff42610cb8ec65da9055897c5c1`.
+[Run 36778736018](https://github.com/NIne-WIngEd/FloRA/actions/runs/36778736018).
+The remaining jobs are still running; this is not a qualifying all-job receipt.
+
+| Completed gate | Observed result |
+| --- | --- |
+| Component contracts | Success: 622 tests in 61 isolated suites; no failures, errors or skips. |
+| Core selected engines | Success: all 28 cases, 551.158 seconds for the suite. Storage restart and persistent Temporal resume probes passed. |
+| Guarded readers | Success: both cases, 81.357 seconds for the suite. Fresh-session/recovery/revocation took 80.476 seconds; actual blocked PGconn retirement took 0.881 seconds. |
+| Native lineage | Success: both cases, 2,402.533 seconds for the suite. Episode/control/state recreation took 2,196.069 seconds; approved-state/history/output recreation and revocation took 206.464 seconds. These are whole-fixture durations, not response timings. |
+| Provider fault fixture | Success: 147.974 seconds. Restoring the independent race precondition lets the actual final callback run and deny the private read. |
+| Standalone comparator | Failure: BEFORE 23,041 milliseconds and AFTER 31,976 milliseconds, both `budget_exceeded` against the unchanged 10,000-millisecond budget. |
+| Native comparison | Failure: both attempts timed out during context preparation/authorization, BEFORE 60,116 milliseconds and AFTER 60,226 milliseconds against the unchanged 60,000-millisecond budget. The earlier owner-custody binding error is cleared. |
+
+The core assessment case completed its arithmetic, then its last unblind callback
+persisted an actual typed owner withdrawal. `analyze_after_seal` denied release.
+This checks the final authority boundary; it is not a behavioral assessment.
+
+An immutable, controlled-transport 90-second chronological diagnostic reached
+original-input registration and entered the first BEFORE capture. It stopped
+safely at a controlled SQL boundary without completing or publishing that
+capture. Its partial capture traversed 47,690 encoded records across 502 actual
+canonical replays. Source hashes stayed unchanged. It does not establish any
+later chronological stage or physical timing.
+
+The identical paired workload using the actual Kurrent envelope codec over a
+controlled encoded client makes 3,419 fresh stream reads and decodes 87,350
+records although only 35 unique records were appended. Replay used 32.465 of
+57.280 profiled seconds. Without profiling, the controlled BEFORE and AFTER
+attempts took 6,736 and 9,671 milliseconds. The physical comparator still fails;
+these controlled measurements identify repeated immutable decoding for the next
+narrow repair, not a satisfied physical response budget.
+
+The frozen codec candidate uses exact SDK record carriers, private bounded
+immutable field snapshots and fresh returned event/scope/provenance objects.
+It still performs all 3,419 stream reads, all 6,120 SQL calls and every physical
+record check. Independent focused verification passed 84 tests. In the identical
+unprofiled controlled workload, total time fell from 19.139 to 10.873 seconds;
+BEFORE/AFTER fell from 6,841/9,402 to 3,534/5,795 milliseconds. Native decodes fell
+from 87,350 to 35. Custom records, generators, delegates and callback machinery
+retain the original uncached path. These receipts identify a useful controlled
+repair; a new exact-commit engine run must establish physical response timing.
+
 ## Stopping boundary
 
 - Finish the observed transport repair and every included engine, fault and

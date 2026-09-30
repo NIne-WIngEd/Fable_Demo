@@ -5,14 +5,14 @@ This note is the takeover point after provisioning the first Docker-capable succ
 ## Expanded gate status — 2026-09-30 UTC
 
 The latest [verification checkpoint](VERIFICATION_CHECKPOINT_2026-09-30.md)
-records the successful component, core, storage-restart, persistent Temporal
-and guarded-reader gates at `5cc36c6754df5e6dcdf99d0581a3f042fcd73077`.
-The two native lineage cases also passed at that exact implementation.
-Transport still fails its deadline. Native completed with two failures and
-three errors, including a pilot boolean/void guard mismatch. Both history
-groups reached their unchanged one-hour cap; preregistration reached original
-registration but published no first BEFORE capture. Historical results below
-qualify only their named checkpoints.
+records completed receipts for `c6150be27d2623eae12061ccab4924c669234ef3`
+and partial receipts for `8a8f41e26163aeb48f9b871fea6c198204a4d38e`.
+At the latter implementation, all 622 component tests, 28 core cases, storage
+restart, persistent Temporal resume and both guarded-reader cases passed.
+The provider race fixture also passed. The standalone comparator still exceeds
+its 10-second deadline; native context preparation/authorization reaches its
+60-second deadline. Later physical gates remain pending. Historical results
+below qualify only their named checkpoints. This is not a model-only pause.
 
 The repaired checkpoint `950fe8321902b681ae798f455779e281985d04a0`
 passed all 524 component tests in
@@ -83,7 +83,7 @@ replacement-artifact fixture. Repairs require another exact-commit engine run.
 The current contract reference is
 `research/mfm-foundation-20260923@4f287a488bc908bd04f99255ee01b794bacba50b`
 (formation schema 1.2.0). The workflow now runs component contracts and exhaustive
-`core`, `transport`, `native`, `lineage`, `readers`, `history` and `history-routes`
+`core`, `transport`, `native-comparison`, `native-pilot`, `lineage`, `readers`, `history` and `history-routes`
 engine groups in parallel. This separates the long lineage and chronology cases
 from the passive-reader, writer-fault and restart gates. New integration modules
 default to `core`.
