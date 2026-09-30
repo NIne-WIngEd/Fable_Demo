@@ -25,7 +25,7 @@ def install_current_metadata_batch(connection):
         connection.calls.append((sql, parameters))
         clauses = re.findall(r"SELECT '([^']+)' AS fence_kind, _id, scope_digest, "
             r"(\w+) AS fence_sha256, record_json FROM (\w+)( FOR VALID_TIME ALL)? "
-            r"WHERE scope_digest = %s AND _id IN \(([^)]+)\)", sql)
+            r"WHERE (scope_digest = %s AND )?_id IN \(([^)]+)\)", sql)
         if not clauses:
             raise AssertionError("unrecognized finite terminal metadata SQL shape")
         limit_match = re.search(r" AS flora_current_metadata_(?:fence|sample) LIMIT ([1-9][0-9]*)$", sql)
@@ -34,13 +34,15 @@ def install_current_metadata_batch(connection):
         row_limit = int(limit_match.group(1))
         offset, values = 0, []
         expected_rows = 0
-        for tag, column, table, temporal, placeholders in clauses:
+        for tag, column, table, temporal, scoped, placeholders in clauses:
             count = placeholders.count("%s")
             expected_rows += count
-            scope, keys = parameters[offset], parameters[offset + 1:offset + 1 + count]
-            offset += 1 + count
+            scope = parameters[offset] if scoped else None
+            start = offset + int(bool(scoped))
+            keys = parameters[start:start + count]
+            offset += int(bool(scoped)) + count
             for (name, key), row in connection.rows.items():
-                if name == table and key in keys and row["scope_digest"] == scope:
+                if name == table and key in keys and (not scoped or row["scope_digest"] == scope):
                     values.append({"fence_kind": tag, "_id": row["_id"], "scope_digest": row["scope_digest"],
                         "fence_sha256": row[column], "record_json": row["record_json"]})
         if offset != len(parameters) or row_limit != expected_rows + 1:

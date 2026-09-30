@@ -32,6 +32,7 @@ from .context import ContextPlan, LocalContext, LocalContextItem
 from .decision_outcome import RecordedEvent, record_decision
 from .formation_policy import XTDBFormationPermissionPolicy
 from .authenticated_history import request_authenticated_history, require_authenticated_request_bindings
+from .history_fence import supports_combined_history_metadata, verify_history_and_external_metadata
 
 
 def _current_permission_rows(*, registry, permissions, source_ids, purpose):
@@ -485,6 +486,17 @@ class SelectedComparatorRecorder:
             require_authenticated_request_bindings(request, policy=evidence, expected_proof=issued_proof)
             purpose = "comparison_external:" + self.configuration.provider.provider_id
             source_ids = (question.event_id, *request.context.source_event_ids)
+            if (self.custody is evidence.custody
+                    and self.disclosure.permissions is evidence.permissions
+                    and supports_combined_history_metadata(evidence)):
+                def final_sources():
+                    final_current()
+                    require_authenticated_request_bindings(request, policy=evidence, expected_proof=issued_proof)
+                verify_history_and_external_metadata(policy=evidence, case_id=request.case_id,
+                    phase=request.phase, history=history, source_ids=source_ids,
+                    purpose=purpose, final_current=final_sources)
+                require_authenticated_request_bindings(request, policy=evidence, expected_proof=issued_proof)
+                return True
             permission_rows = _current_permission_rows(registry=self.custody.registry,
                 permissions=self.disclosure.permissions, source_ids=source_ids, purpose=purpose)
             permission_rows.prime_sources(history.event_ids,

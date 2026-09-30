@@ -21,7 +21,10 @@ from flora.selected.experience import CommittedExperience
 from flora.selected.formation_context import register_experience_source
 from flora.selected.formation_policy import FormationPermissionAction, XTDBFormationPermissionPolicy, formation_permission_payload
 from flora.selected.formation_registry import XTDBFormationSourceRegistry
-from flora.selected.history_fence import authorize_history_metadata, verify_current_history_metadata
+from flora.selected.history_fence import (
+    authorize_history_metadata, verify_current_history_metadata,
+    _verify_current_history_metadata,
+)
 from flora.selected import formation_registry as source_readers
 from flora.selected.owner_authorization import OwnerActionProof, owner_action_message
 import test_governed_development as helpers
@@ -306,7 +309,7 @@ class HistoryFenceTest(unittest.TestCase):
 
     def test_last_final_grant_callback_cannot_withdraw_an_earlier_original(self):
         original = self.permissions.current_action
-        lines, first_line = inspect.getsourcelines(verify_current_history_metadata)
+        lines, first_line = inspect.getsourcelines(_verify_current_history_metadata)
         final_line = first_line + next(index for index, line in enumerate(lines)
             if "action = permissions.current_action(snapshot.event_id, purpose)" in line)
         changed = False
@@ -316,7 +319,7 @@ class HistoryFenceTest(unittest.TestCase):
             frame = sys._getframe(1)
             at_final = False
             while frame is not None:
-                if frame.f_code is verify_current_history_metadata.__code__ and frame.f_lineno == final_line:
+                if frame.f_code is _verify_current_history_metadata.__code__ and frame.f_lineno == final_line:
                     at_final = True
                     break
                 frame = frame.f_back
@@ -339,7 +342,7 @@ class HistoryFenceTest(unittest.TestCase):
 
     def test_initial_private_authentication_ends_with_complete_current_grant_fence(self):
         original = self.permissions.current_action
-        lines, first_line = inspect.getsourcelines(verify_current_history_metadata)
+        lines, first_line = inspect.getsourcelines(_verify_current_history_metadata)
         final_line = first_line + next(index for index, line in enumerate(lines)
             if "action = permissions.current_action(snapshot.event_id, purpose)" in line)
         changed = False
@@ -356,7 +359,7 @@ class HistoryFenceTest(unittest.TestCase):
             frame = sys._getframe(1)
             at_final = False
             while frame is not None:
-                if frame.f_code is verify_current_history_metadata.__code__ and frame.f_lineno == final_line:
+                if frame.f_code is _verify_current_history_metadata.__code__ and frame.f_lineno == final_line:
                     at_final = True
                     break
                 frame = frame.f_back
@@ -434,7 +437,7 @@ class HistoryFenceTest(unittest.TestCase):
 
     def test_final_grant_callback_cannot_replace_the_actual_canonical_reader(self):
         original, changed = self.permissions.current_action, False
-        lines, start = inspect.getsourcelines(verify_current_history_metadata)
+        lines, start = inspect.getsourcelines(_verify_current_history_metadata)
         final_line = start + next(i for i, line in enumerate(lines)
             if "action = permissions.current_action(snapshot.event_id, purpose)" in line)
         def action(event_id, purpose):
@@ -442,7 +445,7 @@ class HistoryFenceTest(unittest.TestCase):
             result = original(event_id, purpose)
             frame, at_final = sys._getframe(1), False
             while frame is not None:
-                if frame.f_code is verify_current_history_metadata.__code__ and frame.f_lineno == final_line:
+                if frame.f_code is _verify_current_history_metadata.__code__ and frame.f_lineno == final_line:
                     at_final = True
                     break
                 frame = frame.f_back

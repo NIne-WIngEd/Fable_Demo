@@ -100,8 +100,13 @@ def _source_guard(runtime, history):
 def _read_artifact(runtime, artifact_id, history, guard=None):
     custody = runtime.original_references.custody
     current = guard or (lambda: _source_guard(runtime, history))
+    def source_authorizer():
+        # Current-context callbacks succeed with None; custody's distinct
+        # source predicate requires True after that fresh callback completes.
+        current()
+        return True
     return custody.read(artifact_id, log=runtime.log, objects=_AuthorizedRuntimeReads(runtime.objects, current),
-                        source_authorizer=current)
+                        source_authorizer=source_authorizer)
 
 
 def _guarded_owner_verifier(runtime, objects):

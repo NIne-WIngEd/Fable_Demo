@@ -186,7 +186,7 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
         def bind_actual_history(runtime, lineage):
             owner = copy(runtime.state_approval_verifier)
             owner.proofs = copy(owner.proofs)
-            owner.proofs.custody = runtime.private
+            owner.proofs.custody = runtime.original_references.custody
             runtime.state_approval_verifier = owner
             owned = copy(custody)
             owned._physical_custody = getattr(custody, "_physical_custody", custody)

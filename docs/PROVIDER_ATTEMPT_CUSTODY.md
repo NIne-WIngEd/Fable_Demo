@@ -167,6 +167,16 @@ ledger case now includes those capture/external races and observes real AEAD
 opens for private audit withdrawal; it is prepared for CI and has not been
 claimed as passing.
 
+Physical run [36767672665](https://github.com/NIne-WIngEd/FloRA/actions/runs/36767672665/job/110065819723)
+on commit `c6150be` failed this ledger case after 138.557 seconds. The preceding
+refusal-retention probe had left AFTER evaluation withdrawn, so the combined
+source fence denied before the separate external-race callback could execute.
+The fixture now restores only that one evaluation grant before the independent
+race. Its exact terminal-denial, callback-executed and no-original-ciphertext
+assertions remain unchanged. Actual selected services over controlled ports
+reproduce both the earlier denial and the intended terminal denial after this
+precondition repair. A complete physical ledger pass still requires the rerun.
+
 `GeneralMemoryArmAdapter` accepts per-execution attempt custody and a supplied
 task-ID function. Without them it is unavailable before dispatch. It prepares a
 sink for the exact `ExecutionRequest`, gives that sink to the transport, tracks

@@ -12,6 +12,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 from cryptography.exceptions import InvalidSignature
 
 from cognitive_kernel.canonical import canonical_json_bytes
@@ -22,6 +23,7 @@ from flora.selected.assessment_custody import (
 from flora.selected.comparison_custody import ComparisonArtifact
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 import test_blind_assessment as fixture_support
+import test_sealed_analysis as analysis_fixture
 
 
 class ComparisonTranscript:
@@ -154,6 +156,46 @@ class AssessmentCustodyContractTest(unittest.TestCase):
         summary = restarted.aggregate_after_seal(run_id="run", collection_id=self.spec.collection_id, permissions=self.permissions)
         self.assertEqual(summary["acceptance_decision"], "not_evaluated")
         self.assertEqual(summary["total_attempts"], 18)
+
+    def _prepare_analysis_custody(self):
+        analysis_fixture.bind_fictional_analysis(self.fixture, analysis_fixture.fictional_analysis_spec())
+        self.store = ComparisonTranscript(Path(self.directory.name) / "analysis-objects", self.fixture)
+        self.permissions = CurrentPermissionFixture(self.store)
+        self.adapter = XTDBAssessmentCustody(comparison_custody=self.store, signature_authority=self.fixture.authority)
+        self.spec = self.fixture.spec
+        self.adapter.register_spec(run_id="run", spec=self.spec, permissions=self.permissions, occurred_at="fixture-time")
+        self._fill()
+        self._seal()
+
+    def test_explicit_analysis_after_seal_preserves_descriptives_and_no_part1_qualification(self):
+        self._prepare_analysis_custody()
+        # This transcript is an arithmetic/orchestration fixture, not selected
+        # services. The actual typed terminal fence is exercised separately.
+        with patch.object(self.adapter, "_assert_analysis_release_permissions", self.adapter._assert_release_permissions):
+            report = self.adapter.analyze_after_seal(run_id="run", collection_id=self.spec.collection_id,
+                permissions=self.permissions)
+        self.assertEqual(report["metrics"][0]["possible_pairs"], 3)
+        self.assertFalse(report["part1_qualified"])
+        self.assertEqual(report["descriptives"]["acceptance_decision"], "not_evaluated")
+
+    def test_release_withdrawal_after_slow_analysis_prevents_report_return(self):
+        self._prepare_analysis_custody()
+        from flora.selected import assessment_custody as module
+        original = module.analyze_sealed_assessment
+        for purpose in (assessment_purpose("run", self.spec.collection_id), "comparison_review", "comparison_unblind"):
+            self.permissions.denied_purposes.clear()
+            completed = []
+            def withdraw_after_analysis(**fields):
+                report = original(**fields)
+                completed.append(report["schema"])
+                self.permissions.denied_purposes.add(purpose)
+                return report
+            with self.subTest(purpose=purpose), patch.object(module, "analyze_sealed_assessment", withdraw_after_analysis), \
+                    patch.object(self.adapter, "_assert_analysis_release_permissions", self.adapter._assert_release_permissions):
+                with self.assertRaises(PermissionError):
+                    self.adapter.analyze_after_seal(run_id="run", collection_id=self.spec.collection_id,
+                        permissions=self.permissions)
+            self.assertEqual(completed, ["flora-sealed-assessment-analysis-report-v1"])
 
     def test_retry_preserves_exact_rating_and_changed_rating_is_immutable(self):
         pair = self.fixture.pack["pairs"][0]

@@ -81,6 +81,63 @@ The local transport-only chronological profile was interrupted before its first
 BEFORE publication; it provides no completed capture receipt. The next full
 selected-engine run must qualify the combined repair at its exact commit.
 
+## Combined repair run — completed receipts
+
+Implementation: `c6150be27d2623eae12061ccab4924c669234ef3`.
+Tree: `885a33e8337ba42d0ad74ec1e02f0a71219437e8`.
+[Run 36767672665](https://github.com/NIne-WIngEd/FloRA/actions/runs/36767672665).
+
+| Completed gate | Observed result |
+| --- | --- |
+| Component contracts | Success: 584 tests in 55 isolated suites. |
+| Core selected engines | Success: all 28 cases; 841.021 seconds for the suite. Storage and persistent Temporal restart probes also passed. |
+| Guarded readers | Success: both cases; fresh-session/recovery/revocation fixture 79.666 seconds, physical PGconn watchdog 0.866 seconds. |
+| Native lineage | Success: both cases; episode/control/state recreation 1,502.736 seconds, approved-state/history/output recreation and revocation 137.461 seconds. Whole fixtures are not paired response timings. |
+| Native comparison and pilot | Failure: one withdrawal case passed, one comparison failed and three positive pilot cases errored. Suite 3,247.935 seconds. |
+| Comparator/provider transport | Failure: BEFORE 23,210 milliseconds and AFTER 31,362 milliseconds, both `budget_exceeded` against the unchanged 10,000-millisecond budget. |
+| Chronological history | Cancelled at the unchanged one-hour cap. Coordinator passed in 86.345 seconds; preregistration reached original-input registration at 88.070 seconds, then published no first BEFORE capture in the remaining 56 minutes. |
+| History routes | Cancelled at the unchanged one-hour cap; no completed route case or internal stage receipt. |
+
+The provider fixture also failed before its intended final external callback:
+an AFTER evaluation grant withdrawn by an earlier retention scenario had not
+been restored. That earlier denial was genuine. The fixture repair restores
+only that scenario precondition, retaining the original terminal-denial,
+callback-executed and private-ciphertext assertions.
+
+The native comparison failed on an owner-proof fixture binding: a byte-read
+facade was supplied where the actual metadata/read custody was required. The
+pilot's three positive cases reached a second guard seam: the void authority
+callback was passed to a source-read guard requiring `True`. A dedicated adapter
+must call the void guard freshly and return `True` only after it completes;
+neither existing strict contract is relaxed.
+
+Both history groups ended without an immediate assertion or segmentation fault.
+No BEFORE seal, probe, update, AFTER capture or final binding is inferred. The next repair
+also addresses confirmed guard-copy amplification in the general manifest and
+provider object facades. The standalone fixture never calls those copy methods;
+that repair is not evidence that its response deadline has been met.
+
+The next CI partition separates the one native comparison case from the four
+pilot cases. Discovery still includes every one of the 43 physical integration
+cases exactly once across eight shards. Component contracts remain a separate
+job; all nine jobs must qualify the same implementation. Job caps and response
+budgets are unchanged. Discovery is not a physical execution receipt.
+
+The shared-purpose candidate's identical controlled workload uses 6,120 SQL
+calls instead of 7,254; recorder calls fall from 3,472 to 2,338. Without cProfile,
+BEFORE and AFTER completed in 3,097 and 4,579 milliseconds with unchanged
+recorded source hashes. These controlled transports do not qualify actual
+engine latency. Profiling overhead is reported separately rather than used as
+a response measurement.
+
+The metadata-only chronological slot candidate retains both original current
+checks, both predicate bodies and all 70 authority callbacks. Its typed controlled
+fixture uses 25 SQL reads instead of 52 and two actual canonical replays instead
+of 11. The frame ends before private reads or producer/update qualification;
+final canonical and metadata fences still reject withdrawal, new stage or
+evaluation evidence, previously absent keys and changed frozen inputs. These
+counts do not establish physical latency or a completed BEFORE capture.
+
 ## Stopping boundary
 
 - Finish the observed transport repair and every included engine, fault and
@@ -92,6 +149,10 @@ selected-engine run must qualify the combined repair at its exact commit.
   native judgment quality or behavioral superiority.
 - The model-dependent pilot must establish its operating budget and protocol
   before a held-out cohort and numerical acceptance thresholds are frozen.
+- Post-seal analysis must consume the actual frozen rubric, label semantics and
+  acceptance/uncertainty specification. A full independent Part1 semantic
+  validator still requires the real producer and material contracts; a signed
+  Boolean or an analysis result alone does not qualify Part1.
 - Limited FBM training and transfer remain after a successful Part 1 result.
   Procedure traces saved here are not trained builder cases.
 

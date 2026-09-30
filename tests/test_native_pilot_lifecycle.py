@@ -22,6 +22,8 @@ from flora.selected.pilot_lifecycle import (
 )
 from flora.selected import pilot_lifecycle
 from flora.selected.context_guard import _invoke_guard
+from flora.selected.personal_artifact_custody import _SourceAuthorizedObjectReads
+import test_personal_artifact_custody as custody_fixture
 
 FIXTURE = Path(__file__).resolve().parents[1] / "data/synthetic_pilot/v1.json"
 
@@ -163,6 +165,59 @@ class NativePilotLifecycleMechanicsTest(unittest.TestCase):
         source_allowed[0] = True
         self.assertIsNone(_invoke_guard(guard))
         self.assertEqual(calls, ["before"] * 4)
+
+    def _actual_artifact_read_fixture(self):
+        """Actual custody and encrypted bytes; SQL and model ports are fixtures."""
+        case = custody_fixture.PersonalArtifactCustodyContractTest()
+        case.setUp()
+        self.addCleanup(case.doCleanups)
+        version, raw = case.fixture.version(1)
+        recorded = case.record(version, raw)
+        runtime = SimpleNamespace(original_references=case.references,
+            objects=case.fixture.objects, log=case.fixture.log)
+        return case, runtime, recorded, version, raw
+
+    def test_actual_artifact_read_adapts_void_guard_to_strict_boolean_source_port(self):
+        case, runtime, recorded, version, raw = self._actual_artifact_read_fixture()
+        calls = []
+        def current():
+            calls.append("current")
+            # The actual current-context authority callback succeeds with None.
+        recovered = pilot_lifecycle._read_artifact(runtime, recorded.artifact_id, None, current)
+        self.assertEqual(recovered.contract, version.metadata_record())
+        self.assertEqual(dict(recovered.content)["content"], b"fictional supplied state 1")
+        self.assertGreater(len(calls), 1)
+        # The custody source port remains strict; this repair belongs to its
+        # caller and cannot authorize a None-returning boolean predicate.
+        with patch.object(case.fixture.objects.backend, "get_object",
+                          side_effect=AssertionError("invalid source port opened bytes")):
+            with self.assertRaises(PermissionError):
+                _SourceAuthorizedObjectReads(runtime.objects, lambda: None).get(raw)
+
+    def test_actual_artifact_void_guard_withdrawal_stops_before_next_private_read(self):
+        case, runtime, recorded, _, _ = self._actual_artifact_read_fixture()
+        allowed, opened = [True], []
+        def current():
+            if not allowed[0]:
+                raise PermissionError("pilot fixture phase withdrawn")
+        backend = case.fixture.objects.backend
+        original = backend.get_object
+        def withdraw(namespace, object_id):
+            opened.append(object_id)
+            sealed = original(namespace, object_id)
+            allowed[0] = False
+            return sealed
+        with patch.object(backend, "get_object", side_effect=withdraw), patch(
+                "flora.selected.object_store.AESGCM",
+                side_effect=AssertionError("withdrawn pilot artifact was decrypted")):
+            with self.assertRaisesRegex(PermissionError, "phase withdrawn"):
+                pilot_lifecycle._read_artifact(runtime, recorded.artifact_id, None, current)
+        self.assertEqual(len(opened), 1)
+        opened.clear()
+        with patch.object(backend, "get_object", side_effect=withdraw):
+            with self.assertRaisesRegex(PermissionError, "phase withdrawn"):
+                pilot_lifecycle._read_artifact(runtime, recorded.artifact_id, None, current)
+        self.assertEqual(opened, [])
 
     def test_phase_withdrawal_during_payload_write_stops_intervention_append(self):
         checkpoint, runtime, lineage, verified = self.fixture("pilot-coffee-correction")

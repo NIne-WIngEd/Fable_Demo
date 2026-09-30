@@ -20,6 +20,7 @@ from ..blind_assessment import (
     aggregate_sealed_assessment,
 )
 from ..evaluation_protocol import EvaluationCase, EvaluationProtocol
+from ..sealed_analysis import analyze_sealed_assessment
 from .comparison_custody import ComparisonArtifact, XTDBComparisonCustody
 from .formation_policy import XTDBFormationPermissionPolicy
 
@@ -341,3 +342,66 @@ class XTDBAssessmentCustody:
         self._read(run_id=run_id, collection_id=collection_id, kind="seal", permissions=permissions)
         self._assert_release_permissions(run_id=run_id, collection_id=collection_id, permissions=permissions)
         return summary
+
+    def analyze_after_seal(self, *, run_id: str, collection_id: str,
+                           permissions: XTDBFormationPermissionPolicy) -> dict:
+        """Analyze a supplied frozen rule, with current release authority last."""
+        private_key = self.release_private_key(run_id=run_id, collection_id=collection_id, permissions=permissions)
+        collection = self.recover_collection(run_id=run_id, collection_id=collection_id, permissions=permissions)
+        run, pack = self._inputs(run_id=run_id, permissions=permissions)
+        report = analyze_sealed_assessment(run=run, pack=pack, private_key=private_key, collection=collection)
+        # Analysis can be slow. Its arithmetic cannot retain an earlier seal or
+        # release grant if actual custody or current authority changed meanwhile.
+        seal = self._read(run_id=run_id, collection_id=collection_id, kind="seal", permissions=permissions)
+        if seal != collection.export_bytes():
+            raise ValueError("durable signed collection changed during assessment analysis")
+        self._assert_analysis_release_permissions(run_id=run_id, collection_id=collection_id, permissions=permissions)
+        return report
+
+    def _assert_analysis_release_permissions(self, *, run_id: str, collection_id: str,
+                                             permissions: XTDBFormationPermissionPolicy) -> None:
+        """Fresh real predicates, then one bounded source/grant row snapshot."""
+        from .phase_source_fence import OneGuardSelectedMetadata
+        self._permissions(permissions)
+        comparison, registry, log = self.comparison, self.comparison.registry, self.comparison.log
+        metadata, replay = comparison.metadata, log.replay
+        sample = OneGuardSelectedMetadata(registry=registry, permissions=permissions)
+        def bindings():
+            sample._bindings()
+            if (self.comparison is not comparison or comparison.registry is not registry
+                    or comparison.log is not log or comparison.metadata != metadata
+                    or log.replay != replay or comparison.connection is not sample.connection
+                    or comparison.scope != registry.scope or log.scope != registry.scope):
+                raise PermissionError("assessment release source/controller binding changed")
+        bindings()
+        roots = []
+        for artifact_id, purpose in (
+                (assessment_artifact_id(collection_id, "seal"), assessment_purpose(run_id, collection_id)),
+                ("blind_pack", "comparison_review"), ("blind_key", "comparison_unblind")):
+            artifact = comparison.metadata(run_id, artifact_id)
+            if artifact is None:
+                raise PermissionError("assessment release artifact is unavailable")
+            roots.append((artifact.event_id, purpose))
+        events = tuple(log.replay())
+        canonical = {event.event_id: event for event in events}
+        if len(canonical) != len(events):
+            raise PermissionError("assessment release canonical source identities are ambiguous")
+        for root, purpose in roots:
+            closure = sample.prime_sources((root,), purpose)
+            for event_id in closure:
+                source, _ = sample.observe_source(event_id, purpose)
+                event = canonical.get(event_id)
+                if (event is None or event.scope != registry.scope
+                        or event.payload_reference != source.object_ref
+                        or event.content_digest != source.evidence.content_digest
+                        or event.parent_event_ids != source.evidence.parent_refs):
+                    raise PermissionError("assessment release lacks exact canonical source/parent closure")
+            source = sample.local_registry.lookup(root)
+            # Real/custom delegates still run. The final callback may withdraw
+            # a previously checked root or parent; final SQL observes all
+            # purposes and their full sampled DAG together after it returns.
+            if sample.local_permissions.permits(source, purpose) is not True:
+                raise PermissionError("assessment release actual source-purpose predicate denied")
+        bindings()
+        sample.verify_final_current_rows()
+        bindings()  # Pure binding checks; no subsequent authority callback.

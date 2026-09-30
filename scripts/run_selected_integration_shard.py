@@ -8,12 +8,12 @@ import time
 import unittest
 
 
-SHARDS = ("core", "transport", "native", "lineage", "readers", "history", "history-routes")
+SHARDS = ("core", "transport", "native-comparison", "native-pilot", "lineage", "readers", "history", "history-routes")
 MODULE_SHARDS = {
     "test_selected_comparator_memory": "transport",
     "test_selected_provider_attempt_ledger": "transport",
-    "test_selected_native_comparison": "native",
-    "test_selected_native_pilot_backend": "native",
+    "test_selected_native_comparison": "native-comparison",
+    "test_selected_native_pilot_backend": "native-pilot",
     "test_selected_native_lineage_backend": "lineage",
     "test_selected_native_read_sessions": "readers",
     "test_selected_native_writer_faults": "readers",

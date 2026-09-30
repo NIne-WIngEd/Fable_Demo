@@ -50,7 +50,7 @@ class _GuardedBackend:
     def __init__(self, backend, check):
         self.backend, self.check = backend, check
     def __getattr__(self, name):
-        return getattr(self.backend, name)
+        return getattr(object.__getattribute__(self, "backend"), name)
     def get_object(self, namespace, object_id):
         self.check()
         value = self.backend.get_object(namespace, object_id)
@@ -66,8 +66,24 @@ class _GuardedObjects:
     def __init__(self, objects, check):
         self.objects, self.check = copy(objects), check
         self.objects.backend = _GuardedBackend(objects.backend, check)
+    @property
+    def check(self):
+        return self._installed_check
+    @check.setter
+    def check(self, value):
+        if "_installed_check" in self.__dict__:
+            raise AttributeError("the installed object authority check is immutable")
+        self._installed_check = value
     def __copy__(self):
-        return type(self)(self.objects, self.check)
+        # The owned plane already contains this check's ciphertext wrapper.
+        # Reconstructing the facade would install the same check again on
+        # every shallow copy. Keep all installed guards, while isolating the
+        # copy's plane and top backend wrapper from later facade mutation.
+        copied = object.__new__(type(self))
+        copied.__dict__.update(self.__dict__)
+        copied.objects = copy(self.objects)
+        copied.objects.backend = copy(self.objects.backend)
+        return copied
     @property
     def backend(self):
         return self.objects.backend

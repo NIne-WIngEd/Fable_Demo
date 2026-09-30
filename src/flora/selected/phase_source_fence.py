@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import json
 from types import MethodType
 
-from cognitive_kernel.canonical import canonical_json_bytes, require_identifier
+from cognitive_kernel.canonical import canonical_json_bytes, canonical_sha256, require_identifier
 
 from . import claims as claim_tables
 from . import formation_policy as permission_tables
@@ -45,7 +45,7 @@ class OneGuardSelectedMetadata:
     their sampled rows remain exact in one terminal selected-engine statement.
     It neither authenticates private objects nor authorizes a source by itself.
     """
-    def __init__(self, *, registry, permissions, claims=None, maximum_rows=4096):
+    def __init__(self, *, registry, permissions, claims=None, comparison=None, maximum_rows=4096):
         if (not isinstance(registry, XTDBFormationSourceRegistry)
                 or not isinstance(permissions, XTDBFormationPermissionPolicy)
                 or (claims is not None and not isinstance(claims, XTDBClaimAuthority))):
@@ -53,7 +53,11 @@ class OneGuardSelectedMetadata:
         if (isinstance(maximum_rows, bool) or not isinstance(maximum_rows, int)
                 or maximum_rows < 1):
             raise ValueError("metadata fence needs an explicit positive row cap")
-        self.registry, self.permissions, self.claims = registry, permissions, claims
+        if comparison is not None:
+            from .comparison_custody import XTDBComparisonCustody
+            if type(comparison) is not XTDBComparisonCustody:
+                raise TypeError("metadata fence comparison needs its actual selected owner")
+        self.registry, self.permissions, self.claims, self.comparison = registry, permissions, claims, comparison
         self.connection, self.maximum_rows = registry.connection, maximum_rows
         self.scope_record = canonical_json_bytes(registry.scope.metadata_record())
         self.namespace = registry.authority_namespace_id
@@ -66,6 +70,9 @@ class OneGuardSelectedMetadata:
         if claims is not None:
             self._methods += [(claims, name, getattr(claims, name))
                 for name in ("_fetch_record", "load_current")]
+        if comparison is not None:
+            self._methods += [(comparison, name, getattr(comparison, name))
+                for name in ("_key", "metadata")]
         self._bindings()
         self.local_registry = self._sample(registry, "registry")
         self.local_permissions = self._sample(permissions, "permission")
@@ -88,6 +95,30 @@ class OneGuardSelectedMetadata:
                 or self.claims.scope != self.registry.scope
                 or self.claims.authority_namespace_id != self.namespace):
             raise PermissionError("metadata fence Claim authority crosses actual selected connection/scope")
+        if self.comparison is not None and (
+                self.comparison.connection is not self.connection
+                or self.comparison.registry is not self.registry
+                or self.comparison.scope != self.registry.scope
+                or self.comparison.authority_namespace_id != self.namespace):
+            raise PermissionError("metadata fence comparison crosses actual selected owner/connection/scope")
+
+    def observe_comparison_artifact(self, *, run_id, artifact_id, artifact):
+        """Fence an actual decoded artifact row; this grants no artifact read."""
+        from .comparison_custody import ComparisonArtifact, _ARTIFACTS
+        self._bindings()
+        if self.comparison is None or type(artifact) is not ComparisonArtifact:
+            raise TypeError("comparison row observation requires its actual owner and typed metadata")
+        record = artifact.record
+        if (record.get("schema") != "flora-comparison-artifact-v1"
+                or record.get("run_id") != run_id or record.get("artifact_id") != artifact_id
+                or canonical_sha256({key: value for key, value in record.items()
+                    if key != "record_sha256"}) != record.get("record_sha256")):
+            raise PermissionError("comparison row observation differs from exact immutable metadata")
+        key = self.comparison._key(run_id, artifact_id)
+        row = {"_id": key, "scope_digest": self.comparison.scope_digest,
+            "record_sha256": record["record_sha256"], "record_json": json.dumps(record)}
+        self._remember("comparison", _ARTIFACTS, key, True,
+            self.comparison, "record_sha256", row)
 
     def _sample(self, service, kind):
         local = copy_native_phase_view(service)
@@ -263,6 +294,62 @@ class OneGuardSelectedMetadata:
                 ancestors.extend(parent for parent in source.evidence.parent_refs if parent not in seen)
             pending = tuple(dict.fromkeys(parent for parent in ancestors if parent not in seen))
         return tuple(sorted(seen))
+
+    def prime_source_purposes(self, source_purposes, *, raw_object_ids=()):
+        """Batch distinct purpose rows within this one freshly created guard."""
+        if not isinstance(source_purposes, tuple) or not source_purposes:
+            raise PermissionError("metadata purpose batch must be finite and nonempty")
+        pending = {}
+        for source_ids, purpose in source_purposes:
+            if (not isinstance(source_ids, tuple) or not source_ids
+                    or len(set(source_ids)) != len(source_ids)
+                    or require_identifier(purpose, "metadata purpose") != purpose):
+                raise PermissionError("metadata purpose batch has invalid nominations")
+            pending.setdefault(purpose, set()).update(source_ids)
+        if (not isinstance(raw_object_ids, tuple) or len(set(raw_object_ids)) != len(raw_object_ids)):
+            raise PermissionError("metadata purpose batch raw references are invalid")
+        seen = {purpose: set() for purpose in pending}
+        extra_raw = tuple(("registry", source_tables._OBJECTS,
+            self.registry._key("raw", identifier), True) for identifier in raw_object_ids)
+        while pending:
+            requests = []
+            for purpose, ids in pending.items():
+                for event_id in sorted(ids):
+                    if require_identifier(event_id, "metadata source ID") != event_id:
+                        raise PermissionError("metadata purpose batch source ID is noncanonical")
+                    requests.extend((("registry", source_tables._SOURCES,
+                        self.registry._key("source", event_id), True),
+                        ("permission", permission_tables._CURRENT,
+                        self.permissions._key("head", event_id, purpose), False)))
+            self._prime_rows(requests)
+            dependencies = list(extra_raw)
+            extra_raw = ()
+            for purpose, ids in pending.items():
+                for event_id in sorted(ids):
+                    source_key = self.registry._key("source", event_id)
+                    source = self.registry._decode(self._sampled_rows[("registry", source_tables._SOURCES,
+                        source_key, True)], expected_key=source_key)
+                    head_key = self.permissions._key("head", event_id, purpose)
+                    head = self.permissions._decode(self._sampled_rows[("permission", permission_tables._CURRENT,
+                        head_key, False)], key=head_key)
+                    if (source.get("schema") != "flora-registered-formation-source-v1"
+                            or head.get("schema") != "flora-current-formation-permission-v1"
+                            or head["source_ref_id"] != event_id or head["purpose"] != purpose):
+                        raise PermissionError("metadata purpose batch lookup changed")
+                    dependencies.extend((("registry", source_tables._OBJECTS,
+                        self.registry._key("raw", source["object_ref"]), True),
+                        ("permission", permission_tables._ACTIONS,
+                        self.permissions._key("action", head["action_id"]), True)))
+            self._prime_rows(dependencies)
+            later = {}
+            for purpose, ids in pending.items():
+                for event_id in sorted(ids):
+                    source, _ = self.observe_source(event_id, purpose)
+                    seen[purpose].add(event_id)
+                    later.setdefault(purpose, set()).update(source.evidence.parent_refs)
+            pending = {purpose: ids - seen[purpose] for purpose, ids in later.items()
+                if ids - seen[purpose]}
+        return tuple((purpose, tuple(sorted(ids))) for purpose, ids in sorted(seen.items()))
 
     def prime_raw_references(self, object_ids):
         """Nominate only raw-reference metadata, granting no source use/read."""

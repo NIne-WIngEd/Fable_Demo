@@ -108,8 +108,21 @@ class _CheckedObjects:
     def __init__(self, objects, check: Callable[[], None]):
         from .experiment_manifests import _GuardedObjects
         self.objects, self.check = _GuardedObjects(objects, check), check
+    @property
+    def check(self):
+        return self._installed_check
+    @check.setter
+    def check(self, value):
+        if "_installed_check" in self.__dict__:
+            raise AttributeError("the installed provider custody check is immutable")
+        self._installed_check = value
     def __copy__(self):
-        return type(self)(self.objects, self.check)
+        # Copy the already guarded plane without creating another identical
+        # wrapper. _GuardedObjects copies its plane and top backend as well.
+        copied = object.__new__(type(self))
+        copied.__dict__.update(self.__dict__)
+        copied.objects = copy(self.objects)
+        return copied
     @property
     def backend(self):
         return self.objects.backend

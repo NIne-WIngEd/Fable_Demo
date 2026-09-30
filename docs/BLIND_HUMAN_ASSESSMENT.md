@@ -56,6 +56,8 @@ Planned comparison strata remain in the report when every pair in that stratum f
 
 The report states `acceptance_decision: not_evaluated` and `uncertainty_estimation: not_computed`. It does not turn missing dimensions, excluded failures or a synthetic result into a win, a confidence interval, customer traction or real-host benefit. A preregistered acceptance/uncertainty analysis must later consume the actual rubric and threshold specification explicitly.
 
+That separate deterministic step is now available through [explicit sealed-assessment analysis](SEALED_ASSESSMENT_ANALYSIS.md). Its pure preflight accepts actual pilot-supplied rule and rubric bytes before held-out outputs exist. After independently signed collection sealing, it applies only the exact supported rule already frozen in the protocol, preserves failed pairs and per-host results, and reports conditional rule decisions. The descriptive aggregate above remains unchanged. Actual study design and complete independent Part1 producer/result qualification remain separate dependencies.
+
 The collector enforces its own unblinding API boundary. It cannot stop a producer who already holds the private key from disclosing it through another channel. Actual reviewer separation, restricted key access and selected-store permission controls are operational requirements.
 
 ## Verification

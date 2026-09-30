@@ -126,6 +126,13 @@ def _sampled(service):
 
 def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
                                     history: HistorySnapshot) -> CurrentHistoryAuthority:
+    """Check one history with its own fresh sample and mandatory terminal fence."""
+    return _verify_current_history_metadata(policy=policy, case_id=case_id,
+        phase=phase, history=history)
+
+
+def _verify_current_history_metadata(*, policy, case_id, phase, history,
+                                     source_purposes=(), after_sources=None):
     """Bind held history to real manifest content and fresh selected authority.
 
     Full register/recover/authorize_history performs initial private custody
@@ -178,12 +185,18 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
     manifest_entry = entries.get(artifact.event_id)
     if manifest_entry is None or manifest_entry.event.event_sha256 != record["event_sha256"]:
         raise PermissionError("history manifest has no exact canonical commit")
-    sampled = OneGuardSelectedMetadata(registry=registry, permissions=permissions)
+    sampled = OneGuardSelectedMetadata(registry=registry, permissions=permissions,
+        comparison=custody if source_purposes else None)
     # One finite call-local selected sample for the exact held source DAG.
     # The manifest reference is metadata only; this does not invent a grant
     # for its private contents or retain an allow across a later boundary.
-    sampled.prime_sources(history.event_ids, purpose)
-    sampled.prime_raw_references((record["object_id"],))
+    if source_purposes:
+        sampled.observe_comparison_artifact(run_id=run_id, artifact_id=artifact_id, artifact=artifact)
+        sampled.prime_source_purposes(((history.event_ids, purpose), *source_purposes),
+            raw_object_ids=(record["object_id"],))
+    else:
+        sampled.prime_sources(history.event_ids, purpose)
+        sampled.prime_raw_references((record["object_id"],))
     local_registry, local_permissions = sampled.local_registry, sampled.local_permissions
     references, captured = [], []
     event_ids = set(history.event_ids)
@@ -247,6 +260,8 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
     current_artifact = custody.metadata(run_id, artifact_id)
     if current_artifact is None or canonical_json_bytes(current_artifact.record) != artifact_record:
         raise PermissionError("history manifest metadata changed during current verification")
+    if source_purposes:
+        sampled.observe_comparison_artifact(run_id=run_id, artifact_id=artifact_id, artifact=current_artifact)
     current_entries = _committed(log)
     current_manifest_entry = current_entries.get(artifact.event_id)
     if current_manifest_entry is None or _committed_record(current_manifest_entry) != _committed_record(manifest_entry):
@@ -282,6 +297,9 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
     # A final grant callback for one original can withdraw an earlier grant.
     # Observe all actual sampled source/raw/action/head rows together after
     # those callbacks, rather than return another sequential cached allow.
+    if after_sources is not None:
+        after_sources(sampled)
+        bindings()
     sampled.verify_final_current_rows()
     bindings()
     return CurrentHistoryAuthority(run_id, case_id, phase, history_digest, body_digest,
@@ -295,3 +313,56 @@ def authorize_history_metadata(*, policy: Any, case_id: str, phase: str, history
         return True
     except (ValueError, PermissionError, KeyError, TypeError, AttributeError):
         return False
+
+
+from .comparison_custody import SelectedRunEvidencePolicy, XTDBComparisonCustody
+_NATIVE_POLICY_HISTORY_METADATA = SelectedRunEvidencePolicy.authorize_history_metadata
+_NATIVE_PERMITS = XTDBFormationPermissionPolicy.permits
+_NATIVE_PUBLIC_METADATA_FENCE = authorize_history_metadata
+_NATIVE_VERIFY_METADATA_FENCE = verify_current_history_metadata
+_NATIVE_CUSTODY_READERS = tuple((name, getattr(XTDBComparisonCustody, name))
+    for name in ("_key", "metadata"))
+
+
+def supports_combined_history_metadata(policy):
+    """Only genuine native decoders share a fresh, single guard's row sample."""
+    if type(policy) is not SelectedRunEvidencePolicy:
+        return False
+    custody = policy.custody
+    registry, permissions = policy.custody.registry, policy.permissions
+    method = policy.authorize_history_metadata
+    return (type(custody) is XTDBComparisonCustody
+        and all(name not in vars(custody) and isinstance(getattr(custody, name), MethodType)
+            and getattr(custody, name).__self__ is custody
+            and getattr(custody, name).__func__ is native
+            for name, native in _NATIVE_CUSTODY_READERS)
+        and "authorize_history_metadata" not in vars(policy)
+        and isinstance(method, MethodType) and method.__self__ is policy
+        and method.__func__ is _NATIVE_POLICY_HISTORY_METADATA
+        and authorize_history_metadata is _NATIVE_PUBLIC_METADATA_FENCE
+        and verify_current_history_metadata is _NATIVE_VERIFY_METADATA_FENCE
+        and _second_pass_readers(registry, permissions)[0]
+        and "permits" not in vars(permissions)
+        and isinstance(permissions.permits, MethodType)
+        and permissions.permits.__self__ is permissions
+        and permissions.permits.__func__ is _NATIVE_PERMITS)
+
+
+def verify_history_and_external_metadata(*, policy, case_id, phase, history,
+                                        source_ids, purpose, final_current):
+    """Fresh native history/external checks; the last callback precedes the fence.
+
+    No sample is supplied by a caller or retained after this call. Single-
+    purpose callers keep their existing uncached, always-fenced route.
+    """
+    if not supports_combined_history_metadata(policy):
+        raise PermissionError("combined history guard requires genuine native delegates")
+    def after_sources(sample):
+        for event_id in source_ids:
+            if sample.local_permissions.permits(sample.local_registry.lookup(event_id), purpose) is not True:
+                raise PermissionError("comparator result lost current external source authority")
+        final_current()
+        if not supports_combined_history_metadata(policy):
+            raise PermissionError("combined history guard native delegates changed")
+    return _verify_current_history_metadata(policy=policy, case_id=case_id, phase=phase,
+        history=history, source_purposes=((source_ids, purpose),), after_sources=after_sources)

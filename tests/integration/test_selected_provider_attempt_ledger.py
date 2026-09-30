@@ -244,6 +244,10 @@ class SelectedProviderAttemptLedgerIntegrationTest(unittest.TestCase):
                         store._require(ids, capture_purpose("run"))
                 self.assertTrue(changed)
                 grant(ids[0], capture_purpose("run"))
+                # Refusal retention above deliberately withdrew AFTER
+                # evaluation. Restore it before this separate disclosure race
+                # so the intended last external callback is actually reached.
+                grant(ids[0], evaluation_purpose("run", "case", "after"))
                 original_action, changed = policy.current_action, False
                 lines, first_line = inspect.getsourcelines(XTDBProviderAttemptCustody._external_snapshot)
                 final_line = first_line + next(i for i, line in enumerate(lines)

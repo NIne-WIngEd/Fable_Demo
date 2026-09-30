@@ -18,6 +18,7 @@ from flora.selected.authenticated_history import (
     AuthenticatedSelectedHistory, request_authenticated_history,
 )
 from flora.selected.comparator_memory import QdrantOriginalMemory
+from flora.selected.history_fence import _verify_current_history_metadata
 from flora.selected.provider_attempt_custody import XTDBProviderAttemptCustody
 import test_history_fence as fixtures
 
@@ -146,7 +147,7 @@ class AuthenticatedHistoryTest(unittest.TestCase):
             nonlocal changed, armed
             result = actual(event_id, purpose)
             frame = sys._getframe(1)
-            while frame is not None and frame.f_code.co_name != "verify_current_history_metadata":
+            while frame is not None and frame.f_code is not _verify_current_history_metadata.__code__:
                 frame = frame.f_back
             if (armed and not changed and event_id == self.h.before.event_ids[-1]
                     and frame is not None and "current_entries" in frame.f_locals):

@@ -5,6 +5,7 @@ The SQL/log and embedding outputs are fixtures; this is no physical latency,
 semantic retrieval or model-quality qualification.
 """
 import asyncio
+from copy import copy
 from dataclasses import replace
 import sys
 import unittest
@@ -100,6 +101,12 @@ class ComparatorCurrentGuardsTest(unittest.TestCase):
                 asyncio.run(self.memory.prepare(replace(self.request, history=changed)))
 
     def test_external_callback_cannot_withdraw_evaluation_before_response_seal(self):
+        self._assert_external_callback_withdrawal()
+
+    def test_distinct_disclosure_permission_owner_keeps_its_actual_denial(self):
+        self._assert_external_callback_withdrawal(distinct_owner=True)
+
+    def _assert_external_callback_withdrawal(self, *, distinct_owner=False):
         h, config = self.h, self.memory.configuration
         self.f, self.registry, self.permissions, self.count = h.f, h.registry, h.permissions, 0
         def grant(event_id, purpose):
@@ -123,12 +130,13 @@ class ComparatorCurrentGuardsTest(unittest.TestCase):
         key = Ed25519PrivateKey.generate()
         verifier = Ed25519TransportObservationVerifier(configuration=config.provider,
             public_key=key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw))
+        disclosure_permissions = copy(h.permissions) if distinct_owner else h.permissions
         disclosure = SelectedComparatorDisclosure(custody=h.custody, run_id="run", configuration=config,
-            permissions=h.permissions, wire_compiler=FixtureCompiler(), evidence=h.policy)
+            permissions=disclosure_permissions, wire_compiler=FixtureCompiler(), evidence=h.policy)
         recorder = SelectedComparatorRecorder(custody=h.custody, run_id="run", configuration=config,
             disclosure=disclosure, exchange_verifier=verifier, clock=lambda: "2026-09-30T17:00:00Z")
         response = signed_response(provider, "d" * 64, key)
-        actual_permits, changed = h.permissions.permits, False
+        actual_permits, changed = disclosure_permissions.permits, False
         target = h.f.objects._identity(encoded(context.receipt_record()))
         sealed = []
         actual_encrypt = AESGCM.encrypt
@@ -153,7 +161,7 @@ class ComparatorCurrentGuardsTest(unittest.TestCase):
                 changed = True
                 h.grant(h.before.event_ids[0], "before", "revoke")
             return result
-        with patch.object(h.permissions, "permits", side_effect=permits), \
+        with patch.object(disclosure_permissions, "permits", side_effect=permits), \
              patch.object(AESGCM, "encrypt", new=encrypt):
             with self.assertRaises(PermissionError):
                 recorder.record(request=request, provider_request=provider, response=response,

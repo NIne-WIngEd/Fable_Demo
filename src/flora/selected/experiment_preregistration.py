@@ -10,24 +10,28 @@ from copy import copy, deepcopy
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+import inspect
 import json
+import re
 from types import MappingProxyType
 from typing import Callable, Mapping
 
-from cognitive_kernel.canonical import canonical_sha256, normalize_timestamp, require_sha256
+from cognitive_kernel.canonical import canonical_json_bytes, canonical_sha256, normalize_timestamp, require_sha256
 from cognitive_kernel.contracts import ProductHostScope
 
-from ..comparator import BaselineConfiguration, encoded, identifier, positive, sha
+from ..comparator import BaselineConfiguration, ProviderConfiguration, MemoryConfiguration, encoded, identifier, positive, sha
 from ..comparison_run import ArmBinding, HistorySnapshot, PairedRunPlan, _context_bytes
-from ..evaluation_protocol import EvaluationProtocol
+from ..evaluation_protocol import EvaluationCase, EvaluationProtocol
 from .artifact_registry import RuntimeWiringManifest
 from .comparison_custody import ComparisonArtifact, SelectedRunEvidencePolicy, XTDBComparisonCustody, evaluation_purpose
-from .context import ContextPlan
+from .context import ContextPlan, StateRoute
 from .experiment_coordinator import _GuardedLog, _attach_private_fence
 from .experiment_manifests import SelectedSourceAuthority, XTDBExperimentManifestCustody, _GuardedObjects, manifest_purpose
 from .formation_policy import XTDBFormationPermissionPolicy
 from .formation_registry import XTDBFormationSourceRegistry
 from .phase_source_fence import OneGuardSelectedMetadata
+from .experience import KurrentExperienceLog
+from .claims import _rows
 from .formation_registry import RegisteredEncryptedFormationCustody
 from .native_arm import FrozenNativeArmPlan, NativeInvocationEntry, NativePhaseSnapshotBinding
 from .native_worker import NativeWorkerManifest
@@ -455,6 +459,7 @@ class XTDBExperimentPreregistrationCustody:
         self._source_gates = ()
         self._controllers = (comparison.registry, comparison.log, comparison.objects, permissions, comparison.connection)
         self._repair_target = ContextVar("flora_preregistration_repair_" + str(id(self)), default=None)
+        self._slot_metadata_frame = ContextVar("flora_preregistration_slot_metadata_" + str(id(self)), default=None)
 
     @staticmethod
     def artifact_id(kind, snapshot_id=None):
@@ -473,13 +478,23 @@ class XTDBExperimentPreregistrationCustody:
         return "preregistration_final_binding" if kind == "final_seal" else "preregistration_" + kind
 
     def _metadata(self, kind, snapshot_id=None):
-        return self.comparison.metadata(self.run_id, self.artifact_id(kind, snapshot_id))
+        frame = self._active_slot_frame()
+        comparison = self.comparison if frame is None else frame.comparison
+        return comparison.metadata(self.run_id, self.artifact_id(kind, snapshot_id))
+
+    def _active_slot_frame(self):
+        variable = getattr(self, "_slot_metadata_frame", None)
+        return None if variable is None else variable.get()
+
+    def _committed_controls(self):
+        frame = self._active_slot_frame()
+        return self.comparison.log.replay_committed() if frame is None else frame.committed
 
     def _stage(self, kind, snapshot_id=None):
         """A committed append without its index cannot permit a later stage."""
         record = self._metadata(kind, snapshot_id)
         activity = "comparison:" + self.comparison._key(self.run_id, self.artifact_id(kind, snapshot_id))
-        committed = [item for item in self.comparison.log.replay_committed()
+        committed = [item for item in self._committed_controls()
                      if item.event.provenance.derivation_activity_id == activity]
         if record is None and committed and self._repair_target.get() != (kind, snapshot_id):
             raise PermissionError("canonical preregistration stage requires explicit index reconciliation")
@@ -503,10 +518,20 @@ class XTDBExperimentPreregistrationCustody:
                 or self.comparison.registry is not local.registry or self.comparison.log is not local.log
                 or self.comparison.objects is not local.objects or self.permissions is not local.permissions):
             raise PermissionError("preregistration actual controller identity changed")
-        with self._current_observations(operation=operation, parents=parents,
-                include_evaluation=include_evaluation) as (manifests, permissions):
+        frame = self._active_slot_frame()
+        if frame is not None:
+            if operation is not None or parents or include_evaluation is not True:
+                raise PermissionError("slot metadata frame cannot change current-guard purpose")
+            frame.bindings()
+            manifests, permissions = frame.manifests, frame.permissions
             self._check_current(manifests=manifests, permissions=permissions,
                 operation=operation, parents=parents, include_evaluation=include_evaluation)
+            frame.bindings()
+        else:
+            with self._current_observations(operation=operation, parents=parents,
+                    include_evaluation=include_evaluation) as (manifests, permissions):
+                self._check_current(manifests=manifests, permissions=permissions,
+                    operation=operation, parents=parents, include_evaluation=include_evaluation)
         local = self.manifests.local
         if (self._controllers != (local.registry, local.log, local.objects, self.permissions, self.comparison.connection)
                 or self.comparison.registry is not local.registry or self.comparison.log is not local.log
@@ -514,7 +539,7 @@ class XTDBExperimentPreregistrationCustody:
             raise PermissionError("preregistration actual controller identity changed during current guard")
 
     @contextmanager
-    def _current_observations(self, *, operation, parents, include_evaluation):
+    def _current_observations(self, *, operation, parents, include_evaluation, frame=None):
         """Share metadata inside this call, never an answer across private I/O."""
         manifests = copy(self.manifests)
         manifests.authorities = dict(self.manifests.authorities)
@@ -550,9 +575,13 @@ class XTDBExperimentPreregistrationCustody:
             selected_log = copy(actual_log)
             selected_log.replay = lambda entries=committed: [entry.event for entry in entries]
             selected_log.replay_committed = lambda entries=committed: entries
-            for (current_id, purpose), event_ids in sorted(purposes.items()):
-                if current_id == authority_id:
-                    sample.prime_sources(tuple(sorted(event_ids)), purpose)
+            nominated = tuple((purpose, tuple(sorted(event_ids)))
+                for (current_id, purpose), event_ids in sorted(purposes.items()) if current_id == authority_id)
+            if frame is None:
+                for purpose, event_ids in nominated:
+                    sample.prime_sources(event_ids, purpose)
+            else:
+                sample.prime_source_purposes(tuple((event_ids, purpose) for purpose, event_ids in nominated))
             selected = copy(authority)
             object.__setattr__(selected, "registry", sample.local_registry)
             object.__setattr__(selected, "permissions", sample.local_permissions)
@@ -561,6 +590,8 @@ class XTDBExperimentPreregistrationCustody:
             observed.append((authority_id, authority, sample, actual_log, replay, committed_replay,
                 committed, source_methods, source_class_methods))
         manifests.local = manifests.authorities[self.manifests.local.authority_id]
+        if frame is not None:
+            frame.initialize(observed, manifests, manifests.local.permissions)
         yield manifests, manifests.local.permissions
         def bindings():
             # Pure identity comparisons follow every actual callback. The
@@ -585,7 +616,15 @@ class XTDBExperimentPreregistrationCustody:
             fresh = tuple(committed_replay())
             if fresh[:len(committed)] != committed:
                 raise PermissionError("preregistration canonical observations changed during current guard")
+            if frame is not None:
+                frame.verify_committed(fresh)
         bindings()
+        if frame is not None:
+            frame.bindings()
+            frame.verify_final_rows(observed)
+            bindings()
+            frame.bindings()
+            return
         for (authority_id, authority, sample, actual_log, replay, committed_replay,
                 committed, source_methods, source_class_methods) in observed:
             sample.verify_final_current_rows()
@@ -626,7 +665,7 @@ class XTDBExperimentPreregistrationCustody:
         return selected
 
     def _canonical(self, artifact):
-        found = [item for item in self.comparison.log.replay_committed() if item.event.event_id == artifact.event_id]
+        found = [item for item in self._committed_controls() if item.event.event_id == artifact.event_id]
         if len(found) != 1 or found[0].event.event_sha256 != artifact.record["event_sha256"]:
             raise PermissionError("preregistration control lacks exact committed canonical position")
         return found[0]
@@ -796,6 +835,22 @@ class XTDBExperimentPreregistrationCustody:
         self._current()
 
     def _authorize_slot(self, *, capture, snapshot_id, case_id, phase, arm, history, plan=None):
+        frame = _SlotMetadataFrame.create(self, plan=plan, history=history)
+        if frame is None:
+            return self._authorize_slot_body(capture=capture, snapshot_id=snapshot_id,
+                case_id=case_id, phase=phase, arm=arm, history=history, plan=plan)
+        if self._active_slot_frame() is not None:
+            raise PermissionError("slot metadata frame cannot be nested")
+        with self._current_observations(operation=None, parents=(), include_evaluation=True, frame=frame):
+            token = self._slot_metadata_frame.set(frame)
+            try:
+                result = self._authorize_slot_body(capture=capture, snapshot_id=snapshot_id,
+                    case_id=case_id, phase=phase, arm=arm, history=history, plan=plan)
+            finally:
+                self._slot_metadata_frame.reset(token)
+        return result
+
+    def _authorize_slot_body(self, *, capture, snapshot_id, case_id, phase, arm, history, plan=None):
         self._current()
         if self.anchor is None:
             raise PermissionError("capture requires a registered immutable anchor")
@@ -826,19 +881,22 @@ class XTDBExperimentPreregistrationCustody:
         if self.spec is None:
             return
         evaluation_ids = {slot.evaluation_invocation_id for slot in self.spec.slots}
-        for entry in self.comparison.log.replay_committed():
+        for entry in self._committed_controls():
             event = entry.event
             if (event.provenance.derivation_activity_id in evaluation_ids
                     and event.event_type in {"qualified_model_input", "qualified_model_output", "qualified_model_attempt_failure", "decision"}):
                 raise PermissionError("frozen paired evaluation already ran before final seal")
         for artifact_id in ("coordinator:running", "coordinator:interrupted", "run"):
-            if self.comparison.metadata(self.run_id, artifact_id) is not None:
+            frame = self._active_slot_frame()
+            comparison = self.comparison if frame is None else frame.comparison
+            if comparison.metadata(self.run_id, artifact_id) is not None:
                 raise PermissionError("same run already has attempted evaluation custody")
         from .provider_attempt_custody import _TABLE as provider_table
         from .claims import _rows
         for task in self.spec.provider_task_ids.values():
             key = canonical_sha256([self.comparison.scope_digest, self.run_id, task, "task"])
-            if _rows(self.comparison.connection.execute(f"SELECT * FROM {provider_table} FOR VALID_TIME ALL WHERE _id = %s", (key,))):
+            connection = self.comparison.connection if frame is None else frame.connection
+            if _rows(connection.execute(f"SELECT * FROM {provider_table} FOR VALID_TIME ALL WHERE _id = %s", (key,))):
                 raise PermissionError("provider evaluation task already exists before final seal")
 
     def _observation(self, snapshot_id):
@@ -1153,3 +1211,303 @@ class XTDBExperimentPreregistrationCustody:
             raise ValueError("private preregistration control differs from actual anchor")
         check()
         return body["payload"]
+
+
+class _SlotRows:
+    """Eager metadata-only rows from the real connection, never a grant."""
+    def __init__(self, description, rows):
+        self.description, self._rows = description, rows
+    def fetchall(self):
+        return deepcopy(self._rows)
+
+
+class _SlotMetadataFrame:
+    """One native metadata operation, closed before any private operation."""
+    @classmethod
+    def create(cls, store, *, plan, history=None):
+        if (not _slot_native_readers(store)
+                or _slot_field_values(store, plan) is None
+                or (history is not None and (type(history) is not HistorySnapshot
+                    or _slot_native_value(history) is None))
+                or (plan is not None and (type(plan) is not ContextPlan
+                    or _slot_native_value(plan) is None
+                    or any(inspect.getattr_static(ContextPlan, name) is not descriptor
+                        or name in vars(plan) for name, descriptor in _SLOT_NATIVE_METHODS[ContextPlan])))):
+            return None
+        return cls(store, plan=plan)
+
+    def __init__(self, store, *, plan):
+        self.store = store
+        self.plan = plan
+        self.values = _slot_field_values(store, plan)
+        self.namespaces = tuple((service, service.scope, service.scope_digest,
+            getattr(service, "authority_namespace_id", None)) for service in
+            (store.manifests, store.comparison, store.permissions, *(
+                registry for authority in store.manifests.authorities.values()
+                for registry in (authority.registry, authority.permissions))))
+        self.actual_connection = store.comparison.connection
+        self.controllers = (store.manifests, store.comparison, store.permissions,
+            store.manifests.local, store.spec, store.anchor, store.comparison.log,
+            store.comparison.log.client, store.comparison.log.stream)
+        self.connection = self
+        self.rows = {}
+        self.comparison = None
+        self.manifests = self.permissions = None
+        self.committed = None
+        self.control_projection = None
+
+    def bindings(self):
+        current = (self.store.manifests, self.store.comparison,
+            self.store.permissions, self.store.manifests.local, self.store.spec,
+            self.store.anchor, self.store.comparison.log,
+            self.store.comparison.log.client)
+        if (not _slot_native_readers(self.store)
+                or any(left is not right for left, right in zip(self.controllers[:-1], current))
+                or self.controllers[-1] != self.store.comparison.log.stream
+                or self.values != _slot_field_values(self.store, self.plan)
+                or any(service.scope is not scope or service.scope_digest != digest
+                    or getattr(service, "authority_namespace_id", None) != namespace
+                    for service, scope, digest, namespace in self.namespaces)
+                or self.store.comparison.connection is not self.actual_connection):
+            raise PermissionError("slot metadata native controller/reader binding changed")
+
+    def initialize(self, observed, manifests, permissions):
+        self.bindings()
+        local = self.store.manifests.local
+        matching = [item for item in observed if item[1] is local]
+        if len(matching) != 1:
+            raise PermissionError("slot metadata frame has no exact local observations")
+        self.committed = matching[0][6]
+        self.control_projection = self._project_controls(self.committed)
+        self.manifests, self.permissions = manifests, permissions
+        self.comparison = copy(self.store.comparison)
+        self.comparison.registry = manifests.local.registry
+        self.comparison.log = manifests.local.log
+        self.comparison.connection = self
+        manifests.connection = self
+
+    def execute(self, sql, parameters):
+        # Native methods still decode/validate every result. Eager observation
+        # does not cache their callbacks or their permission answers.
+        self.bindings()
+        match = re.fullmatch(r"SELECT \* FROM (flora_comparison_artifacts|flora_experiment_manifest_artifacts|flora_provider_attempt_artifacts) FOR VALID_TIME ALL WHERE _id = %s", sql)
+        if match is None or len(parameters) != 1:
+            raise PermissionError("slot metadata frame attempted an undeclared operation")
+        cursor = self.actual_connection.execute(sql, parameters)
+        description = cursor.description
+        values = cursor.fetchall()
+        names = tuple(column.name for column in description)
+        rows = [dict(zip(names, value)) for value in values]
+        table, key = match.group(1), parameters[0]
+        service = self.store.manifests if table == "flora_experiment_manifest_artifacts" else self.store.comparison
+        if len(rows) > 1:
+            raise PermissionError("slot metadata frame has ambiguous immutable rows")
+        expected = None if not rows else rows[0]
+        if expected is not None and (expected["_id"] != key or expected["scope_digest"] != service.scope_digest):
+            raise PermissionError("slot metadata observation changed exact scope/key")
+        identity = (table, key, service.scope_digest)
+        if identity in self.rows and self.rows[identity] != expected:
+            raise PermissionError("slot metadata row changed during its operation")
+        self.rows[identity] = deepcopy(expected)
+        if len(self.rows) > 4096:
+            raise PermissionError("slot metadata observations exceed their finite cap")
+        self.bindings()
+        return _SlotRows(description, values)
+
+    def _project_controls(self, entries):
+        activity_ids = {"comparison:" + self.store.comparison._key(self.store.run_id,
+            self.store.artifact_id(kind)) for kind in ("before_seal", "update_gate", "update", "final_seal")}
+        evaluation_ids = {slot.evaluation_invocation_id for slot in self.store.spec.slots}
+        return tuple(entry for entry in entries if (
+            entry.event.provenance.derivation_activity_id in activity_ids
+            or (entry.event.provenance.derivation_activity_id in evaluation_ids
+                and entry.event.event_type in {"qualified_model_input", "qualified_model_output",
+                    "qualified_model_attempt_failure", "decision"})))
+
+    def verify_committed(self, entries):
+        self.bindings()
+        if self._project_controls(entries) != self.control_projection:
+            raise PermissionError("slot stage/update/evaluation canonical evidence changed during metadata operation")
+        self.bindings()
+
+    def verify_final_rows(self, observed):
+        grouped, expected = {}, {}
+        for _, _, sample, *_ in observed:
+            sample._bindings()
+            for row in sample._observations.values():
+                tag = row.kind + ":" + row.table + (":all" if row.immutable else ":current")
+                group = (tag, row.table, row.immutable, row.scope_digest, row.digest_column)
+                grouped.setdefault(group, set()).add(row.key)
+                expected[(tag, row.key)] = (row.scope_digest, row.digest, row.record)
+        for (table, key, scope_digest), row in self.rows.items():
+            tag = "preregistration:" + table + ":all"
+            grouped.setdefault((tag, table, True, None, "record_sha256"), set()).add(key)
+            expected[(tag, key)] = None if row is None else (scope_digest,
+                row["record_sha256"], canonical_json_bytes(json.loads(str(row["record_json"]))))
+        if not expected or len(expected) > 4096:
+            raise PermissionError("slot terminal metadata observation set is empty or unbounded")
+        terms, parameters = [], []
+        for (tag, table, immutable, scope_digest, column), keys in sorted(grouped.items()):
+            keys = sorted(keys)
+            temporal = " FOR VALID_TIME ALL" if immutable else ""
+            scoped = "scope_digest = %s AND " if scope_digest is not None else ""
+            terms.append(f"SELECT '{tag}' AS fence_kind, _id, scope_digest, {column} AS fence_sha256, record_json FROM {table}{temporal} WHERE " + scoped + "_id IN (" + ", ".join("%s::text" for _ in keys) + ")")
+            parameters.extend((*((scope_digest,) if scope_digest is not None else ()), *keys))
+        sql = "SELECT * FROM (" + " UNION ALL ".join(terms) + f") AS flora_current_metadata_fence LIMIT {len(expected) + 1}"
+        self.bindings()
+        values = _rows(self.actual_connection.execute(sql, tuple(parameters)))
+        self.bindings()
+        seen = set()
+        for row in values:
+            identity = (row["fence_kind"], row["_id"])
+            actual = (row["scope_digest"], row["fence_sha256"], canonical_json_bytes(json.loads(str(row["record_json"]))))
+            if identity in seen or expected.get(identity) != actual:
+                raise PermissionError("slot terminal current row changed or became ambiguous")
+            seen.add(identity)
+        if seen != {identity for identity, row in expected.items() if row is not None}:
+            raise PermissionError("slot terminal current metadata row became absent")
+        for _, _, sample, *_ in observed:
+            sample._bindings()
+        self.bindings()
+
+
+def _slot_native_readers(store):
+    if (type(store) is not XTDBExperimentPreregistrationCustody
+            or type(store.manifests) is not XTDBExperimentManifestCustody
+            or type(store.comparison) is not XTDBComparisonCustody
+            or type(store.permissions) is not XTDBFormationPermissionPolicy
+            or type(store.spec) is not ExperimentPreregistration
+            or type(store.comparison.log) is not KurrentExperienceLog
+            or getattr(store, "_slot_metadata_frame", None) is None):
+        return False
+    local = store.manifests.local
+    if (type(local) is not SelectedSourceAuthority
+            or local.registry is not store.comparison.registry
+            or local.log is not store.comparison.log
+            or local.permissions is not store.permissions
+            or store.manifests.connection is not store.comparison.connection):
+        return False
+    services = [store, store.manifests, store.comparison, store.permissions, store.comparison.log, store.spec]
+    for authority in store.manifests.authorities.values():
+        if (type(authority) is not SelectedSourceAuthority
+                or type(authority.registry) is not XTDBFormationSourceRegistry
+                or type(authority.permissions) is not XTDBFormationPermissionPolicy
+                or authority.registry.connection is not store.comparison.connection
+                or authority.permissions.connection is not store.comparison.connection
+                or authority.log is not store.comparison.log):
+            return False
+        services.extend((authority, authority.registry, authority.permissions))
+    services.extend(service.scope for service in tuple(services) if hasattr(service, "scope"))
+    for service in services:
+        native = _SLOT_NATIVE_METHODS.get(type(service))
+        if native is None:
+            return False
+        for name, descriptor in native:
+            if inspect.getattr_static(type(service), name) is not descriptor or name in vars(service):
+                return False
+    if not all(namespace.get(name) is value for namespace, name, value in _SLOT_NATIVE_GLOBALS):
+        return False
+    if not all(inspect.getattr_static(owner, name, None) is value
+            for owner, name, value in _SLOT_NATIVE_ATTRIBUTES):
+        return False
+    if not all(cell.cell_contents is value for cell, value in _SLOT_NATIVE_CLOSURES):
+        return False
+    return all(inspect.getattr_static(cls, name, None) is descriptor
+        for cls, methods in _SLOT_NATIVE_METHODS.items() for name, descriptor in methods)
+
+
+def _slot_native_value(value):
+    """Pure finite snapshots of typed immutable input fields, no callbacks."""
+    if value is None or type(value) in (str, bytes, int, bool, float):
+        return (type(value), value)
+    if type(value) in (tuple, list):
+        items = tuple(_slot_native_value(item) for item in value)
+        return None if any(item is None for item in items) else (type(value), items)
+    if type(value) in (dict, MappingProxyType):
+        items = tuple((_slot_native_value(key), _slot_native_value(item)) for key, item in value.items())
+        return None if any(key is None or item is None for key, item in items) else (type(value), frozenset(items))
+    native = _SLOT_NATIVE_METHODS.get(type(value))
+    if native is None or not hasattr(type(value), "__dataclass_fields__"):
+        return None
+    if any(name in vars(value) for name, _ in native):
+        return None
+    fields = tuple((name, _slot_native_value(item)) for name, item in vars(value).items())
+    return None if any(item is None for _, item in fields) else (type(value), fields)
+
+
+def _slot_field_values(store, plan):
+    values = tuple(_slot_native_value(value) for value in (store.spec,
+        store.histories, store.questions, store.dependencies, store._source_gates,
+        store._spec_record, store._histories_record, store._questions_record, plan))
+    return None if any(value is None for value in values) else values
+
+
+# Stable import-time references make a preexisting class/decoder override use
+# the original uncached path. Late replacement fails the active frame.
+_SLOT_NATIVE_METHODS = {cls: tuple((name, descriptor) for name, descriptor in vars(cls).items()
+    if inspect.isfunction(descriptor) or isinstance(descriptor, (classmethod, staticmethod, property)))
+    for cls in (XTDBExperimentPreregistrationCustody, XTDBExperimentManifestCustody,
+        XTDBComparisonCustody, XTDBFormationSourceRegistry, XTDBFormationPermissionPolicy,
+        SelectedSourceAuthority, KurrentExperienceLog, ExperimentPreregistration, ContextPlan, StateRoute,
+        CaptureSlotDeclaration, NativeArmDeclaration, NativeWorkerManifest, EvaluationCase,
+        ProviderConfiguration, MemoryConfiguration)}
+_SLOT_NATIVE_GLOBALS = []
+_SLOT_NATIVE_ATTRIBUTES = []
+_SLOT_NATIVE_CLOSURES = []
+# These are local imports in the original evaluation-absence guard. Include
+# their exact module bindings even though co_names cannot resolve them in the
+# function's global namespace.
+from . import provider_attempt_custody as _slot_provider_tables
+from . import claims as _slot_claim_reader
+_SLOT_NATIVE_ATTRIBUTES.extend(((_slot_provider_tables, "_TABLE", _slot_provider_tables._TABLE),
+    (_slot_claim_reader, "_rows", _slot_claim_reader._rows)))
+def _slot_descriptor_functions(descriptor):
+    if isinstance(descriptor, property):
+        return tuple(method for method in (descriptor.fget, descriptor.fset, descriptor.fdel) if method is not None)
+    return (descriptor.__func__ if isinstance(descriptor, (classmethod, staticmethod)) else descriptor,)
+
+_slot_pending = [function for methods in _SLOT_NATIVE_METHODS.values()
+    for _, descriptor in methods for function in _slot_descriptor_functions(descriptor)]
+_slot_seen = set()
+while _slot_pending:
+    _slot_function = _slot_pending.pop()
+    if not inspect.isfunction(_slot_function) or _slot_function in _slot_seen:
+        continue
+    _slot_seen.add(_slot_function)
+    if hasattr(_slot_function, "__wrapped__"):
+        _SLOT_NATIVE_ATTRIBUTES.append((_slot_function, "__wrapped__", _slot_function.__wrapped__))
+        _slot_pending.append(_slot_function.__wrapped__)
+    for _slot_cell in _slot_function.__closure__ or ():
+        try:
+            _slot_closed = _slot_cell.cell_contents
+        except ValueError:
+            continue
+        if inspect.isfunction(_slot_closed):
+            _SLOT_NATIVE_CLOSURES.append((_slot_cell, _slot_closed))
+            _slot_pending.append(_slot_closed)
+    for _slot_name in _slot_function.__code__.co_names:
+        _slot_value = _slot_function.__globals__.get(_slot_name)
+        if _slot_name in _slot_function.__globals__ and type(_slot_value) in (str, bytes, int, bool, float, frozenset, tuple):
+            _SLOT_NATIVE_GLOBALS.append((_slot_function.__globals__, _slot_name, _slot_value))
+        if inspect.isfunction(_slot_value) or inspect.isclass(_slot_value):
+            _SLOT_NATIVE_GLOBALS.append((_slot_function.__globals__, _slot_name, _slot_value))
+            if inspect.isfunction(_slot_value):
+                _slot_pending.append(_slot_value)
+            elif (_slot_value.__module__.startswith(("flora.", "cognitive_kernel."))
+                    and _slot_value not in _SLOT_NATIVE_METHODS):
+                _slot_methods = tuple((name, descriptor) for name, descriptor in vars(_slot_value).items()
+                    if inspect.isfunction(descriptor) or isinstance(descriptor, (classmethod, staticmethod, property)))
+                _SLOT_NATIVE_METHODS[_slot_value] = _slot_methods
+                _slot_pending.extend(function for _, descriptor in _slot_methods
+                    for function in _slot_descriptor_functions(descriptor))
+        elif inspect.ismodule(_slot_value):
+            # Decoder calls such as json.loads are module attributes, not bare
+            # globals. Capture their real identity as well as the module.
+            _SLOT_NATIVE_GLOBALS.append((_slot_function.__globals__, _slot_name, _slot_value))
+            for _slot_attribute in _slot_function.__code__.co_names:
+                _slot_member = inspect.getattr_static(_slot_value, _slot_attribute, None)
+                if inspect.isfunction(_slot_member) or inspect.isclass(_slot_member):
+                    _SLOT_NATIVE_ATTRIBUTES.append((_slot_value, _slot_attribute, _slot_member))
+                    if inspect.isfunction(_slot_member) and _slot_member.__module__.startswith(("flora.", "cognitive_kernel.")):
+                        _slot_pending.append(_slot_member)
+del _slot_pending, _slot_seen, _slot_function, _slot_name, _slot_value

@@ -1,6 +1,6 @@
 """Real selected-store assessment custody, with fictional human submissions.
 
-No MFM, personality, model inference, live human study or acceptance result.
+No MFM, personality, model inference, live human study or qualified acceptance result.
 """
 
 import base64
@@ -14,6 +14,7 @@ import random
 import tempfile
 import unittest
 import uuid
+from unittest.mock import patch
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -37,6 +38,7 @@ from flora.selected.formation_policy import FormationPermissionAction, XTDBForma
 from flora.selected.formation_registry import XTDBFormationSourceRegistry
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 from flora.selected.owner_authorization import Ed25519OwnerActionVerifier, OwnerActionProof, owner_action_message
+from test_sealed_analysis import fictional_analysis_spec
 
 
 def sha(content):
@@ -87,7 +89,14 @@ class SelectedAssessmentCustodyIntegrationTest(unittest.TestCase):
                 rubric = canonical_json_bytes({"schema": "flora-human-assessment-rubric-v1",
                     "dimensions": {dimension: {"instruction": "Fictional rubric instruction; no actual study.",
                         "labels": ["left", "right", "tie"]} for dimension in sorted(DIMENSIONS)}})
-                thresholds = canonical_json_bytes({"fixture_only": True, "no_actual_acceptance_rule": True})
+                analysis_spec = fictional_analysis_spec()
+                metric = analysis_spec["metrics"][0]
+                metric["interventions"] = ["relevant_correction"]
+                metric["label_scores"] = {"left": {"left": "1/1", "right": "-1/1"},
+                    "right": {"left": "-1/1", "right": "1/1"}, "tie": {"left": "0/1", "right": "0/1"}}
+                metric["uncertainty"].update(cluster_unit="host", resamples=4)
+                metric["criteria"] = [{"quantity": "lower", "operator": "gt", "bound": "0/1"}]
+                thresholds = canonical_json_bytes(analysis_spec)
                 case_rubric = b"Fictional sealed expected case behavior; no actual personal judgment."
                 question = b"What should this fictional person do?"
                 case = EvaluationCase("case", host, "relevant_correction", "heldout", histories[("case", "before")].digest(),
@@ -225,6 +234,34 @@ class SelectedAssessmentCustodyIntegrationTest(unittest.TestCase):
                 self.assertEqual((summary["possible_comparison_pairs"], summary["reviewed_comparison_pairs"], summary["excluded_comparison_pairs"]), (4, 3, 1))
                 self.assertEqual(summary["acceptance_decision"], "not_evaluated")
                 key_event_id = custody.metadata("run", "blind_key").event_id
+                report = adapter.analyze_after_seal(run_id="run", collection_id="collection", permissions=permissions)
+                self.assertEqual(report["metrics"][0]["possible_pairs"], 1)
+                self.assertEqual(report["acceptance_decision"], "not_evaluable")
+                self.assertFalse(report["part1_qualified"])
+                from flora.selected import assessment_custody as assessment_module
+                actual_analysis = assessment_module.analyze_sealed_assessment
+                completed_analyses = []
+                armed, withdrawn = [False], []
+                def withdraw_after_actual_analysis(**fields):
+                    result = actual_analysis(**fields)
+                    completed_analyses.append(result["schema"])
+                    armed[0] = True
+                    return result
+                native_permits = permissions.permits
+                def last_unblind_callback(source, current_purpose):
+                    allowed = native_permits(source, current_purpose)
+                    if (armed[0] and not withdrawn and source.evidence.ref_id == key_event_id
+                            and current_purpose == "comparison_unblind"):
+                        withdrawn.append(True)
+                        grant(seal.event_id, purpose, "revoke")
+                    return allowed
+                with patch.object(assessment_module, "analyze_sealed_assessment", withdraw_after_actual_analysis), \
+                        patch.object(permissions, "permits", last_unblind_callback):
+                    with self.assertRaises(PermissionError):
+                        adapter.analyze_after_seal(run_id="run", collection_id="collection", permissions=permissions)
+                self.assertEqual(completed_analyses, ["flora-sealed-assessment-analysis-report-v1"])
+                self.assertEqual(withdrawn, [True])
+                grant(seal.event_id, purpose, "allow")
             # Recreate the connection/registry/policy/adapter from actual custody.
             with psycopg.connect(dsn, autocommit=True) as connection:
                 registry = XTDBFormationSourceRegistry(scope=scope, authority_namespace_id=namespace, connection=connection)
