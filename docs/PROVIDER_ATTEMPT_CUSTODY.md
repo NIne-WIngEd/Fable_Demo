@@ -51,6 +51,14 @@ including nested object `put` and reference-recovery reads. Checks use current
 registered metadata and current ancestor permission, never a cached permission
 decision. A reviewer grant cannot substitute for private audit permission.
 
+Each capture, audit and external-disclosure check samples the actual registered
+ancestor closure within that call. After the final control callback, one bounded
+XTDB query checks all observed source, action and current-head rows together. A
+last callback cannot revoke an earlier grant unnoticed. Task-source validation
+also ends with the entire task closure; several individual source checks cannot
+stand in for that final fence. These observations are never reused as later
+permission grants.
+
 ## Distinct dispatch attempts
 
 `prepare_task(...)` returns a `BoundProviderAttemptSink`. One task permits one
@@ -92,6 +100,33 @@ Recovery recreates the full task, authorization and signed observation from the
 selected stores. It rechecks immutable bindings and current audit permission; no
 caller RAM observation or permission map is needed.
 
+## Two-stage experiment seal
+
+An actual durable preregistration anchor makes the final binding mandatory.
+Omitting it from a provider, Qdrant or disclosure constructor cannot switch that
+run back to the legacy fixture path. Only genuinely unanchored runs retain that
+earlier contract.
+
+- Task preparation, disclosure, actual transport transfer and successful answer
+  acceptance require the exact final plan and predeclared comparator task ID.
+- Outer dispatch and acceptance requalify the actual captured phase and producer
+  update proofs. Inner encrypted-object and append guards check exact current
+  metadata without recursively opening those private proofs.
+- A signed observation already made under its exact dispatch authorization can
+  still be preserved when evaluation, external disclosure or producer-update
+  qualification is withdrawn. Its separate capture consent and actual final
+  identity must remain current. Private audit additionally needs audit consent.
+- Capture-only authority cannot dispatch another call, accept a response or
+  qualify the experiment's result.
+
+The copied encrypted-object view preserves each guard through nested source
+readers. A withdrawal during the actual ciphertext fetch is checked before AEAD
+opens the bytes, including the private task and bound observation.
+
+The present preregistration declares provider tasks for `general_model_memory`.
+A native feature packet still needs separately qualified wire semantics and an
+independently declared task contract; this module does not substitute one.
+
 The issued sink also exposes `verify_response(response)` and `verified_usage()`.
 These validate exactly that handle's captured observation under current capture
 permission; they do not provide a general private-artifact reader. A successful
@@ -111,6 +146,26 @@ decryption gates. The uniquely named selected-backend test covers durable
 recovery, per-arm/phase dispatch limits, partial timeout/cancellation, refusal
 usage after withdrawal, and rejection before private reads. Its physical-engine
 qualification remains pending the repository CI run.
+
+Eight additional final-binding tests use actual encrypted controls with explicitly
+fictional registry, permission and producer ports. They cover omitted or changed
+task authority, slow-verification withdrawal, pre-AEAD withdrawal, signed refusal
+retention after evaluation and update-proof withdrawal, capture revocation, and
+external-consent denial remaining `refused` before a client call. They provide
+mechanical contract evidence. They do not qualify physical storage, learned
+behavior, tokenization quality or provider execution. The earlier physical run
+exposed a copied-reader recursion; the wrapper repair is locally verified and
+awaits the next physical run.
+
+Four source-fence regressions use actual selected registry and signed owner-grant
+services with a controlled SQL row recorder. They exercise the last capture
+callback revoking an earlier source, the last external callback revoking an
+earlier disclosure grant, ancestor grants under an original-bound predicate,
+and complete task closure after individual binding checks. No withdrawn
+original ciphertext or disclosure marker is returned. The actual selected-engine
+ledger case now includes those capture/external races and observes real AEAD
+opens for private audit withdrawal; it is prepared for CI and has not been
+claimed as passing.
 
 `GeneralMemoryArmAdapter` accepts per-execution attempt custody and a supplied
 task-ID function. Without them it is unavailable before dispatch. It prepares a

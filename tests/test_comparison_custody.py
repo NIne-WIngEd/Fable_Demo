@@ -33,6 +33,14 @@ class ComparisonCustodyContractTest(unittest.TestCase):
                 model_artifact_sha256=("7" if phase == "before" else "8") * 64)
             for phase in ("before", "after") for arm in ARMS})
         self.assertEqual(_plan_from_record(json.loads(json.dumps(_plan_record(phased)))).digest(), phased.digest())
+        anchored = replace(phased, preregistration_sha256="9" * 64)
+        stored_anchor = json.loads(json.dumps(_plan_record(anchored)))
+        self.assertEqual(_plan_from_record(stored_anchor).digest(), anchored.digest())
+        self.assertNotEqual(anchored.digest(), phased.digest())
+        changed_anchor = replace(anchored, preregistration_sha256="a" * 64)
+        self.assertNotEqual(changed_anchor.digest(), anchored.digest())
+        with self.assertRaisesRegex(ValueError, "complete observed"):
+            replace(plan, preregistration_sha256="9" * 64).validate()
 
     def test_phase_specific_permission_never_reuses_after_scope_for_before(self):
         self.assertNotEqual(evaluation_purpose("run", "case", "before"),
@@ -94,8 +102,70 @@ class ComparisonCustodyContractTest(unittest.TestCase):
                 store.read(run_id="run", artifact_id=kind, permissions=None,
                            purpose="comparison_assessment:collection")
 
+    def test_preregistration_controls_never_open_through_generic_artifact_read(self):
+        store = object.__new__(XTDBComparisonCustody)
+        for kind in ("preregistration_anchor", "preregistration_slot", "preregistration_final_binding"):
+            store.metadata = lambda run, artifact_id, kind=kind: ComparisonArtifact({"kind": kind})
+            store._read_authorized = lambda **_: self.fail("generic route opened private control")
+            with self.subTest(kind=kind), self.assertRaisesRegex(PermissionError, "dedicated recovery"):
+                store.read(run_id="run", artifact_id="control", permissions=None, purpose="comparison_review")
+
+    def test_durable_anchor_requires_actual_final_authority_even_when_omitted(self):
+        store = object.__new__(XTDBComparisonCustody)
+        store.metadata = lambda run, artifact_id: ComparisonArtifact({"kind": "preregistration_anchor"})
+        for supplied in (None, True, SimpleNamespace(authorize_plan=lambda **_: True)):
+            with self.subTest(supplied=type(supplied).__name__), self.assertRaisesRegex(PermissionError, "actual final"):
+                store.require_final_authority(run_id="run", final_authority=supplied)
+
+    def test_committed_unindexed_anchor_cannot_be_treated_as_legacy(self):
+        store = object.__new__(XTDBComparisonCustody)
+        store.metadata = lambda *_: None
+        store._key = lambda *_: "anchor-key"
+        event = SimpleNamespace(provenance=SimpleNamespace(derivation_activity_id="comparison:anchor-key"))
+        store.log = SimpleNamespace(replay_committed=lambda: [SimpleNamespace(event=event)])
+        with self.assertRaisesRegex(PermissionError, "reconciliation"):
+            store.require_final_authority(run_id="run")
+
+    def test_anchor_denies_context_before_history_or_private_reads(self):
+        store = object.__new__(XTDBComparisonCustody)
+        store.metadata = lambda *_: ComparisonArtifact({"kind": "preregistration_anchor"})
+        policy = object.__new__(SelectedRunEvidencePolicy)
+        policy.custody, policy.run_id, policy.final_authority = store, "run", None
+        policy.authorize_history = lambda **_: self.fail("unsealed evaluation reached private history")
+        with self.assertRaisesRegex(PermissionError, "actual final"):
+            policy.authorize_context(case_id="case", phase="before", history=None,
+                                     context=None, arm="general_model_memory")
+
+    def test_original_inputs_cannot_register_under_an_arbitrary_anchor_port(self):
+        store = object.__new__(XTDBComparisonCustody)
+        with self.assertRaisesRegex(PermissionError, "actual canonical anchor"):
+            store.register_preregistered_inputs(run_id="run", preregistration=SimpleNamespace(),
+                histories={}, questions={}, occurred_at="2026-09-30T00:00:00Z")
+
 
 class NativeCustodyReadOrderTest(unittest.IsolatedAsyncioTestCase):
+    async def test_runner_refuses_unsealed_or_duck_typed_anchor_before_prepare(self):
+        import test_comparison_run as fixtures
+        f = fixtures.PairedComparisonContractTest()
+        await f.asyncSetUp()
+        self.addCleanup(f.doCleanups)
+        phased = replace(f.plan, phase_bindings={
+            (case.case_id, phase, arm): f.plan.arm_bindings[arm]
+            for case in f.plan.protocol.cases for phase in ("before", "after") for arm in ARMS},
+            preregistration_sha256="9" * 64)
+        f.policy.authorize_history = lambda **_: self.fail("anchored run reached original reads")
+        with self.assertRaisesRegex(PermissionError, "actual selected final"):
+            await f.run_fixture(plan=phased)
+        store = object.__new__(XTDBComparisonCustody)
+        store.metadata = lambda *_: ComparisonArtifact({"kind": "preregistration_anchor"})
+        policy = object.__new__(SelectedRunEvidencePolicy)
+        policy.custody, policy.run_id, policy.final_authority = store, "run", None
+        with self.assertRaisesRegex(PermissionError, "actual final"):
+            # Even removing the anchor field from the caller's plan cannot
+            # opt the actual anchored selected run into the legacy path.
+            await f.run_fixture(evidence_policy=policy)
+        self.assertTrue(all(not adapter.preparations for adapter in f.adapters.values()))
+
     async def test_revoked_phase_fails_before_private_decision_or_output_read(self):
         import test_comparison_run as fixtures
         f = fixtures.PairedComparisonContractTest()
@@ -119,6 +189,9 @@ class NativeCustodyReadOrderTest(unittest.IsolatedAsyncioTestCase):
                 return ComparisonArtifact({"content_sha256": fixtures.digest(request.question)})
             raise AssertionError("revoked phase progressed into private context lookup")
         store.metadata = metadata
+        # This test exercises legacy native private-read ordering. Anchored
+        # lifecycle and omission refusal are covered by the separate cases.
+        store.preregistration_metadata = lambda _: None
         reads = []
         def forbidden_read(event_id):
             reads.append(event_id)

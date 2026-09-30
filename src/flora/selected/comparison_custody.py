@@ -74,6 +74,8 @@ def _plan_record(plan: PairedRunPlan) -> dict:
             "evidence_kind": plan.evidence_kind}
     if plan.phase_bindings is not None:
         record["phase_bindings"] = plan.phase_binding_record()
+    if plan.preregistration_sha256 is not None:
+        record["preregistration_sha256"] = plan.preregistration_sha256
     return record
 
 
@@ -89,7 +91,8 @@ def _plan_from_record(record: dict) -> PairedRunPlan:
         record["context_token_budget"], record["context_byte_budget"],
         record["feature_call_budget"], record["question_sha256_by_case"], record["evidence_kind"],
         None if "phase_bindings" not in record else {
-            (e["case_id"], e["phase"], e["arm"]): ArmBinding(**e["binding"]) for e in record["phase_bindings"]})
+            (e["case_id"], e["phase"], e["arm"]): ArmBinding(**e["binding"]) for e in record["phase_bindings"]},
+        record.get("preregistration_sha256"))
     if _plan_record(plan) != record:
         raise ValueError("stored plan is not canonical")
     return plan
@@ -123,9 +126,62 @@ class XTDBComparisonCustody:
         self.scope, self.authority_namespace_id = scope, authority_namespace_id
         self.connection, self.registry = connection, registry
         self.objects, self.log = objects, log
+        # Guarded shallow copies preserve this actual physical owner identity.
+        self._physical_custody = self
         self.raw_custody = RegisteredEncryptedFormationCustody(registry=registry, objects=objects)
         self.scope_digest = canonical_sha256([scope.metadata_record(), authority_namespace_id])
         configure_xtdb_connection(connection)
+
+    def preregistration_metadata(self, run_id: str) -> ComparisonArtifact | None:
+        """Detect durable anchors, including committed but unindexed appends."""
+        artifact = self.metadata(run_id, "preregistration")
+        if artifact is not None:
+            if artifact.record["kind"] != "preregistration_anchor":
+                raise PermissionError("run preregistration identity has an unexpected artifact kind")
+            return artifact
+        activity = "comparison:" + self._key(run_id, "preregistration")
+        if any(item.event.provenance.derivation_activity_id == activity
+               for item in self.log.replay_committed()):
+            raise PermissionError("committed preregistration requires explicit index reconciliation")
+        return None
+
+    def require_final_authority(self, *, run_id: str, plan: PairedRunPlan | None = None,
+                                final_authority=None, capture_only: bool = False):
+        """A durable anchored run cannot opt out of its actual final seal."""
+        if not isinstance(capture_only, bool):
+            raise TypeError("final authority operation must be explicit")
+        anchor = self.preregistration_metadata(run_id)
+        if anchor is None:
+            if final_authority is not None or (plan is not None and plan.preregistration_sha256 is not None):
+                raise PermissionError("anchored evaluation lacks its durable preregistration")
+            return None
+        from .experiment_preregistration import RegisteredExperimentFinalBinding
+        if not isinstance(final_authority, RegisteredExperimentFinalBinding):
+            raise PermissionError("preregistered evaluation requires its actual final binding")
+        owner = final_authority.store.comparison
+        if (getattr(owner, "_physical_custody", owner) is not getattr(self, "_physical_custody", self)
+                or final_authority.run_id != run_id or final_authority.scope != self.scope
+                or final_authority.authority_namespace_id != self.authority_namespace_id
+                or anchor.record["metadata"]["preregistration_sha256"] != final_authority.preregistration_sha256):
+            raise PermissionError("final binding crosses actual custody, run, or preregistration")
+        selected_plan = final_authority.plan if plan is None else plan
+        if capture_only:
+            # Retaining a signed observation uses independent capture consent;
+            # this operation cannot authorize another inference or an answer.
+            final_authority.authorize_capture_custody(plan=selected_plan)
+        else:
+            final_authority.authorize_plan(plan=selected_plan, metadata_only=True)
+        return final_authority
+
+    def _authority_fenced_copy(self, check):
+        from .experiment_manifests import _GuardedObjects
+        from .experiment_preregistration import _GuardedLog
+        selected = copy(self)
+        selected.objects = _GuardedObjects(self.objects, check)
+        selected.raw_custody = RegisteredEncryptedFormationCustody(
+            registry=self.registry, objects=selected.objects)
+        selected.log = _GuardedLog(self.log, check)
+        return selected
 
     def _key(self, run_id: str, artifact_id: str) -> str:
         return canonical_sha256([self.scope_digest, _identity(run_id, "run_id"),
@@ -268,8 +324,8 @@ class XTDBComparisonCustody:
     def read(self, *, run_id: str, artifact_id: str,
              permissions: XTDBFormationPermissionPolicy, purpose: str) -> bytes:
         artifact = self.metadata(run_id, artifact_id)
-        if artifact is not None and artifact.record["kind"].startswith("coordinator_"):
-            raise PermissionError("experiment coordinator controls require their dedicated recovery route")
+        if artifact is not None and artifact.record["kind"].startswith(("coordinator_", "preregistration_")):
+            raise PermissionError("experiment controls require their dedicated recovery route")
         if artifact is not None and artifact.record["kind"] == "blind_key":
             raise PermissionError("blind identity key requires sealed assessment release")
         if (artifact is not None and purpose.startswith("comparison_assessment:")
@@ -312,11 +368,51 @@ class XTDBComparisonCustody:
             raise PermissionError("comparison artifact changed or permission was withdrawn during read")
         return content
 
-    def register_inputs(self, *, run_id: str, plan: PairedRunPlan,
+    def register_preregistered_inputs(self, *, run_id: str, preregistration,
                         histories: dict[tuple[str, str], HistorySnapshot],
                         questions: dict[str, bytes], occurred_at: str) -> None:
+        from .experiment_preregistration import RegisteredExperimentPreregistration
+        if (not isinstance(preregistration, RegisteredExperimentPreregistration)
+                or getattr(preregistration.store.comparison, "_physical_custody", preregistration.store.comparison)
+                    is not getattr(self, "_physical_custody", self)
+                or preregistration.run_id != run_id
+                or self.preregistration_metadata(run_id) != preregistration._record):
+            raise PermissionError("original input registration requires this actual canonical anchor")
+        def check():
+            preregistration.authorize_inputs(protocol=preregistration.protocol,
+                                             histories=histories, questions=questions)
+        check()
+        self._authority_fenced_copy(check)._register_original_inputs(
+            run_id=run_id, protocol=preregistration.protocol,
+            question_sha256_by_case=preregistration.spec.question_sha256_by_case,
+            histories=histories, questions=questions, occurred_at=occurred_at)
+        check()
+
+    def register_inputs(self, *, run_id: str, plan: PairedRunPlan,
+                        histories: dict[tuple[str, str], HistorySnapshot],
+                        questions: dict[str, bytes], occurred_at: str,
+                        final_authority=None) -> None:
         plan.validate()
-        cases = {case.case_id: case for case in plan.protocol.cases}
+        actual = self.require_final_authority(run_id=run_id, plan=plan, final_authority=final_authority)
+        def check():
+            self.require_final_authority(run_id=run_id, plan=plan, final_authority=actual)
+            if actual is not None:
+                actual.authorize_plan(plan=plan, histories=histories, questions=questions, metadata_only=True)
+        selected = self if actual is None else self._authority_fenced_copy(check)
+        check()
+        parents = selected._register_original_inputs(run_id=run_id, protocol=plan.protocol,
+            question_sha256_by_case=plan.question_sha256_by_case,
+            histories=histories, questions=questions, occurred_at=occurred_at)
+        selected._put(run_id=run_id, artifact_id="plan", kind="plan", content=_json(_plan_record(plan)),
+                  parents=tuple(sorted(parents)), metadata={"plan_sha256": plan.digest()},
+                  occurred_at=occurred_at)
+        check()
+
+    def _register_original_inputs(self, *, run_id: str, protocol: EvaluationProtocol,
+                        question_sha256_by_case: Mapping[str, str],
+                        histories: dict[tuple[str, str], HistorySnapshot],
+                        questions: dict[str, bytes], occurred_at: str) -> set[str]:
+        cases = {case.case_id: case for case in protocol.cases}
         if (any(case.host_id != self.scope.host_instance_id for case in cases.values())
                 or set(questions) != set(cases)
                 or set(histories) != {(case_id, phase) for case_id in cases for phase in ("before", "after")}):
@@ -329,7 +425,7 @@ class XTDBComparisonCustody:
                     or after.sources[:len(before.sources)] != before.sources
                     or case.intervention_event_id not in after.event_ids
                     or case.intervention_event_id in before.event_ids
-                    or _digest(questions[case_id]) != plan.question_sha256_by_case[case_id]):
+                    or _digest(questions[case_id]) != question_sha256_by_case[case_id]):
                 raise ValueError("registered input lineage or frozen question changed")
             for phase, history in (("before", before), ("after", after)):
                 if history.digest() != getattr(case, f"{phase}_history_sha256"):
@@ -359,9 +455,7 @@ class XTDBComparisonCustody:
                       content=questions[case_id], parents=before.event_ids,
                       metadata={"case_id": case_id, "question_sha256": _digest(questions[case_id])},
                       occurred_at=occurred_at)
-        self._put(run_id=run_id, artifact_id="plan", kind="plan", content=_json(_plan_record(plan)),
-                  parents=tuple(sorted(parents)), metadata={"plan_sha256": plan.digest()},
-                  occurred_at=occurred_at)
+        return parents
 
     def recover_history(self, *, run_id: str, case_id: str, phase: str,
                         permissions: XTDBFormationPermissionPolicy) -> HistorySnapshot:
@@ -392,6 +486,22 @@ class XTDBComparisonCustody:
     def save_run(self, *, run_id: str, run: PairedRun, occurred_at: str,
                  execution_records: Mapping[tuple[str, str, str], tuple[ExecutionRequest, ArmResult]] | None = None,
                  evidence_policy: SelectedRunEvidencePolicy | None = None) -> None:
+        actual = self.require_final_authority(run_id=run_id, plan=run.plan,
+            final_authority=getattr(evidence_policy, "final_authority", None))
+        def check():
+            self.require_final_authority(run_id=run_id, plan=run.plan, final_authority=actual)
+        selected = self if actual is None else self._authority_fenced_copy(check)
+        policy = evidence_policy
+        if actual is not None and evidence_policy is not None:
+            policy = copy(evidence_policy)
+            policy.custody = selected
+        check()
+        selected._save_run(run_id=run_id, run=run, occurred_at=occurred_at,
+                           execution_records=execution_records, evidence_policy=policy)
+        check()
+
+    def _save_run(self, *, run_id: str, run: PairedRun, occurred_at: str,
+                 execution_records=None, evidence_policy=None) -> None:
         validate_run(run)
         plan = self.metadata(run_id, "plan")
         if (plan is None or plan.record["metadata"]["plan_sha256"] != run.plan.digest()
@@ -647,12 +757,15 @@ class SelectedRunEvidencePolicy:
 
     def __init__(self, *, custody: XTDBComparisonCustody, run_id: str,
                  permissions: XTDBFormationPermissionPolicy,
-                 native_lineage=None):
+                 native_lineage=None, final_authority=None):
         _identity(run_id, "run_id")
         if (custody.scope != permissions.scope
                 or custody.authority_namespace_id != permissions.authority_namespace_id):
             raise ValueError("comparison evidence policy crosses scope or authority")
         self.custody, self.run_id, self.permissions = custody, run_id, permissions
+        self.final_authority = final_authority
+        if native_lineage is not None or final_authority is not None:
+            custody.require_final_authority(run_id=run_id, final_authority=final_authority)
         if native_lineage is not None:
             from .judgment_lineage import NativeJudgmentLineageVerifier
             plan = custody.metadata(run_id, "plan")
@@ -668,8 +781,13 @@ class SelectedRunEvidencePolicy:
         self.native_lineage = native_lineage
         self.requires_native_result = native_lineage is not None
 
+    def require_final_authority(self, *, plan=None):
+        return self.custody.require_final_authority(run_id=self.run_id, plan=plan,
+            final_authority=getattr(self, "final_authority", None))
+
     def authorize_context(self, *, case_id: str, phase: str, history: HistorySnapshot,
                           context: LocalContext, arm: str) -> bool:
+        self.require_final_authority()
         if not self.authorize_history(case_id=case_id, phase=phase, history=history):
             return False
         if arm == "general_model_memory" or self.native_lineage is None:
@@ -678,9 +796,12 @@ class SelectedRunEvidencePolicy:
             history=history, context=context, arm=arm)
 
     def verify_native_result(self, request, result, *, arm: str = "flora_full") -> RecordedEvent:
+        self.require_final_authority(plan=request.plan)
         if self.native_lineage is None:
             raise PermissionError("qualified native comparison lineage is not configured")
-        return self.native_lineage.verify_native_result(request, result, arm=arm)
+        actual = self.native_lineage.verify_native_result(request, result, arm=arm)
+        self.require_final_authority(plan=request.plan)
+        return actual
 
     def authorize_history_metadata(self, *, case_id: str, phase: str, history: HistorySnapshot) -> bool:
         from .history_fence import authorize_history_metadata
@@ -696,7 +817,6 @@ class SelectedRunEvidencePolicy:
                 return False
             purpose = evaluation_purpose(self.run_id, case_id, phase)
             entries = {entry.event.event_id: entry.event for entry in self.custody.log.replay_committed()}
-            sources = []
             for original in history.sources:
                 source = self.custody.registry.lookup(original.event.event_id)
                 if (source is None or entries.get(original.event.event_id) != original.event
@@ -705,8 +825,10 @@ class SelectedRunEvidencePolicy:
                         or self.custody.raw_custody.read(self.custody.scope, source.object_ref) != original.plaintext
                         or not self.permissions.permits(source, purpose)):
                     return False
-                sources.append(source)
-            return all(self.permissions.permits(source, purpose) for source in sources)
+            # Final callbacks may withdraw an earlier grant. Authenticate the
+            # actual selected heads together after them, without reopening raw
+            # originals or treating a previous allow as a lease.
+            return self.authorize_history_metadata(case_id=case_id, phase=phase, history=history)
         except (ValueError, PermissionError, KeyError):
             return False
 
@@ -737,6 +859,8 @@ class SelectedRunEvidencePolicy:
             if (source is None or action is None or source.registration_sha256 != registration_sha
                     or action.action_sha256 != action_sha or action.decision != "allow"):
                 return None
+        if not self.authorize_history_metadata(case_id=case_id, phase=phase, history=history):
+            return None
         return canonical_sha256({"run_id": self.run_id, "case_id": case_id,
                                  "phase": phase, "purpose": purpose, "sources": marker})
 

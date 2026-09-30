@@ -2,9 +2,33 @@
 
 This note is the takeover point after provisioning the first Docker-capable successor-fabric environment for FloRA.
 
-## Current checkpoint — 2026-09-29
+## Expanded gate status — 2026-09-30 UTC
 
-The latest green receipt is [run 36574921127](https://github.com/NIne-WIngEd/FloRA/actions/runs/36574921127). Since the original handoff, the selected-backend gate has also passed Qdrant current-claim indexing, source-bound authority filtering and obsolete-point cleanup; a pending NATS event across restart; separate XTDB host/relationship/assistant-self candidate state; exact KurrentDB approval and activation with a synthetic verifier; and an outcome-linked revision that stays a candidate while the older approved state remains active. See the [alignment map](FloRA_ALIGNMENT.md) and [candidate-state boundary](PERSONAL_STATE_CANDIDATES.md) for scope and gaps. This is infrastructure evidence, not a trained memory, native judgment, or builder transfer result.
+The historical receipts below qualify their own earlier checkpoints. They do
+not qualify the expanded two-stage experiment workflow. Run
+[36660341118](https://github.com/NIne-WIngEd/FloRA/actions/runs/36660341118)
+at `f94a020b43aaaaa4b614caa826d398b64a2067df` passed component checks but
+failed its physical suite: 39 tests, two failures and fourteen errors. Restart
+steps were skipped. The failures exposed an XTDB read-first transaction before
+runtime DML, private-wrapper copying, earlier formation refusal types and a
+replacement-artifact fixture. Repairs require another exact-commit engine run.
+
+The current contract reference is
+`research/mfm-foundation-20260923@4f287a488bc908bd04f99255ee01b794bacba50b`
+(formation schema 1.2.0). The workflow now runs component contracts and exhaustive
+`core`, `native` and `history` engine groups in parallel. New integration modules
+default to `core`; long historical/two-stage suites are assigned to `history`.
+Discovery rejects duplicate identities or import failures. Every test must run
+exactly once across the groups. The core group also runs actual storage and
+persistent Temporal restart probes. All jobs must pass at the same commit.
+
+The frozen comparison response budget remains 60 seconds. Successful fixture
+wiring cannot replace that timing receipt, actual producer exports or learned
+behavior evidence. No personality or MFM is built by these infrastructure tests.
+
+## Historical checkpoint — 2026-09-29
+
+That checkpoint's green receipt is [run 36574921127](https://github.com/NIne-WIngEd/FloRA/actions/runs/36574921127). Since the original handoff, the selected-backend gate has also passed Qdrant current-claim indexing, source-bound authority filtering and obsolete-point cleanup; a pending NATS event across restart; separate XTDB host/relationship/assistant-self candidate state; exact KurrentDB approval and activation with a synthetic verifier; and an outcome-linked revision that stays a candidate while the older approved state remains active. See the [alignment map](FloRA_ALIGNMENT.md) and [candidate-state boundary](PERSONAL_STATE_CANDIDATES.md) for scope and gaps. This is infrastructure evidence, not a trained memory, native judgment, or builder transfer result.
 
 The earlier receipts and original engineering checklist below are preserved as historical checkpoints; their "next" list no longer describes every completed slice.
 

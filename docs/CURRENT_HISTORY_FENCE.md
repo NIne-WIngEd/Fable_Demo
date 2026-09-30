@@ -52,6 +52,16 @@ afterward. No ciphertext, plaintext object, permission result or semantic verdic
 is memoized. The already held original bytes are hashed locally, not retrieved
 again.
 
+After all actual grant callbacks, one finite selected XTDB statement checks all
+sampled source/raw/action/current-head rows together. This catches a callback on
+the final original that revokes an earlier grant after its sequential check.
+The full initial history path retains its real private authentication and
+finishes with this metadata fence. The permission-marker path also rechecks
+current metadata after its final callbacks. The row sample is discarded after
+this call. See
+[the terminal metadata fence](PHASE_SOURCE_METADATA_FENCE.md) for its exact
+current-row boundary and explicit limits.
+
 The returned `CurrentHistoryAuthority` is a typed observation of that call. It is
 not a permission receipt for a later operation. Subsequent private reads, native
 execution and output acceptance still need their own current authority gates.
@@ -60,14 +70,18 @@ add a new grant for opening a manifest, because it opens no manifest bytes.
 
 ## Evidence and limits
 
-Eleven tests pass with the real selected registry, comparison custody and purpose
+Fourteen tests pass with the real selected registry, comparison custody and purpose
 policy implementations, real encrypted initial custody and Ed25519 permission
 authentication, using controlled SQL/log ports. Tests cover no private byte I/O,
 reordered and after-in-before histories, forged manifest content metadata, held
 plaintext mutation, cross-scope inputs, source/parent withdrawal, withdrawal
 during the final original's grant lookup, raw-reference change during grant
-work, and consent withdrawal during the final uncached raw-reference read.
-The final current grant checks follow every slower source/raw-reference read.
+work, consent withdrawal during the final uncached raw-reference read, and
+withdrawal specifically during the last callback of the final grant pass,
+initial private authentication followed by that final metadata fence, and
+withdrawal during the final permission-marker callback.
+The terminal current-row query follows every slower source/raw-reference and
+grant callback. It grants no authority after the query's snapshot.
 
 These are authority and custody tests. They do not qualify physical engines,
 measured latency, a learned model or before-phase training exclusion. The helper

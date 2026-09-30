@@ -42,13 +42,17 @@ def _digest(value: str, name: str) -> None:
 class NativePhaseSnapshotBinding:
     """Predeclared immutable archive identity, without a run-digest cycle.
 
-    The snapshot body itself contains the run-plan digest. Its content/event
-    hashes therefore cannot also participate in that same digest. Selected
-    custody independently authenticates those hashes on every route opening.
+    V2 binds an observed capture made under the earlier preregistration anchor.
+    Its body/event hashes can therefore enter the later final run digest without
+    referring to that same digest. V1 remains an explicit legacy fixture route.
     """
     run_id: str
     snapshot_id: str
     arm: str
+    preregistration_sha256: str | None = None
+    snapshot_sha256: str | None = None
+    event_id: str | None = None
+    event_sha256: str | None = None
 
     def record(self) -> dict:
         for name in ("run_id", "snapshot_id"):
@@ -57,7 +61,17 @@ class NativePhaseSnapshotBinding:
                 raise ValueError("native phase snapshot identifiers must be canonical")
         if self.arm not in {"flora_full", "same_evidence_ablation"}:
             raise ValueError("native phase snapshot has an unknown arm")
-        return {"schema": "flora-native-phase-snapshot-binding-v1", **vars(self)}
+        fields = (self.preregistration_sha256, self.snapshot_sha256, self.event_id, self.event_sha256)
+        if any(value is not None for value in fields):
+            if any(value is None for value in fields):
+                raise ValueError("native anchored snapshot hashes and event identity must be supplied together")
+            for name in ("preregistration_sha256", "snapshot_sha256", "event_sha256"):
+                _digest(getattr(self, name), name)
+            if require_identifier(self.event_id, "event_id") != self.event_id:
+                raise ValueError("native phase event identifier must be canonical")
+            return {"schema": "flora-native-phase-snapshot-binding-v2", **vars(self)}
+        return {"schema": "flora-native-phase-snapshot-binding-v1", "run_id": self.run_id,
+                "snapshot_id": self.snapshot_id, "arm": self.arm}
 
 
 @dataclass(frozen=True)
@@ -82,7 +96,13 @@ class NativeInvocationEntry:
             if not isinstance(self.phase_snapshot, NativePhaseSnapshotBinding):
                 raise TypeError("native invocation requires a typed phase snapshot binding")
             self.phase_snapshot.record()
-        return asdict(self)
+        record = asdict(self)
+        if self.phase_snapshot is not None:
+            reference = self.phase_snapshot.record()
+            # Legacy fixture hashes retain their original three-field shape.
+            record["phase_snapshot"] = (reference if self.phase_snapshot.preregistration_sha256 is not None
+                else {key: value for key, value in reference.items() if key != "schema"})
+        return record
 
 
 @dataclass(frozen=True)
@@ -102,6 +122,11 @@ class FrozenNativeArmPlan:
                 or len({(e.case_id, e.phase) for e in self.entries}) != len(self.entries)
                 or len({e.invocation_id for e in self.entries}) != len(self.entries)):
             raise ValueError("native arm needs unique frozen per-case/phase invocation IDs")
+        anchors = {e.phase_snapshot.preregistration_sha256 for e in self.entries
+                   if e.phase_snapshot is not None and e.phase_snapshot.preregistration_sha256 is not None}
+        if anchors and (len(anchors) != 1 or any(e.phase_snapshot is None
+                or e.phase_snapshot.preregistration_sha256 not in anchors for e in self.entries)):
+            raise ValueError("anchored native arm requires complete snapshots from one actual preregistration")
         _digest(self.worker_manifest_sha256, "worker_manifest_sha256")
         return {"schema": "flora-frozen-native-arm-v1", "scope": self.scope.metadata_record(),
             "authority_namespace_id": self.authority_namespace_id, "arm": self.arm,
@@ -197,11 +222,15 @@ class NativeArmAdapter:
     def __init__(self, *, run_id: str, run_plan: PairedRunPlan, frozen: FrozenNativeArmPlan,
                  custody: XTDBComparisonCustody, worker: QualifiedNativeProcessWorker | None,
                  codec: NativeWorkerCodec | None, reads: QualifiedAsyncNativeReadServices | None,
-                 meter: NativeUsageVerifier | None):
+                 meter: NativeUsageVerifier | None, final_authority=None,
+                 allow_unregistered_fixture_run: bool = False, writer_guard=None):
         if require_identifier(run_id, "run_id") != run_id:
             raise ValueError("native adapter needs a canonical run ID")
         run_plan.validate()
         frozen.record()
+        if (not isinstance(allow_unregistered_fixture_run, bool)
+                or (allow_unregistered_fixture_run and isinstance(custody, XTDBComparisonCustody))):
+            raise ValueError("native fixture bypass is only for explicitly unregistered fictional custody")
         if (frozen.scope != custody.scope or frozen.authority_namespace_id != custody.authority_namespace_id
                 or any(run_plan.binding_for(e.case_id, e.phase, frozen.arm).lineage_sha256
                        != frozen.lineage_sha256 for e in frozen.entries)
@@ -211,6 +240,9 @@ class NativeArmAdapter:
             raise ValueError("native arm differs from exact frozen host/run lineage")
         self.run_id, self.run_plan, self.frozen, self.custody = run_id, run_plan, frozen, custody
         self.worker, self.codec, self.reads, self.meter = worker, codec, reads, meter
+        self.final_authority = final_authority
+        self.allow_unregistered_fixture_run = allow_unregistered_fixture_run
+        self.writer_guard = writer_guard
         self._run_sha256, self._lineage_sha256 = run_plan.digest(), frozen.lineage_sha256
         self._deadlines: dict[tuple[str, str], float] = {}
         self._executions: dict[tuple[str, str, str], tuple[ExecutionRequest, ArmResult]] = {}
@@ -259,6 +291,104 @@ class NativeArmAdapter:
                 or self.meter.configuration_sha256 != manifest.meter_configuration_sha256):
             raise ValueError("native ports differ from independently qualified worker manifest")
 
+    def _check_authority_identity(self, request, entry):
+        if not isinstance(self.custody, XTDBComparisonCustody):
+            if (not self.allow_unregistered_fixture_run or self.final_authority is not None
+                    or request.plan.preregistration_sha256 is not None
+                    or (entry.phase_snapshot is not None
+                        and entry.phase_snapshot.preregistration_sha256 is not None)):
+                raise PermissionError("native evaluation requires actual registered selected custody")
+            return None
+        # Frozen object identity only. Live selected rows are checked on an
+        # owned passive session under the already running task deadline.
+        authority = self.final_authority
+        if authority is not None:
+            from .experiment_preregistration import RegisteredExperimentFinalBinding
+            if not isinstance(authority, RegisteredExperimentFinalBinding):
+                raise PermissionError("native evaluation requires its actual registered final authority")
+            expected = authority.native_plans.get(self.frozen.arm)
+            if (expected is None or expected.record() != self.frozen.record()
+                    or authority.run_id != self.run_id or authority.scope != self.frozen.scope
+                    or authority.authority_namespace_id != self.frozen.authority_namespace_id
+                    or authority.final_plan_sha256 != request.plan.digest()
+                    or entry.phase_snapshot is None
+                    or entry.phase_snapshot.preregistration_sha256 != authority.preregistration_sha256):
+                raise PermissionError("native evaluation differs from its actually sealed invocation/snapshot header")
+        elif (request.plan.preregistration_sha256 is not None or entry.phase_snapshot is not None
+                and entry.phase_snapshot.preregistration_sha256 is not None):
+            raise PermissionError("anchored native header lacks its actual final authority")
+        return authority
+
+    async def _authorize_final_metadata(self, entry, request, deadline):
+        self._check(request)
+        if not isinstance(self.custody, XTDBComparisonCustody):
+            return False
+        from .native_reads import SelectedNativeReadServices
+        if not isinstance(self.reads, SelectedNativeReadServices):
+            raise PermissionError("native selected authority requires actual owned bounded reads")
+        async with asyncio.timeout_at(deadline):
+            anchored = await self.reads.authorize_final_metadata(entry=entry, request=request,
+                run_id=self.run_id,
+                physical_custody=getattr(self.custody, "_physical_custody", self.custody),
+                expected_final=self.final_authority)
+        self._check(request)
+        if asyncio.get_running_loop().time() >= deadline:
+            raise TimeoutError
+        return anchored
+
+    def _require_final_for_write(self, request, entry, lease):
+        lease.require_active(self.custody.connection)
+        actual = self.custody.require_final_authority(run_id=self.run_id,
+            plan=request.plan, final_authority=self.final_authority)
+        if actual is not None:
+            actual.require_evaluation(plan=request.plan, case_id=entry.case_id,
+                phase=entry.phase, arm=self.frozen.arm, invocation_id=entry.invocation_id)
+        lease.require_active(self.custody.connection)
+
+    def _check_writer_binding(self):
+        if not isinstance(self.custody, XTDBComparisonCustody):
+            return
+        from .native_writer_guard import NativeWriterGuard
+        manifest = self.worker.manifest
+        guard = self.writer_guard
+        if (not isinstance(guard, NativeWriterGuard)
+                or guard.connection is not self.custody.connection
+                or guard.configuration.scope != self.frozen.scope
+                or guard.configuration.authority_namespace_id != self.frozen.authority_namespace_id
+                or guard.configuration.maximum_operation_time_ms > self.run_plan.protocol.wall_time_budget_ms
+                or guard.artifact_sha256 != manifest.writer_guard_artifact_sha256
+                or guard.configuration_sha256 != manifest.writer_guard_configuration_sha256):
+            raise ArmStopped("unavailable")
+        guard.require_identity()
+
+    def _write_selected(self, entry, request, deadline, operation):
+        if not isinstance(self.custody, XTDBComparisonCustody):
+            return operation(self.custody)
+        self._check_writer_binding()
+        remaining = deadline - asyncio.get_running_loop().time()
+        with self.writer_guard.operation(remaining_seconds=remaining) as lease:
+            def guard():
+                self._require_final_for_write(request, entry, lease)
+            guard()
+            selected = self.custody._authority_fenced_copy(guard)
+            result = operation(selected)
+            guard()
+            return result
+    async def _authorize_final_evaluation(self, entry, request, deadline):
+        """Requalify the sealed experiment through an owned passive session."""
+        if not await self._authorize_final_metadata(entry, request, deadline):
+            return
+        from .native_reads import SelectedNativeReadServices
+        if not isinstance(self.reads, SelectedNativeReadServices):
+            raise PermissionError("anchored native evaluation requires actual owned selected reads")
+        async with asyncio.timeout_at(deadline):
+            allowed = await self.reads.authorize_evaluation(entry=entry, request=request)
+        if allowed is not True:
+            raise PermissionError("native experiment no longer has its actual qualified final seal")
+        self._check(request, request.context)
+        if asyncio.get_running_loop().time() >= deadline:
+            raise TimeoutError
+
     def _check(self, request: PreparationRequest | ExecutionRequest, context: LocalContext | None = None):
         self._available()
         entry = self.frozen.entry(request.case_id, request.phase)
@@ -282,6 +412,7 @@ class NativeArmAdapter:
                     or _sha(_context_bytes(context)) != entry.context_sha256
                     or len(_context_bytes(context)) > self.run_plan.context_byte_budget):
                 raise ValueError("native context differs from its exact frozen input")
+        self._check_authority_identity(request, entry)
         return entry
 
     def _deadline(self, key: tuple[str, str]) -> float:
@@ -294,23 +425,31 @@ class NativeArmAdapter:
 
     async def _authorize(self, entry, request, context, deadline):
         self._check(request, context)
+        await self._authorize_final_metadata(entry, request, deadline)
         async with asyncio.timeout_at(deadline):
             allowed = await self.reads.authorize_context(entry=entry, request=request, context=context, arm=self.frozen.arm)
         if allowed is not True:
             raise ArmStopped("refused")
+        await self._authorize_final_metadata(entry, request, deadline)
         self._check(request, context)
         if asyncio.get_running_loop().time() >= deadline:
             raise TimeoutError
 
     async def prepare(self, request: PreparationRequest) -> LocalContext:
+        deadline = asyncio.get_running_loop().time() + self.run_plan.protocol.wall_time_budget_ms / 1000
         entry = self._check(request)
         key = (entry.case_id, entry.phase)
         if key in self._in_flight or key in self._executions or key in self._deadlines:
             raise ValueError("native invocation cannot be prepared twice")
-        deadline = asyncio.get_running_loop().time() + self.run_plan.protocol.wall_time_budget_ms / 1000
         self._deadlines[key] = deadline
         async with asyncio.timeout_at(deadline):
+            await self._authorize_final_metadata(entry, request, deadline)
             await self._passive_reads.run(self.worker.verify_identity)
+            self._check(request)
+            await self._authorize_final_metadata(entry, request, deadline)
+            if self.writer_guard is not None:
+                await self._passive_reads.run(self.writer_guard.verify_identity)
+                self._check_writer_binding()
             context = await self.reads.prepare_context(entry)
             self._check(request, context)
             await self._authorize(entry, request, context, deadline)
@@ -334,7 +473,9 @@ class NativeArmAdapter:
                     frozen=self.frozen, entry=entry, request=request)
             async def authorize_dispatch():
                 try:
+                    await self._authorize_final_evaluation(entry, request, deadline)
                     await self._authorize(entry, request, request.context, deadline)
+                    self._check_writer_binding()
                 except ArmStopped as exc:
                     if exc.status == "refused":
                         raise NativeWorkerDispatchDenied("refused") from None
@@ -379,6 +520,7 @@ class NativeArmAdapter:
             self._observed_usage[key] = usage
             self._observed_context[key] = _sha(_context_bytes(request.context))
             result = ArmResult(actual.execution.result.output, actual.delivery, actual.decision, usage)
+            self._check(request, request.context)
             async with asyncio.timeout_at(deadline):
                 proof = await self.reads.verify_native_result(entry=entry, request=request, result=result)
             if (not isinstance(proof, VerifiedNativeJudgmentResult) or proof.invocation_id != entry.invocation_id
@@ -391,14 +533,16 @@ class NativeArmAdapter:
                     or proof.context_lineage.authorized_history_sha256 != request.authorized_history_sha256
                     or proof.context_lineage.context_receipt_sha256 != request.context.receipt_record()["receipt_sha256"]):
                 raise ValueError("native result has no exact independently recovered phase proof")
+            await self._authorize_final_evaluation(entry, request, deadline)
             # No detached read task owns these writes. Each synchronous selected
             # boundary follows an awaited fresh permission/deadline check.
             for recorded in (actual.delivery, actual.execution.output_record, actual.decision):
                 await self._authorize(entry, request, request.context, deadline)
-                self.custody.register_recorded(recorded)
+                self._write_selected(entry, request, deadline, lambda writer: writer.register_recorded(recorded))
             await self._authorize(entry, request, request.context, deadline)
-            self.custody.register_context(run_id=self.run_id, context=actual.context, delivery=actual.delivery,
-                                         occurred_at=actual.delivery.event.occurred_at)
+            self._write_selected(entry, request, deadline, lambda writer: writer.register_context(
+                run_id=self.run_id, context=actual.context, delivery=actual.delivery,
+                occurred_at=actual.delivery.event.occurred_at))
             await self._authorize(entry, request, request.context, deadline)
             self._executions[(entry.case_id, entry.phase, self.frozen.arm)] = (request, result)
             return result
@@ -407,6 +551,15 @@ class NativeArmAdapter:
                 raise TimeoutError from None
             if exc.receipt.reason == "dispatch_refused":
                 raise ArmStopped("refused") from None
+            raise
+        except asyncio.CancelledError:
+            if self.writer_guard is not None:
+                try:
+                    self.writer_guard.poison()
+                except Exception:
+                    # Retirement failure retains the poisoned owner reservation;
+                    # it cannot replace the task's cancellation signal.
+                    pass
             raise
         except ArmStopped as exc:
             if usage is not None:

@@ -59,7 +59,7 @@ class PhaseSnapshotTest(unittest.TestCase):
         self.history = self.lineage_fixture.histories[("case-one", "after")]
         self.verifier = self.lineage_fixture._verifier()
         self.custody = XTDBPhaseSnapshotCustody(runtime=self.live, run_id="phase-run",
-            run_plan_sha256="9" * 64, clock=self.f._clock)
+            run_plan_sha256="9" * 64, clock=self.f._clock, allow_unregistered_fixture_route=True)
         self.snapshot = self.custody.capture(snapshot_id="phase-one", case_id="case-one", phase="after", arm="flora_full",
             plan=self.plan, lineage=self.verifier, history=self.history)
 
@@ -81,6 +81,12 @@ class PhaseSnapshotTest(unittest.TestCase):
         self.assertIsNot(route.runtime.claims, self.live.claims)
         with self.assertRaises(PermissionError):
             route.runtime.form_experience()
+
+    def test_live_authority_guard_is_raise_only_for_actual_context_assembly(self):
+        route = self.route()
+        self.assertIsNone(route.guard_live())
+        self.assertEqual(route.runtime._context(self.plan, authority_guard=route.guard_live).receipt_record(),
+            self.snapshot.record["context_receipt"])
 
     def test_head_replacement_uses_pinned_actual_historical_claim_projection(self):
         captured = self.snapshot.record["claims"][0]
@@ -135,6 +141,71 @@ class PhaseSnapshotTest(unittest.TestCase):
         finally:
             self.f.objects.backend.get_object = old_get
 
+    def test_runtime_final_authority_guard_blocks_dispatch_after_slow_qualification(self):
+        self.live.clock = lambda: "2026-09-29T15:00:00Z"
+        binding = self.live.bindings["personality_judgment"]
+        old_verify = binding.qualification_verifier.verify
+        allowed, fired = [True], [False]
+        def guard():
+            if not allowed[0]:
+                raise PermissionError("fixture final binding withdrawn before dispatch")
+        def slow_verify(**kwargs):
+            result = old_verify(**kwargs)
+            frame = sys._getframe(1)
+            while frame is not None:
+                if frame.f_code.co_name == "_execute" and "input_record" in frame.f_locals:
+                    allowed[0], fired[0] = False, True
+                    break
+                frame = frame.f_back
+            return result
+        binding.qualification_verifier.verify = slow_verify
+        count = len(binding.adapter.invocations)
+        try:
+            with self.assertRaisesRegex(PermissionError, "final binding withdrawn"):
+                self.live.judge(plan=self.plan, task=b"fictional guarded final task",
+                    invocation_id="final-dispatch-race", authority_guard=guard)
+        finally:
+            binding.qualification_verifier.verify = old_verify
+        self.assertTrue(fired[0])
+        self.assertEqual(len(binding.adapter.invocations), count)
+        self.assertFalse(any(event.event_type in {"qualified_model_output", "decision"}
+            and event.provenance.derivation_activity_id == "final-dispatch-race" for event in self.live.log.replay()))
+
+    def test_dispatch_guard_requalifies_after_last_slow_artifact_lookup(self):
+        self.live.clock = lambda: "2026-09-29T15:00:00Z"
+        binding = self.live.bindings["personality_judgment"]
+        old_verify = binding.qualification_verifier.verify
+        allowed, fired, checked = [True], [False], []
+        def dispatch():
+            checked.append(True)
+            if not allowed[0]:
+                raise PermissionError("fixture independent update qualification withdrawn")
+        def slow_verify(**kwargs):
+            result = old_verify(**kwargs)
+            frame = sys._getframe(1)
+            while frame is not None:
+                if frame.f_code.co_name == "_execute" and "input_record" in frame.f_locals:
+                    allowed[0], fired[0] = False, True
+                    break
+                frame = frame.f_back
+            return result
+        binding.qualification_verifier.verify = slow_verify
+        count = len(binding.adapter.invocations)
+        try:
+            with self.assertRaises(PermissionError):
+                self.live.judge(plan=self.plan, task=b"fictional dispatch qualification task",
+                    invocation_id="last-qualification-race", authority_guard=lambda: None, dispatch_guard=dispatch)
+        finally:
+            binding.qualification_verifier.verify = old_verify
+        self.assertTrue(fired[0])
+        self.assertTrue(checked, "actual dispatch boundary did not requalify the withdrawn update proof")
+        self.assertEqual(len(binding.adapter.invocations), count)
+
+    def test_unregistered_mechanics_need_explicit_legacy_fixture_opt_in(self):
+        with self.assertRaisesRegex(TypeError, "explicit fixture opt-in"):
+            XTDBPhaseSnapshotCustody(runtime=self.live, run_id="unregistered-mechanics",
+                run_plan_sha256="9" * 64, clock=self.f._clock)
+
     def test_exact_historical_checkpoint_is_required_after_recreation(self):
         path = self.live.bindings["personality_judgment"].checkpoint_path
         Path(path).write_bytes(b"wrong historical checkpoint bytes")
@@ -175,8 +246,8 @@ class PhaseSnapshotTest(unittest.TestCase):
         captured = self.snapshot.record["claims"][0]
         key = self.live.claims._row_id(captured["claim_id"])
         old_sources = self.custody._sources_now
-        def slow_sources(source_ids):
-            result = old_sources(source_ids)
+        def slow_sources(source_ids, **kwargs):
+            result = old_sources(source_ids, **kwargs)
             row = self.f.connection.rows[(_CURRENT, key)]
             changed = json.loads(row["record_json"])
             changed["deletion_state"] = "pending_deletion"
@@ -192,37 +263,32 @@ class PhaseSnapshotTest(unittest.TestCase):
             self.f.objects.backend.get_object = old_get
 
     def test_postcipher_permission_check_quarantine_precedes_aead_decryption(self):
-        import inspect
         from unittest.mock import patch
         from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-        lines, start = inspect.getsourcelines(XTDBPhaseSnapshotCustody.authorize)
-        final_gate_line = max(start + index for index, line in enumerate(lines) if line.strip() == "metadata_gate()")
-        original = self.custody.artifact_permissions.permits
+        original = self.f.objects.backend.get_object
         fired, decrypts = [False], []
         captured = self.snapshot.record["claims"][0]
-        def permits(source, purpose):
-            allowed = original(source, purpose)
-            frame, inside_get, postcipher, final_gate = sys._getframe(1), False, False, False
+        snapshot_object = self.custody.metadata("phase-one")["object_id"]
+        def fetch(namespace, object_id):
+            sealed = original(namespace, object_id)
+            frame, inside_get = sys._getframe(1), False
             while frame is not None:
                 filename = Path(frame.f_code.co_filename).name
                 inside_get |= filename == "object_store.py" and frame.f_code.co_name == "get"
-                postcipher |= filename == "personal_artifact_custody.py" and frame.f_code.co_name == "get_object" and "sealed" in frame.f_locals
-                final_gate |= filename == "phase_snapshots.py" and frame.f_code.co_name == "authorize" and frame.f_lineno == final_gate_line
                 frame = frame.f_back
-            if not fired[0] and inside_get and postcipher and final_gate:
+            if not fired[0] and inside_get and object_id == snapshot_object:
                 fired[0] = True
                 row = self.f.connection.rows[(_CURRENT, self.live.claims._row_id(captured["claim_id"]))]
                 current = json.loads(row["record_json"])
                 current["deletion_state"] = "pending_deletion"
                 row["record_json"] = json.dumps(current)
-            return allowed
+            return sealed
         decrypt = AESGCM.decrypt
         def check_decrypt(aes, *args):
             if fired[0]:
                 decrypts.append(True)
             return decrypt(aes, *args)
-        self.custody.artifact_permissions.permits = permits
-        with patch.object(AESGCM, "decrypt", check_decrypt):
+        with patch.object(self.f.objects.backend, "get_object", fetch), patch.object(AESGCM, "decrypt", check_decrypt):
             with self.assertRaises(ValueError):
                 self.custody.recover(snapshot_id="phase-one", history=self.history, history_authority=self.verifier.history_authority)
         self.assertTrue(fired[0], "fixture did not reach the actual postcipher permission window")
@@ -495,7 +561,7 @@ class PhaseSnapshotTest(unittest.TestCase):
         for arm in arms:
             bindings[arm] = replace(bindings[arm], model_artifact_sha256=actual_sha, lineage_sha256=arms[arm].lineage_sha256)
         run_plan = replace(run_plan, arm_bindings=bindings)
-        custody = XTDBPhaseSnapshotCustody(runtime=self.live, run_id="router-run", run_plan_sha256=run_plan.digest(), clock=self.f._clock)
+        custody = XTDBPhaseSnapshotCustody(runtime=self.live, run_id="router-run", run_plan_sha256=run_plan.digest(), clock=self.f._clock, allow_unregistered_fixture_route=True)
         comparison = XTDBComparisonCustody(scope=self.live.scope, authority_namespace_id=self.live.authority_namespace_id,
             connection=self.f.connection, registry=self.f.registry, objects=self.f.objects, log=self.live.log)
         comparison.register_inputs(run_id="router-run", plan=run_plan, histories=histories,

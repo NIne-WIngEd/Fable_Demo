@@ -178,7 +178,8 @@ class NativeContractFixture:
 
     def new_adapter(self, **changes):
         inputs = dict(run_id="native-fixture-run", run_plan=self.plan, frozen=self.frozen,
-            custody=self.custody, worker=self.worker, codec=self.codec, reads=self.reads, meter=self.meter)
+            custody=self.custody, worker=self.worker, codec=self.codec, reads=self.reads, meter=self.meter,
+            allow_unregistered_fixture_run=True)
         inputs.update(changes)
         return NativeArmAdapter(**inputs)
 

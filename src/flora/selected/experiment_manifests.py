@@ -78,17 +78,20 @@ class _GuardedObjects:
         return getattr(object.__getattribute__(self, "objects"), name)
     def get(self, raw):
         self.check()
-        value = self.objects.get(raw)
+        # A restored instance-bound method may still point to the original
+        # unguarded plane after copy(). Execute the actual codec on this facade
+        # so its backend fence remains between ciphertext fetch and AEAD.
+        value = EncryptedObjectPlane.get(self, raw)
         self.check()
         return value
     def put(self, value):
         self.check()
-        raw = self.objects.put(value)
+        raw = EncryptedObjectPlane.put(self, value)
         self.check()
         return raw
     def recover_reference(self, **kwargs):
         self.check()
-        raw = self.objects.recover_reference(**kwargs)
+        raw = EncryptedObjectPlane.recover_reference(self, **kwargs)
         self.check()
         return raw
 

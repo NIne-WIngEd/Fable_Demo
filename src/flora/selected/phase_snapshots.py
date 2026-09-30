@@ -23,7 +23,7 @@ from .claims import _dml_placeholder, _record_json, _rows
 from .context import ContextPlan, StateRoute
 from .formation_context import register_experience_source
 from .formation_registry import RegisteredEncryptedFormationCustody
-from .judgment_lineage import NativeJudgmentLineageVerifier
+from .judgment_lineage import NativeJudgmentLineageVerifier, _artifact_record
 from .personal_artifact_custody import _SourceAuthorizedObjectReads
 from .object_store import EncryptedObjectPlane
 from .personal_state import _ACTIVE, _VERSIONS
@@ -32,6 +32,101 @@ from .source_native import _require_available
 _TABLE = "flora_selected_phase_snapshots"
 _INTENTS = "flora_selected_phase_capture_intents"
 _EVENT_TYPE = "phase_snapshot_artifact"
+
+
+def _capture_identity(record):
+    """Return one explicit authority domain, never an anchor-as-final alias."""
+    v2 = record.get("schema", "").endswith("-v2")
+    field_name = "preregistration_sha256" if v2 else "run_plan_sha256"
+    other = "run_plan_sha256" if v2 else "preregistration_sha256"
+    if other in record or require_sha256(record.get(field_name), field_name) != record[field_name]:
+        raise ValueError("phase capture crosses preregistration/final-plan identity domains")
+    return {field_name: record[field_name]}
+
+
+@dataclass(frozen=True)
+class PreregisteredPhaseArtifactSnapshotRequest:
+    scope: object
+    authority_namespace_id: str
+    case_id: str
+    phase: str
+    arm: str
+    snapshot_id: str
+    preregistration_sha256: str
+    authorized_history_sha256: str
+    authorized_original_event_ids: tuple[str, ...]
+    context_lineage_sha256: str
+    artifact: object
+
+    def record(self):
+        self.scope.validate()
+        if self.phase not in {"before", "after"} or self.arm not in {"flora_full", "same_evidence_ablation"}:
+            raise ValueError("preregistered producer capture requires an exact phase/native arm")
+        for name in ("authority_namespace_id", "case_id", "snapshot_id"):
+            if require_identifier(getattr(self, name), name) != getattr(self, name):
+                raise ValueError("preregistered capture identifier is not canonical")
+        for name in ("preregistration_sha256", "authorized_history_sha256", "context_lineage_sha256"):
+            require_sha256(getattr(self, name), name)
+        if (tuple(sorted(set(self.authorized_original_event_ids))) != self.authorized_original_event_ids
+                or not self.authorized_original_event_ids or self.artifact.scope != self.scope):
+            raise ValueError("preregistered capture source/artifact scope differs")
+        for event_id in self.authorized_original_event_ids:
+            if require_identifier(event_id, "original event ID") != event_id:
+                raise ValueError("preregistered original event identifier is not canonical")
+        return {"schema": "flora-phase-artifact-snapshot-request-v2", "scope": self.scope.metadata_record(),
+            **{name: getattr(self, name) for name in self.__dataclass_fields__ if name not in {"scope", "artifact"}},
+            "artifact": _artifact_record(self.artifact)}
+
+    @property
+    def request_sha256(self):
+        return canonical_sha256(self.record())
+
+
+class PreregisteredPhaseCaptureLineageVerifier:
+    """Actual selected context qualification with no final execution identity."""
+    def __init__(self, *, runtime, preregistration, snapshot_id, case_id, phase, arm,
+                 history_for, phase_receipt_for):
+        from .experiment_preregistration import RegisteredExperimentPreregistration
+        if not isinstance(preregistration, RegisteredExperimentPreregistration):
+            raise TypeError("capture lineage requires actual registered experiment preregistration")
+        if (runtime.scope != preregistration.scope
+                or runtime.authority_namespace_id != preregistration.authority_namespace_id
+                or not all(callable(value) for value in (history_for, phase_receipt_for))):
+            raise ValueError("capture lineage crosses actual selected authority/lookups")
+        self.runtime, self.preregistration = runtime, preregistration
+        self.snapshot_id, self.case_id, self.phase, self.arm = snapshot_id, case_id, phase, arm
+        self.preregistration_sha256 = preregistration.preregistration_sha256
+        self.history_authority = preregistration.history_authority()
+        self.history_for, self.phase_receipt_for = history_for, phase_receipt_for
+        preregistration.authorize_slot_use(snapshot_id=snapshot_id, case_id=case_id,
+            phase=phase, arm=arm, history=history_for(case_id, phase))
+
+    _claim = NativeJudgmentLineageVerifier._claim
+
+    def _phase_request(self, *, case_id, phase, history_digest, original_event_ids,
+                       context_lineage_sha256, artifact):
+        if (case_id, phase) != (self.case_id, self.phase):
+            raise PermissionError("capture producer proof crosses its exact preregistered slot")
+        return PreregisteredPhaseArtifactSnapshotRequest(self.runtime.scope, self.runtime.authority_namespace_id,
+            case_id, phase, self.arm, self.snapshot_id, self.preregistration_sha256, history_digest,
+            original_event_ids, context_lineage_sha256, artifact)
+
+    def context_lineage(self, **kwargs):
+        history = kwargs["history"]
+        self.preregistration.authorize_slot_use(snapshot_id=self.snapshot_id, case_id=kwargs["case_id"],
+            phase=kwargs["phase"], arm=self.arm, history=history, plan=kwargs["context"].plan)
+        actual = NativeJudgmentLineageVerifier.context_lineage(self, **kwargs)
+        self.preregistration.authorize_slot_use(snapshot_id=self.snapshot_id, case_id=kwargs["case_id"],
+            phase=kwargs["phase"], arm=self.arm, history=history, plan=kwargs["context"].plan)
+        return actual
+
+    def authorize_context(self, **kwargs):
+        raise PermissionError("preregistration capture cannot authorize native evaluation")
+
+    def verify_native_result(self, *args, **kwargs):
+        raise PermissionError("preregistration capture has no final native execution identity")
+
+    verify_native_result_details = verify_native_result
 
 
 def _plain(value):
@@ -129,9 +224,12 @@ def verify_update_policy(*, runtime, snapshot_record, receipt, authority_guard=N
     if not set(typed.excluded_update_event_ids).issubset(actual_events):
         raise ValueError("ablation exclusions cite absent canonical update events")
     artifact = runtime._resolve("personality_judgment", authority_guard=authority_guard)[1]
-    request = {"schema": "flora-phase-update-exclusion-request-v1", "scope": runtime.scope.metadata_record(),
+    identity = _capture_identity(snapshot_record)
+    version = "v2" if "preregistration_sha256" in identity else "v1"
+    request = {"schema": "flora-phase-update-exclusion-request-" + version, "scope": runtime.scope.metadata_record(),
         "authority_namespace_id": runtime.authority_namespace_id,
-        **{name: snapshot_record[name] for name in ("run_id", "run_plan_sha256", "case_id", "phase", "arm", "history_sha256", "context_lineage_sha256", "update_policy")},
+        **identity,
+        **{name: snapshot_record[name] for name in ("run_id", "case_id", "phase", "arm", "history_sha256", "context_lineage_sha256", "update_policy")},
         "artifact_manifest_sha256": artifact.manifest_sha256}
     verifier = runtime.bindings["personality_judgment"].qualification_verifier
     method = getattr(verifier, "verify_phase_update_policy", None)
@@ -142,7 +240,7 @@ def verify_update_policy(*, runtime, snapshot_record, receipt, authority_guard=N
     verified = method(request=request, receipt=receipt)
     if authority_guard is not None:
         authority_guard()
-    expected = {"schema": "flora-qualified-phase-update-exclusion-v1", "request_sha256": canonical_sha256(request),
+    expected = {"schema": "flora-qualified-phase-update-exclusion-" + version, "request_sha256": canonical_sha256(request),
         "receipt_sha256": hashlib.sha256(receipt).hexdigest(), "artifact_manifest_sha256": artifact.manifest_sha256,
         "qualifier_id": artifact.qualifier_id, "qualification_id": artifact.qualification_id, "allowed": True}
     if verified != expected:
@@ -169,14 +267,15 @@ class SelectedPhaseSnapshot:
 
     def validate(self):
         r = self.record
-        if r.get("schema") != "flora-selected-phase-snapshot-v1" or r["phase"] not in {"before", "after"}:
+        if r.get("schema") not in {"flora-selected-phase-snapshot-v1", "flora-selected-phase-snapshot-v2"} or r["phase"] not in {"before", "after"}:
             raise ValueError("phase snapshot schema/phase differs")
         for name in ("run_id", "snapshot_id", "case_id", "authority_namespace_id"):
             if require_identifier(r[name], name) != r[name]:
                 raise ValueError("phase snapshot identifier differs")
         if r["arm"] not in {"flora_full", "same_evidence_ablation"}:
             raise ValueError("phase snapshot requires an exact native arm")
-        for name in ("run_plan_sha256", "history_sha256", "context_lineage_sha256"):
+        _capture_identity(r)
+        for name in ("history_sha256", "context_lineage_sha256"):
             require_sha256(r[name], name)
         if (isinstance(r["capture_stream_position"], bool) or not isinstance(r["capture_stream_position"], int)
                 or r["capture_stream_position"] < 0 or normalize_timestamp(r["captured_at"]) != r["captured_at"]):
@@ -207,12 +306,24 @@ class XTDBPhaseSnapshotCustody:
     artifact and ancestor closure, and independent live phase-history authority.
     Capturing this manifest creates no grants and never declares model quality.
     """
-    def __init__(self, *, runtime, run_id: str, run_plan_sha256: str, clock: Callable[[], str], artifact_permissions=None):
+    def __init__(self, *, runtime, run_id: str, clock: Callable[[], str], run_plan_sha256: str | None = None,
+                 preregistration=None, artifact_permissions=None, allow_unregistered_fixture_route=False):
         require_identifier(run_id, "run_id")
-        require_sha256(run_plan_sha256, "run_plan_sha256")
+        if (run_plan_sha256 is None) == (preregistration is None):
+            raise ValueError("phase custody needs exactly one capture authority domain")
+        if preregistration is None:
+            require_sha256(run_plan_sha256, "run_plan_sha256")
+        else:
+            from .experiment_preregistration import RegisteredExperimentPreregistration
+            if (not isinstance(preregistration, RegisteredExperimentPreregistration)
+                    or preregistration.run_id != run_id or preregistration.scope != runtime.scope
+                    or preregistration.authority_namespace_id != runtime.authority_namespace_id):
+                raise TypeError("phase custody needs actual matching registered preregistration")
         if not callable(clock):
             raise TypeError("phase custody requires an explicit clock")
         self.runtime, self.run_id, self.run_plan_sha256, self.clock = runtime, run_id, run_plan_sha256, clock
+        self.preregistration = preregistration
+        self.preregistration_sha256 = None if preregistration is None else preregistration.preregistration_sha256
         self.scope, self.authority_namespace_id = runtime.scope, runtime.authority_namespace_id
         self.connection = runtime.claims.connection
         self.scope_digest = canonical_sha256([self.scope.metadata_record(), self.authority_namespace_id])
@@ -220,6 +331,15 @@ class XTDBPhaseSnapshotCustody:
         # Bind before a native session installs its original-only method guard,
         # or supply an independently bound actual owner policy explicitly.
         permissions = copy(runtime.source_policy if artifact_permissions is None else artifact_permissions)
+        from .formation_policy import XTDBFormationPermissionPolicy
+        if not isinstance(allow_unregistered_fixture_route, bool):
+            raise TypeError("fixture route flag must be Boolean")
+        if isinstance(permissions, XTDBFormationPermissionPolicy):
+            if allow_unregistered_fixture_route:
+                raise ValueError("actual selected permissions cannot opt into unregistered fixture routing")
+        elif preregistration is not None or not allow_unregistered_fixture_route:
+            raise TypeError("phase custody needs actual selected permission authority; legacy mechanics require explicit fixture opt-in")
+        self.allow_unregistered_fixture_route = allow_unregistered_fixture_route
         if (permissions.scope != self.scope or permissions.authority_namespace_id != self.authority_namespace_id
                 or permissions.registry is not runtime.sources
                 or getattr(permissions, "connection", self.connection) is not self.connection):
@@ -230,6 +350,25 @@ class XTDBPhaseSnapshotCustody:
         self.artifact_permissions = permissions
         self.artifact_source_policy = RegisteredJudgmentContextPolicy(claims=runtime.claims, state=state,
             log=runtime.log, registry=runtime.sources, permissions=permissions)
+
+    def identity_record(self):
+        return ({"run_plan_sha256": self.run_plan_sha256} if self.preregistration is None
+                else {"preregistration_sha256": self.preregistration_sha256})
+
+    def _schema(self, stem):
+        return stem + ("-v1" if self.preregistration is None else "-v2")
+
+    def _slot_use(self, *, snapshot_id, case_id, phase, arm, history, plan=None):
+        if self.preregistration is not None:
+            return self.preregistration.authorize_slot_use(snapshot_id=snapshot_id, case_id=case_id,
+                phase=phase, arm=arm, history=history, plan=plan)
+        return None
+
+    def _slot_capture(self, *, snapshot_id, case_id, phase, arm, history, plan=None):
+        if self.preregistration is not None:
+            return self.preregistration.authorize_slot_capture(snapshot_id=snapshot_id, case_id=case_id,
+                phase=phase, arm=arm, history=history, plan=plan)
+        return None
 
     def _key(self, snapshot_id):
         require_identifier(snapshot_id, "snapshot_id")
@@ -256,8 +395,8 @@ class XTDBPhaseSnapshotCustody:
         record = self._immutable(_INTENTS, snapshot_id)
         if record is None:
             return None
-        if (record.get("schema") != "flora-selected-phase-capture-intent-v1"
-                or record["run_plan_sha256"] != self.run_plan_sha256
+        if (record.get("schema") != self._schema("flora-selected-phase-capture-intent")
+                or _capture_identity(record) != self.identity_record()
                 or record["claim_ids"] != sorted(set(record["claim_ids"]))
                 or record["source_event_ids"] != sorted(set(record["source_event_ids"]))):
             raise ValueError("phase intent does not bind an exact frozen run")
@@ -285,8 +424,9 @@ class XTDBPhaseSnapshotCustody:
             self.connection.execute(f"INSERT INTO {table} ({', '.join(values)}) VALUES (" + ', '.join(_dml_placeholder(value) for value in values.values()) + ')', tuple(values.values()))
 
     def _custody_record(self, intent, event, source):
-        record = {"schema": "flora-selected-phase-custody-v1", "scope": self.scope.metadata_record(),
+        record = {"schema": self._schema("flora-selected-phase-custody"), "scope": self.scope.metadata_record(),
             "authority_namespace_id": self.authority_namespace_id, "run_id": self.run_id,
+            **({} if self.preregistration is None else self.identity_record()),
             **{name: intent[name] for name in ("snapshot_id", "snapshot_sha256", "object_id", "source_event_ids", "claim_ids", "case_id", "phase", "arm", "history_sha256")},
             "event_id": event.event_id, "event_sha256": event.event_sha256, "registration_sha256": source.registration_sha256,
             "capture_intent_sha256": intent["record_sha256"]}
@@ -313,14 +453,29 @@ class XTDBPhaseSnapshotCustody:
         record = self._immutable(_TABLE, snapshot_id)
         return None if record is None else self._verify_metadata(snapshot_id, record)
 
-    def _sources_now(self, source_ids):
+    def _sources_now(self, source_ids, *, claim_ids=()):
+        from .formation_policy import XTDBFormationPermissionPolicy
+        if isinstance(self.artifact_permissions, XTDBFormationPermissionPolicy):
+            from .phase_source_fence import verify_current_phase_sources
+            return verify_current_phase_sources(policy=self.artifact_source_policy,
+                source_event_ids=tuple(source_ids), claim_ids=tuple(claim_ids))
+        # Explicit legacy pilot/contract authorities are not selected-engine
+        # qualification. Anchored custody rejects this path in its constructor.
         for event_id in source_ids:
             if self.artifact_source_policy.allow_event(event_id, "personal_judgment") is not True:
                 raise PermissionError("phase source/control use has been withdrawn")
+        for claim_id in claim_ids:
+            _require_available(self.runtime.claims.load_current(claim_id), claim_id)
         return True
 
     def _checked_history_authority(self, authority, source_gate):
         from .comparison_custody import SelectedRunEvidencePolicy
+        if self.preregistration is not None:
+            from .experiment_preregistration import PreregisteredHistoryAuthority
+            if isinstance(authority, PreregisteredHistoryAuthority):
+                return authority.bind_private_guard(source_gate)
+            if not isinstance(authority, SelectedRunEvidencePolicy):
+                raise TypeError("phase history needs actual preregistered or finalized selected authority")
         if not isinstance(authority, SelectedRunEvidencePolicy):
             return authority
         checked = copy(authority)
@@ -343,10 +498,13 @@ class XTDBPhaseSnapshotCustody:
 
     def capture(self, *, snapshot_id: str, case_id: str, phase: str, arm: str,
                 plan: ContextPlan, lineage: NativeJudgmentLineageVerifier, history,
-                update_policy: FrozenPhaseUpdatePolicy | None = None, update_receipt: bytes | None = None):
+                update_policy: FrozenPhaseUpdatePolicy | None = None, update_receipt: bytes | None = None,
+                ablation_personality_binding=None):
         plan_record(plan)
         if phase not in {"before", "after"} or arm not in {"flora_full", "same_evidence_ablation"}:
             raise ValueError("phase capture requires an exact native arm/phase")
+        slot_authority = self._slot_capture(snapshot_id=snapshot_id, case_id=case_id,
+            phase=phase, arm=arm, history=history, plan=plan)
         if self.metadata(snapshot_id) is not None:
             raise ValueError("phase snapshot identity is already frozen; recover it instead")
         if self.intent(snapshot_id) is not None:
@@ -357,7 +515,12 @@ class XTDBPhaseSnapshotCustody:
                 and entry.event.provenance.derivation_activity_id == "phase_snapshot:" + self._key(snapshot_id)
                 for entry in self.runtime.log.replay_committed()):
             raise PermissionError("partial canonical phase capture exists; explicit custody reconciliation is required")
-        if (lineage.runtime is not self.runtime or lineage.run_plan_sha256 != self.run_plan_sha256
+        expected_type = NativeJudgmentLineageVerifier if self.preregistration is None else PreregisteredPhaseCaptureLineageVerifier
+        if (not isinstance(lineage, expected_type) or lineage.runtime is not self.runtime
+                or (self.preregistration is None and lineage.run_plan_sha256 != self.run_plan_sha256)
+                or (self.preregistration is not None and (lineage.preregistration is not self.preregistration
+                    or lineage.preregistration_sha256 != self.preregistration_sha256
+                    or (lineage.snapshot_id, lineage.case_id, lineage.phase, lineage.arm) != (snapshot_id, case_id, phase, arm)))
                 or history.scope != self.scope or lineage.history_for(case_id, phase) != history):
             raise ValueError("phase capture crosses actual runtime/registered phase history")
         # Evaluation authority must precede even initial context/owner-proof
@@ -372,18 +535,18 @@ class XTDBPhaseSnapshotCustody:
                 if self.runtime.context_policy.allow_state(route.subject_type, route.subject_id,
                         route.projection_id, "personal_judgment") is not True:
                     raise PermissionError("phase capture personal-state/control use is withdrawn")
-            self._sources_now(history.event_ids)
-            for claim_id in plan.exact_claim_ids:
-                _require_available(self.runtime.claims.load_current(claim_id), claim_id)
+            self._sources_now(history.event_ids, claim_ids=plan.exact_claim_ids)
             return True
         history_authority = self._checked_history_authority(lineage.history_authority, personal_gate)
         personal_gate()
         self._authorize_history(authority=history_authority, case_id=case_id, phase=phase, history=history)
         personal_gate()
         def capture_guard():
+            self._slot_capture(snapshot_id=snapshot_id, case_id=case_id, phase=phase, arm=arm, history=history, plan=plan)
             personal_gate()
             self._authorize_history(authority=history_authority, case_id=case_id, phase=phase, history=history,
                 metadata_only=True)
+            self._slot_capture(snapshot_id=snapshot_id, case_id=case_id, phase=phase, arm=arm, history=history, plan=plan)
             personal_gate()
         capture_guard()
         # The actual shared runtime guards its context, owner proofs and
@@ -394,8 +557,31 @@ class XTDBPhaseSnapshotCustody:
         if arm == "same_evidence_ablation" and phase == "after":
             before = self.metadata(update_policy.before_snapshot_id)
             if (before is None or before["snapshot_sha256"] != update_policy.before_snapshot_sha256
-                    or before["phase"] != "before" or before["arm"] != "flora_full" or before["case_id"] != case_id):
+                    or before["phase"] != "before" or before["arm"] != "flora_full" or before["case_id"] != case_id
+                    or (self.preregistration is not None and before.get("preregistration_sha256") != self.preregistration_sha256)):
                 raise PermissionError("ablation must bind the actual frozen before full-update snapshot")
+            if self.preregistration is not None:
+                if ablation_personality_binding is None:
+                    raise PermissionError("preregistered ablation needs the retained actual before personality binding")
+                slot = self.preregistration.spec.slot(update_policy.before_snapshot_id)
+                if (slot.case_id, slot.phase, slot.arm) != (case_id, "before", "flora_full"):
+                    raise PermissionError("ablation cannot select another declared before role")
+                before_history = self.preregistration.history_for(case_id, "before")
+                before_authority = self.preregistration.history_authority()
+                before_snapshot = self.recover(snapshot_id=update_policy.before_snapshot_id,
+                    history=before_history, history_authority=before_authority)
+                current_capture_guard = capture_guard
+                def combined_capture_guard():
+                    current_capture_guard()
+                    self.authorize(snapshot_id=update_policy.before_snapshot_id, history=before_history,
+                        history_authority=before_authority, expected=before)
+                    current_capture_guard()
+                capture_guard = combined_capture_guard
+                from .phase_routes import derive_preregistered_ablation_runtime
+                capture_runtime = derive_preregistered_ablation_runtime(custody=self, before_snapshot=before_snapshot,
+                    personality_binding=ablation_personality_binding, authority_guard=capture_guard)
+        elif ablation_personality_binding is not None:
+            raise PermissionError("retained before role is only allowed for preregistered after ablation")
         context = capture_runtime._context(plan, authority_guard=capture_guard)
         receipts = {}
         capturing = copy(lineage)
@@ -436,7 +622,7 @@ class XTDBPhaseSnapshotCustody:
                 "head": self.runtime.state.episodes._head(publication.thread_id), "publication": record})
         artifacts = []
         for manifest in actual.artifacts:
-            registry = self.runtime.artifacts
+            registry = capture_runtime.artifacts
             head = registry._fetch(artifacts_module._CURRENT, registry._key("role", manifest.role))
             admission = registry._fetch(artifacts_module._ADMISSIONS, registry._key("artifact", manifest.artifact_id))
             if head is None or admission is None or admission["record_sha256"] != head["admission_sha256"]:
@@ -448,9 +634,9 @@ class XTDBPhaseSnapshotCustody:
         parents = tuple(sorted(set(history.event_ids) | set(context.source_event_ids)))
         self._sources_now(parents)
         entries = self.runtime.log.replay_committed()
-        body = _plain({"schema": "flora-selected-phase-snapshot-v1", "scope": self.scope.metadata_record(),
+        body = _plain({"schema": self._schema("flora-selected-phase-snapshot"), "scope": self.scope.metadata_record(),
             "authority_namespace_id": self.authority_namespace_id, "run_id": self.run_id, "snapshot_id": snapshot_id,
-            "case_id": case_id, "phase": phase, "arm": arm, "run_plan_sha256": self.run_plan_sha256,
+            "case_id": case_id, "phase": phase, "arm": arm, **self.identity_record(),
             "history_sha256": history.digest(), "original_event_ids": sorted(history.event_ids), "source_event_ids": list(parents),
             "context_plan": plan_record(plan), "context_receipt": context.receipt_record(),
             "context_lineage": actual.record(), "context_lineage_sha256": actual.lineage_sha256,
@@ -458,6 +644,8 @@ class XTDBPhaseSnapshotCustody:
             "update_policy": update_policy.record(), "update_receipt_base64": None if update_receipt is None else base64.b64encode(update_receipt).decode(),
             "producer_receipts": [{"request_sha256": key, "receipt_base64": base64.b64encode(value).decode()} for key, value in sorted(receipts.items())],
             "capture_stream_position": entries[-1].stream_position, "captured_at": normalize_timestamp(self.clock())})
+        if self.preregistration is not None:
+            body["capture_slot_authority"] = _plain(slot_authority)
         verified_update = verify_update_policy(runtime=capture_runtime, snapshot_record=body, receipt=update_receipt,
             authority_guard=capture_guard)
         body["verified_update_exclusion"] = verified_update
@@ -472,9 +660,9 @@ class XTDBPhaseSnapshotCustody:
             return True
         guarded = PhaseAuthorizedObjectReads(self.runtime.objects, write_gate)
         raw = guarded.put(content)
-        intent = {"schema": "flora-selected-phase-capture-intent-v1", "scope": self.scope.metadata_record(),
+        intent = {"schema": self._schema("flora-selected-phase-capture-intent"), "scope": self.scope.metadata_record(),
             "authority_namespace_id": self.authority_namespace_id, "run_id": self.run_id, "snapshot_id": snapshot_id,
-            "run_plan_sha256": self.run_plan_sha256, "snapshot_sha256": raw.plaintext_sha256, "object_id": raw.object_id,
+            **self.identity_record(), "snapshot_sha256": raw.plaintext_sha256, "object_id": raw.object_id,
             "object_size": raw.size, "claim_ids": sorted(item["claim_id"] for item in claim_records),
             **{name: body[name] for name in ("source_event_ids", "case_id", "phase", "arm", "history_sha256", "captured_at", "capture_stream_position", "context_lineage_sha256")},
             "context_plan_sha256": canonical_sha256(body["context_plan"])}
@@ -499,13 +687,7 @@ class XTDBPhaseSnapshotCustody:
     def _phase_metadata_gate(self, snapshot_id, expected):
         if self.metadata(snapshot_id) != expected:
             raise PermissionError("phase capture metadata changed during source use")
-        for claim_id in expected["claim_ids"]:
-            _require_available(self.runtime.claims.load_current(claim_id), claim_id)
-        self._sources_now((expected["event_id"],))
-        # Permission adapters can be slow. A quarantine that arrives in that
-        # interval must still win before ciphertext is decrypted.
-        for claim_id in expected["claim_ids"]:
-            _require_available(self.runtime.claims.load_current(claim_id), claim_id)
+        self._sources_now((expected["event_id"],), claim_ids=expected["claim_ids"])
         return True
 
     def authorize(self, *, snapshot_id: str, history, history_authority, expected=None, metadata_only=True):
@@ -516,6 +698,8 @@ class XTDBPhaseSnapshotCustody:
         def metadata_gate():
             return self._phase_metadata_gate(snapshot_id, record)
         metadata_gate()
+        self._slot_use(snapshot_id=snapshot_id, case_id=record["case_id"], phase=record["phase"],
+            arm=record["arm"], history=history)
         # The concrete selected authority reads original history to authenticate
         # it. Its inner reads also retain this phase's live source-use barrier.
         checked_authority = self._checked_history_authority(history_authority, metadata_gate)
@@ -523,6 +707,8 @@ class XTDBPhaseSnapshotCustody:
             raise PermissionError("phase recovery lost exact current history authority")
         self._authorize_history(authority=checked_authority, case_id=record["case_id"], phase=record["phase"],
             history=history, metadata_only=metadata_only)
+        self._slot_use(snapshot_id=snapshot_id, case_id=record["case_id"], phase=record["phase"],
+            arm=record["arm"], history=history)
         metadata_gate()
         return True
 
@@ -542,7 +728,7 @@ class XTDBPhaseSnapshotCustody:
         intent = self.intent(snapshot_id)
         if (snapshot.snapshot_sha256 != record["snapshot_sha256"] or body["source_event_ids"] != record["source_event_ids"]
                 or any(body[name] != record[name] for name in ("run_id", "snapshot_id", "case_id", "phase", "arm", "history_sha256"))
-                or body["run_plan_sha256"] != self.run_plan_sha256 or body["scope"] != self.scope.metadata_record()
+                or _capture_identity(body) != self.identity_record() or body["scope"] != self.scope.metadata_record()
                 or body["authority_namespace_id"] != self.authority_namespace_id
                 or canonical_sha256(body["context_plan"]) != intent["context_plan_sha256"]
                 or any(body[name] != intent[name] for name in ("context_lineage_sha256", "captured_at", "capture_stream_position"))
@@ -550,6 +736,25 @@ class XTDBPhaseSnapshotCustody:
             raise ValueError("phase snapshot changed exact canonical scope/lineage")
         fresh()
         return snapshot
+
+    def capture_route(self, *, snapshot_id, history_authority, historical_bindings):
+        """Actual historical observation for sealing, with no native dispatch."""
+        if self.preregistration is None:
+            raise PermissionError("capture-only route requires actual preregistration")
+        from .phase_routes import SelectedPhaseRoute
+        metadata = self.metadata(snapshot_id)
+        if metadata is None:
+            raise PermissionError("capture route lacks its actual immutable phase artifact")
+        history = self.preregistration.history_for(metadata["case_id"], metadata["phase"])
+        return SelectedPhaseRoute(custody=self, snapshot_id=snapshot_id, history=history,
+            history_authority=history_authority, historical_bindings=historical_bindings,
+            invocation_id_for=lambda *_: (_ for _ in ()).throw(PermissionError("capture route has no native invocation")))
+
+    def before_probe_route(self, *, snapshot_id, case_id, historical_bindings):
+        """Exact archived before-full probe; never a final evaluation route."""
+        from .phase_routes import SelectedBeforeProbeRoute
+        return SelectedBeforeProbeRoute(custody=self, snapshot_id=snapshot_id,
+            case_id=case_id, historical_bindings=historical_bindings)
 
     def _repair_heads_now(self, snapshot):
         """Repair an index, never adopt a new interpretation after head moves."""

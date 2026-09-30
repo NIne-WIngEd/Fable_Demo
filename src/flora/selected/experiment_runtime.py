@@ -275,6 +275,10 @@ class _RuntimePrivateCustody:
 
     def register(self, recorded: RecordedEvent, invocation_id: str, stage: str, *,
                  revalidate: Callable[[], None] | None = None) -> None:
+        # A retry is still a current write-boundary operation. Do not inspect
+        # private rows or authority through a caller's existing snapshot.
+        if hasattr(self.connection, "info") and self.connection.info.transaction_status != 0:
+            raise ValueError("runtime custody requires its own idle top-level XTDB transaction")
         if revalidate is not None:
             revalidate()
         event = recorded.event
@@ -298,11 +302,24 @@ class _RuntimePrivateCustody:
             if prior is None:
                 pending.append((table, key, record))
         if pending:
+            # XTDB infers the transaction mode from its first statement and
+            # prohibits SELECT in a DML transaction. The live guard reads
+            # selected authority, so it must run outside this atomic batch.
+            # Never commit or reuse a caller-owned read/write transaction.
+            if hasattr(self.connection, "info") and self.connection.info.transaction_status != 0:
+                raise ValueError("runtime custody requires its own idle top-level XTDB transaction")
+            if revalidate is not None:
+                revalidate()
+            if hasattr(self.connection, "info") and self.connection.info.transaction_status != 0:
+                raise ValueError("runtime custody guard left an active XTDB transaction")
             with self.connection.transaction():
                 for table, key, record in pending:
-                    if revalidate is not None:
-                        revalidate()
                     self._insert(table, key, record)
+        # Source/producer consent and XTDB indexing are separate boundaries.
+        # Withdrawal during commit leaves recoverable custody, but this fresh
+        # check denies downstream inference or acceptance of the result.
+        if revalidate is not None:
+            revalidate()
 
     def raw_reference(self, object_id: str) -> RawObjectReference | None:
         record = self._fetch(self.raw_refs, self._key("raw", object_id))
@@ -498,7 +515,8 @@ class FloRAExperimentRuntime:
 
     def _execute(self, *, role: str, invocation_id: str, operation: str,
                  delivery: RecordedEvent, payload: bytes, revalidate: Callable[[], None],
-                 private_guard: Callable[[], None] | None = None) -> ExecutedModelOutput:
+                 private_guard: Callable[[], None] | None = None,
+                 dispatch_guard: Callable[[], None] | None = None) -> ExecutedModelOutput:
         require_identifier(invocation_id, "invocation_id")
         if not isinstance(payload, bytes) or not payload:
             raise ValueError("qualified producer codec returned no exact input bytes")
@@ -525,7 +543,15 @@ class FloRAExperimentRuntime:
                 raise ValueError("current model artifact changed before inference")
             invocation = RuntimeInvocation(self.scope, self.authority_namespace_id, invocation_id,
                 operation, artifact, delivery.event.event_id, input_record.event.event_id, _hash(payload), payload)
+            guard()
+            if dispatch_guard is not None:
+                dispatch_guard()
+                guard()
             result = binding.adapter.invoke(invocation)
+            if dispatch_guard is not None:
+                guard()
+                dispatch_guard()
+                guard()
             revalidate()
             if (not isinstance(result, RuntimeResult) or result.invocation_id != invocation_id
                     or result.artifact != artifact or result.input_sha256 != invocation.input_sha256
@@ -782,13 +808,18 @@ class FloRAExperimentRuntime:
             approval_verifier_factory=approval_verifier_factory, authority_guard=authority_guard,
             before_private_assembly=before_private_assembly)
 
-    def judge(self, *, plan: ContextPlan, task: bytes, invocation_id: str) -> JudgmentRun:
+    def judge(self, *, plan: ContextPlan, task: bytes, invocation_id: str,
+              authority_guard: Callable[[], None] | None = None,
+              dispatch_guard: Callable[[], None] | None = None) -> JudgmentRun:
         if not isinstance(task, bytes) or not task:
             raise ValueError("native judgment requires an exact task input")
+        if dispatch_guard is not None and not callable(dispatch_guard):
+            raise TypeError("native dispatch qualification guard must be callable")
         role = {}
         def qualify(metadata_guard):
             role["resolved"] = self._resolve("personality_judgment", authority_guard=metadata_guard)
-        prepared = self._prepare_current_context(plan, before_private_assembly=qualify)
+        prepared = self._prepare_current_context(plan, authority_guard=authority_guard,
+            before_private_assembly=qualify)
         binding, _ = role["resolved"]
         context = prepared.context
         if not context.sufficient_by_declared_count:
@@ -803,8 +834,12 @@ class FloRAExperimentRuntime:
         self.private.register(delivery, invocation_id, "context_delivery", revalidate=prepared.metadata_current)
         execution = self._execute(role="personality_judgment", invocation_id=invocation_id, operation="native_judgment",
             delivery=delivery, payload=binding.codec.judgment_frame(context=context, task=task), revalidate=revalidate,
-            private_guard=prepared.metadata_current)
+            private_guard=prepared.metadata_current, dispatch_guard=dispatch_guard)
         binding.codec.validate_identity_decision(output=execution.result.output, context=context)
+        if dispatch_guard is not None:
+            prepared.metadata_current()
+            dispatch_guard()
+            prepared.metadata_current()
         revalidate()
         linked = _LinkedReferences(self.references, {
             delivery.raw.object_id: delivery.raw, execution.input_record.raw.object_id: execution.input_record.raw,

@@ -1,5 +1,6 @@
 """Real selected stores with signed fictional observations, not a provider call."""
 import base64
+import inspect
 from dataclasses import replace
 from datetime import datetime, timezone
 import os
@@ -8,9 +9,11 @@ import sys
 import tempfile
 import unittest
 import uuid
+from unittest.mock import patch
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from kurrentdbclient import KurrentDBClient
 import psycopg
 
@@ -36,6 +39,15 @@ from flora.selected.provider_attempt_custody import (
 
 def now():
     return datetime.now(timezone.utc).isoformat()
+
+
+def _inside(function, line=None):
+    frame = sys._getframe(1)
+    while frame is not None:
+        if frame.f_code is function.__code__ and (line is None or frame.f_lineno == line):
+            return True
+        frame = frame.f_back
+    return False
 
 
 class SelectedProviderAttemptLedgerIntegrationTest(unittest.TestCase):
@@ -208,34 +220,78 @@ class SelectedProviderAttemptLedgerIntegrationTest(unittest.TestCase):
                 self.assertNotIn(comparison.metadata("run", "plan").event_id,
                                restarted._metadata("before-cancelled", "task")["parent_event_ids"])
                 self.assertIsNone(comparison.metadata("run", "before-cancelled"))
+                # Actual selected permission heads are fenced together after
+                # the last callback, including independent capture purposes.
+                ids = tuple(source.event.event_id for source in sources)
+                original_permits, changed = policy.permits, False
+                def late_capture_revoke(source, purpose):
+                    nonlocal changed
+                    result = original_permits(source, purpose)
+                    if (_inside(XTDBProviderAttemptCustody._require)
+                            and source.evidence.ref_id == ids[-1] and purpose == capture_purpose("run")
+                            and not changed):
+                        changed = True
+                        grant(ids[0], purpose, "revoke")
+                    return result
+                actual_fetch = objects.backend.get_object
+                def no_original_cipher(namespace, object_id):
+                    self.assertNotIn(object_id, {source.event.payload_reference for source in sources},
+                        "metadata permission fence opened original ciphertext")
+                    return actual_fetch(namespace, object_id)
+                with patch.object(policy, "permits", side_effect=late_capture_revoke), \
+                     patch.object(objects.backend, "get_object", side_effect=no_original_cipher):
+                    with self.assertRaisesRegex(PermissionError, "terminal"):
+                        store._require(ids, capture_purpose("run"))
+                self.assertTrue(changed)
+                grant(ids[0], capture_purpose("run"))
+                original_action, changed = policy.current_action, False
+                lines, first_line = inspect.getsourcelines(XTDBProviderAttemptCustody._external_snapshot)
+                final_line = first_line + next(i for i, line in enumerate(lines)
+                    if 'action = self.permissions.current_action(saved["event_id"], purpose)' in line)
+                external_ids = after.body["disclosure_source_ids"]
+                for event_id in external_ids:
+                    grant(event_id, "comparison_external:fixture-provider")
+                def late_external_revoke(event_id, purpose):
+                    nonlocal changed
+                    result = original_action(event_id, purpose)
+                    if (_inside(XTDBProviderAttemptCustody._external_snapshot, final_line)
+                            and event_id == external_ids[-1] and not changed):
+                        changed = True
+                        grant(external_ids[0], purpose, "revoke")
+                    return result
+                with patch.object(policy, "current_action", side_effect=late_external_revoke), \
+                     patch.object(objects.backend, "get_object", side_effect=no_original_cipher):
+                    with self.assertRaisesRegex(PermissionError, "terminal"):
+                        store._external_snapshot(after.body)
+                self.assertTrue(changed)
                 # A reviewer grant cannot substitute for this private audit route.
                 grant(sources[0].event.event_id, audit_purpose("run"), "revoke")
                 grant(sources[0].event.event_id, "comparison_review")
-                original_get, private_reads = objects.get, []
-                def no_private_read(reference):
-                    private_reads.append(reference.object_id)
-                    raise AssertionError("withdrawn source must be checked before private decrypt")
-                objects.get = no_private_read
-                try:
+                private_ids = {restarted._metadata("after-refusal", kind)["object_id"]
+                    for kind in ("task", "authorization", "observation")}
+                actual_decrypt, private_reads = AESGCM.decrypt, []
+                def no_private_decrypt(cipher, nonce, content, aad):
+                    if any(aad.endswith((":" + object_id).encode()) for object_id in private_ids):
+                        private_reads.append(aad)
+                        raise AssertionError("withdrawn source must be checked before private decrypt")
+                    return actual_decrypt(cipher, nonce, content, aad)
+                with patch.object(AESGCM, "decrypt", new=no_private_decrypt):
                     with self.assertRaises(PermissionError):
                         restarted.recover(task_id="after-refusal")
                     self.assertEqual(private_reads, [])
-                finally:
-                    objects.get = original_get
                 grant(sources[0].event.event_id, audit_purpose("run"))
                 target = restarted._metadata("after-refusal", "observation")["object_id"]
-                original_get = objects.get
-                def withdraw_inside_decrypt(reference):
-                    content = original_get(reference)
-                    if reference.object_id == target:
+                opened_target = []
+                def withdraw_inside_decrypt(cipher, nonce, content, aad):
+                    plaintext = actual_decrypt(cipher, nonce, content, aad)
+                    if aad.endswith((":" + target).encode()):
+                        opened_target.append(target)
                         grant(sources[0].event.event_id, audit_purpose("run"), "revoke")
-                    return content
-                objects.get = withdraw_inside_decrypt
-                try:
+                    return plaintext
+                with patch.object(AESGCM, "decrypt", new=withdraw_inside_decrypt):
                     with self.assertRaises(PermissionError):
                         restarted.recover(task_id="after-refusal")
-                finally:
-                    objects.get = original_get
+                self.assertEqual(opened_target, [target])
         finally:
             client.close()
 

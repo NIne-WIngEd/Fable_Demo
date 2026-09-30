@@ -14,6 +14,7 @@ import time
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+from metadata_batch_fixture import install_current_metadata_batch
 
 from flora.comparison_run import ArmResult, ExecutionRequest, PreparationRequest
 from flora.selected.native_reads import ReadOnlyNativeSQLConnection
@@ -105,7 +106,10 @@ class NativeReadOwnershipTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(self.f.opened_connections), 1)
         self.assertEqual(len(self.f.closed_connections), 0)
         release.set()
-        await second
+        # With no unrelated event-loop timer, physical cleanup must wake the
+        # waiter promptly instead of waiting for the15s component deadline.
+        async with asyncio.timeout(3):
+            await second
         self.assertEqual(len(self.f.opened_connections), 2)
         self.assertEqual(len(self.f.closed_connections), 2)
         self.assertEqual(self.f.custody.registrations, [])
@@ -185,6 +189,24 @@ class NativeReadOwnershipTest(unittest.IsolatedAsyncioTestCase):
             await self.f.reads.prepare_context(self.entry)
         self.assertEqual(self.f.opened_connections, [])
 
+    async def test_model_phase_gate_does_not_mutate_shared_original_controller_policies(self):
+        shared = []
+        def capture(runtime, lineage):
+            shared.append((runtime, runtime.source_policy, runtime.state, runtime.context_policy))
+        self.f.read_hook = capture
+        self.assertEqual(await self.f.reads.prepare_context(self.entry), self.f.context)
+        runtime, original, original_state, original_context = shared[0]
+        self.assertIsNot(runtime.source_policy, original)
+        self.assertIsNot(runtime.state, original_state)
+        self.assertIsNot(runtime.context_policy, original_context)
+        self.assertIs(runtime.state.policy, runtime.source_policy)
+        self.assertIs(runtime.context_policy.state, runtime.state)
+        self.assertIs(runtime.context_policy.permissions, runtime.source_policy)
+        self.assertIs(original_state.policy, original)
+        self.assertIs(original_context.permissions, original)
+        self.assertIs(original.permits.__self__, original)
+        self.assertIs(original_context.allow_event.__self__, original_context)
+
     async def selected_route(self):
         """Actual selected-route code on explicitly fictional SQL/proof bytes."""
         connection = phase_support.PhaseSQL(self.f.f.connection)
@@ -202,7 +224,8 @@ class NativeReadOwnershipTest(unittest.IsolatedAsyncioTestCase):
         self.f.plan = replace(self.f.plan, arm_bindings=bindings)
         self.f.lineage.run_plan_sha256 = self.f.plan.digest()
         custody = XTDBPhaseSnapshotCustody(runtime=self.f.runtime, run_id="native-fixture-run",
-            run_plan_sha256=self.f.plan.digest(), clock=self.f.runtime.clock)
+            run_plan_sha256=self.f.plan.digest(), clock=self.f.runtime.clock,
+            allow_unregistered_fixture_route=True)
         self.snapshot = custody.capture(snapshot_id="native-after-archive", case_id="case-one", phase="after",
             arm="flora_full", plan=self.entry.context_plan, lineage=self.f.lineage,
             history=self.f.histories[("case-one", "after")])
@@ -215,7 +238,7 @@ class NativeReadOwnershipTest(unittest.IsolatedAsyncioTestCase):
                 self.assertIs(session.runtime.claims.connection, connection)
                 custody = XTDBPhaseSnapshotCustody(runtime=session.runtime, run_id=entry.phase_snapshot.run_id,
                     run_plan_sha256=session.lineage.run_plan_sha256, clock=session.runtime.clock,
-                    artifact_permissions=artifact_permissions)
+                    artifact_permissions=artifact_permissions, allow_unregistered_fixture_route=True)
                 route = SelectedPhaseRoute(custody=custody, snapshot_id=entry.phase_snapshot.snapshot_id,
                     history=session.lineage.history_for(entry.case_id, entry.phase),
                     history_authority=session.lineage.history_authority,
@@ -286,6 +309,42 @@ class NativeReadOwnershipTest(unittest.IsolatedAsyncioTestCase):
             await self.f.reads.prepare_context(self.entry)
         self.assertEqual(self.routes, [])
 
+    async def test_changed_production_question_or_context_is_denied_before_archive_plaintext(self):
+        await self.selected_route()
+        backend, opened = self.f.runtime.objects.backend, []
+        original_get = backend.get_object
+        def observe(namespace, object_id):
+            opened.append(object_id)
+            return original_get(namespace, object_id)
+        altered = replace(self.f.context,
+            items=(replace(self.f.context.items[0], content=b"changed fixture context"),))
+        with patch.object(backend, "get_object", side_effect=observe):
+            for request in (replace(self.request(), question=b"changed fixture question"),
+                            replace(self.request(), context=altered)):
+                with self.assertRaisesRegex(ValueError, "frozen question|frozen plan/content"):
+                    await self.f.reads.recover_judgment(entry=self.entry, request=request)
+                self.assertEqual(opened, [])
+                self.assertEqual(self.routes, [])
+
+    async def test_withdrawal_after_archive_constructor_prevents_recovery_private_fetch(self):
+        await self.selected_route()
+        revoked, opened = [False], []
+        backend, original_get = self.f.runtime.objects.backend, self.f.runtime.objects.backend.get_object
+        def observe(namespace, object_id):
+            if revoked[0]:
+                opened.append(object_id)
+            return original_get(namespace, object_id)
+        def withdraw(runtime, lineage):
+            self.f.lineage.history_authority.allowed = False
+            revoked[0] = True
+        self.phase_hook = withdraw
+        with patch.object(backend, "get_object", side_effect=observe):
+            with self.assertRaises(PermissionError):
+                await self.f.reads.recover_judgment(entry=self.entry, request=self.request())
+        self.assertTrue(revoked[0])
+        self.assertEqual(opened, [])
+        self.assertEqual(self.f.custody.registrations, [])
+
     async def test_selected_route_metadata_revocation_blocks_private_receipt_recovery(self):
         await self.selected_route()
         revoked, reads = [False], []
@@ -314,6 +373,7 @@ class NativeReadOwnershipTest(unittest.IsolatedAsyncioTestCase):
     async def test_actual_selected_history_controller_uses_separate_policy_without_recursion(self):
         """Actual custody/controller/current grants on explicit fictional SQL."""
         runtime, run_id = self.f.runtime, "native-fixture-run"
+        install_current_metadata_batch(runtime.claims.connection)
         policy = XTDBFormationPermissionPolicy(scope=runtime.scope,
             authority_namespace_id=runtime.authority_namespace_id,
             connection=runtime.claims.connection, registry=runtime.sources)

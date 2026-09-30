@@ -31,7 +31,8 @@ prove what a before context contained.
 ## Capture and recovery
 
 `XTDBPhaseSnapshotCustody.capture(...)` requires an actual selected runtime,
-original phase history and `NativeJudgmentLineageVerifier`. Current personal
+original phase history and the registered experiment's capture-only
+`PreregisteredPhaseCaptureLineageVerifier`. Current personal
 source/control permission and independent evaluation consent are checked before
 the first private read, throughout context/proof reads and before return.
 
@@ -66,6 +67,10 @@ cannot stand in for a missing before checkpoint.
 `check_live()` is a metadata/current-permission fence. It does not reread the
 snapshot plaintext on every nested read. Actual context and model use still
 revalidate immutable selected records, current authority and producer proofs.
+Actual selected guards use a finite terminal XTDB statement after the real
+permission callbacks. It checks all sampled source/raw registrations, immutable
+actions, current grant heads and Claim quarantine together. Metadata sampled
+inside one guard is discarded afterward; it creates no permission lease.
 
 ## Same-evidence ablation
 
@@ -80,6 +85,13 @@ run, case, phase, arm, original history, context lineage, policy and exact admit
 artifact. Missing or mismatched producer semantics block the ablation. The
 qualified phase lineage rechecks this proof on each context qualification;
 FloRA supplies no implementation that invents an exclusion.
+
+For preregistered after-ablation capture, custody derives a concrete selected
+view with the exact same-case before-full personality artifact and its actual
+historical checkpoint/producer port. The after Claim, approved state and MFM
+remain current. It does not restore a live artifact head or accept an arbitrary
+old checkpoint. The producer exclusion proof must qualify this exact retained
+arm and the actual post-seal update.
 
 ## Interrupted capture
 
@@ -124,30 +136,54 @@ event/hash matching, actual historical selected records, current source/evaluati
 permission and producer proofs. Permission/proof tail entries require their own
 actual canonical verification; there is no event-type allowance.
 
-## Remaining genuine-intervention blocker
+## Freeze before unknown after checkpoints
 
-Current custody requires the final paired run-plan digest before capturing a
-snapshot. That digest contains both native arm headers, including the actual
-after context hash and personality checkpoint hash. A real before capture
-cannot know those future learned values. The mechanical fixtures use supplied
-bytes known in advance; they do not solve this workflow.
+The [two-stage preregistration](EXPERIMENT_PREREGISTRATION.md) separates capture
+from the final evaluation plan. Before capture no longer needs unknown after
+checkpoint or context hashes:
 
-The next required step is a two-stage capture contract:
-
-1. Preregister an immutable anchor for the protocol, questions, original-history
-   policy, budgets and arm contracts, before intervention or evaluation.
+1. Preregister an immutable anchor for the protocol, questions, authorized
+   synthetic histories, budgets, policy/producer contracts, known baseline
+   roles and exact capture/probe/update/evaluation IDs.
 2. Capture actual before authority and producer/source proofs against that
    anchor, without predicting an after checkpoint or context.
-3. Perform the actual governed intervention, then capture its after authority.
+3. Publish and canonically seal every before slot before the update gate.
+   Perform the actual governed intervention and independently qualify its
+   execution. Enroll actual after producer ports when their files exist, then
+   capture every after slot.
 4. Seal the observed phase binding matrix and exact earlier anchor/snapshot
    references into the final paired plan before evaluation. Budgets and held-out
    boundaries remain those preregistered in the anchor.
 
-This contract is not implemented here. Its producer receipts and final-plan
-link checks must authenticate the actual prior captures; a new identifier or
-shape-valid anchor cannot substitute for those proofs. Until that route exists,
-these files establish historical custody and strict replay mechanics, not a
-ready genuine before/train/after experiment.
+V2 snapshot bodies and producer capture/exclusion requests explicitly name
+`preregistration_sha256`. They never call that anchor a final run hash. Final
+native snapshot references bind the actual earlier body/event hashes. Final
+execution lineage names the actual later plan hash while replaying those same
+anchored capture requests and opaque proofs; before capture is never repeated
+or relabelled after the update.
+
+The finalizer consumes the entire declared capture table and reconstructs
+actual contexts and independently qualified checkpoint bytes. A stored
+`ObservedPhaseBinding` shape grants no authority. Capture-only routes cannot
+judge or authorize paired results; finalized routes require the actual durable
+final seal, exact task/context and arm-specific invocation.
+
+`before_probe_route(...)` is a separate archived before-full facade for the
+declared pilot probe. It accepts only that case's frozen shared question,
+captured context and distinct probe ID, with actual historical producers and
+live anchor/source guards. It stops once the update gate or final seal exists
+and supplies no paired evaluation authority.
+
+Direct finalized dispatch and passive recovery requalify current private
+producer/update proofs at their outer boundaries. Dispatch checks again after
+slow qualification, after inference and before accepting the codec's decision.
+Nested ciphertext/AEAD guards stay metadata-only so proof recovery does not
+recursively recover itself. Passive recovery never repairs invocation custody.
+
+The legacy final-plan V1 route remains for explicit mechanics/pilot contracts.
+Unregistered fictional permissions require
+`allow_unregistered_fixture_route=True`; this is rejected for actual selected
+permissions and every V2 anchored capture.
 
 ## Verification boundary
 
@@ -166,5 +202,11 @@ after-ablation update-exclusion proof. Passive replay invokes no inference and
 appends no canonical event. Denial spies observe actual ciphertext backend reads.
 
 Its producer bytes, signed receipts, supplied outputs and counters are explicitly
-fictional. The selected backend gate is pending; neither test lane demonstrates
-learned judgment, the two-stage capture workflow, or consumer readiness.
+fictional. The new
+`tests/integration/test_selected_experiment_preregistration.py` gate binds a real
+registered cohort/recipe and preregistration to chronological before sealing,
+actual Claim/state/personality-head replacement, retained-personality ablation,
+observed final sealing and four strict native result routes. It also prepares
+fresh production SELECT-only reader checks. Physical execution is pending;
+neither fixture establishes learned judgment, qualified semantic update,
+consumer latency or experiment readiness.

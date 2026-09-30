@@ -4,15 +4,20 @@ Selected engines/permissions/runtime/lineage/custody are real. Supplied checkpoi
 phase receipts, output and usage are fixtures; no learned advantage is measured.
 """
 import asyncio
+import base64
+from copy import copy
 from dataclasses import replace
 import hashlib
 import importlib.util
 from pathlib import Path
 import sys
+import tempfile
+from types import SimpleNamespace
 import unittest
 import uuid
 
 from cognitive_kernel.claim_contracts import CanonicalTaggedValue
+from cognitive_kernel.canonical import canonical_json_bytes, canonical_sha256
 from cognitive_kernel.formation_context_planner import FormationPlanningRequest
 from flora.comparison_run import (
     ArmBinding, ArmResult, HistorySnapshot, MeasuredUsage, PairedRunPlan,
@@ -24,6 +29,13 @@ from flora.selected.context import ContextPlan, StateRoute
 from flora.selected.experiment_runtime import SuppliedClaimAdmission
 from flora.selected.formation_policy import FormationPermissionAction, formation_permission_payload
 from flora.selected.judgment_lineage import NativeJudgmentLineageVerifier
+from flora.selected.native_arm import FrozenNativeArmPlan, NativeArmAdapter, NativeInvocationEntry, NativeWorkerCompletion
+from flora.selected.native_reads import InitializedNativeSessionFactory, NativeReadManifest, SelectedNativeReadServices
+from flora.selected.native_writer_guard import NativeWriterConfiguration, NativeWriterGuard, VerifiedNativeWriterOwnership
+from flora.selected.bounded_xtdb_reads import BoundedXTDBReadConfiguration, BoundedXTDBReadOpener, ExplicitXTDBReadCredentials
+from flora.comparison_run import _context_bytes
+import psycopg
+from psycopg.conninfo import conninfo_to_dict
 
 
 def fixture(name, path):
@@ -37,6 +49,7 @@ def fixture(name, path):
 _ROOT = Path(__file__).resolve().parents[1]
 _runtime = fixture("flora_native_comparison_backend_fixture", Path(__file__).parent / "test_selected_runtime_bridge.py")
 _phase = fixture("flora_native_comparison_phase_fixture", _ROOT / "test_selected_judgment_lineage.py")
+_native = fixture("flora_native_comparison_process_fixture", _ROOT / "native_contract_fixture.py")
 
 
 class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
@@ -85,6 +98,51 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
         plan = PairedRunPlan(protocol, bindings, 100, 20000, 1, {"case": hashlib.sha256(question).hexdigest()})
         custody = XTDBComparisonCustody(scope=f.scope, authority_namespace_id=f.namespace, connection=f.connection,
             registry=f.registry, objects=f.objects, log=f.log)
+        context = f.runtime._context(context_plan)
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        # The subprocess relays existing fictional fixture receipts. No model
+        # is trained or inferred by this process-transport contract test.
+        worker = _native.worker_fixture.worker_fixture(temporary.name,
+            "import sys,json,hashlib\nraw=sys.stdin.buffer.read()\nr=json.loads(raw)\n"
+            "sys.stdout.write(json.dumps({'invocation_id':r['invocation_id'],"
+            "'worker_request_sha256':hashlib.sha256(raw).hexdigest(),"
+            "'qualified_output_event_id':r['output_event'],'meter':r['meter']}))\n",
+            scope=f.scope, namespace=f.namespace)
+        owner_config = NativeWriterConfiguration(f.scope, f.namespace, "native-comparison-fixture-owner",
+            psycopg.__version__, "a" * 64, 5000)
+        owner_verifier = SimpleNamespace(verify_native_writer=lambda *, request, receipt:
+            VerifiedNativeWriterOwnership("fixture-owner-qualifier", "fixture-owner-qualification",
+                canonical_sha256(request), hashlib.sha256(receipt).hexdigest(), True))
+        writer_guard = NativeWriterGuard(connection=f.connection, configuration=owner_config,
+            verifier=owner_verifier, qualification_receipt=b"supplied fictional exclusive-owner proof",
+            qualifier_id="fixture-owner-qualifier", qualification_id="fixture-owner-qualification")
+        read_manifest = NativeReadManifest(f.scope, f.namespace, "2" * 64, "3" * 64, 1, 60000, 5000,
+            allow_current_fixture_route=True)
+        parameters = conninfo_to_dict(f.connection.info.dsn)
+        opener = BoundedXTDBReadOpener(configuration=BoundedXTDBReadConfiguration(f.connection.info.hostaddr,
+            int(f.connection.info.port), f.connection.info.dbname, f.connection.info.user, psycopg.__version__,
+            2, 5000, 60000), credentials=ExplicitXTDBReadCredentials(parameters.get("password") or "explicit-fixture-trust"))
+        bridge = object.__new__(_native.NativeContractFixture)
+        bridge.runtime, bridge.scope, bridge.namespace = f.runtime, f.scope, f.namespace
+        bridge.read_hook, bridge.binder_hook = None, None
+        factory = InitializedNativeSessionFactory(artifact_sha256="2" * 64, configuration_sha256="3" * 64,
+            connection_opener=opener, bind_initialized=bridge._bind, backend_read_timeout_ms=5000)
+        reads = SelectedNativeReadServices(manifest=read_manifest, factory=factory)
+        worker.manifest = replace(worker.manifest, read_service_artifact_sha256=reads.artifact_sha256,
+            read_service_configuration_sha256=reads.configuration_sha256,
+            writer_guard_artifact_sha256=writer_guard.artifact_sha256,
+            writer_guard_configuration_sha256=writer_guard.configuration_sha256)
+        key = _native.Ed25519PrivateKey.generate()
+        payload = {"schema": "fictional-worker-qualification-v1", "manifest": worker.manifest.manifest_sha256}
+        worker.qualification_receipt = canonical_json_bytes({"payload": payload,
+            "signature": base64.b64encode(key.sign(canonical_json_bytes(payload))).decode()})
+        worker.verifier = _native.worker_fixture.FictionalWorkerQualifier(key.public_key())
+        frozen = FrozenNativeArmPlan(f.scope, f.namespace, "flora_full", worker.manifest.manifest_sha256,
+            tuple(NativeInvocationEntry("case", phase, "paired-native-" + phase, context_plan,
+                hashlib.sha256(_context_bytes(context)).hexdigest()) for phase in ("before", "after")))
+        bindings["flora_full"] = replace(bindings["flora_full"], lineage_sha256=frozen.lineage_sha256)
+        plan = replace(plan, arm_bindings=bindings)
         custody.register_inputs(run_id="native-run", plan=plan, histories=histories,
                                 questions={"case": question}, occurred_at=f.fabric._time())
 
@@ -109,6 +167,8 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
         for (case_id, phase), history in histories.items():
             for event_id in history.event_ids:
                 grant(f.registry.lookup(event_id), evaluation_purpose("native-run", case_id, phase))
+            grant(f.registry.lookup(custody.metadata("native-run", f"history:{case_id}:{phase}").event_id),
+                evaluation_purpose("native-run", case_id, phase))
         history_authority = SelectedRunEvidencePolicy(custody=custody, run_id="native-run", permissions=f.policy)
         verifier = NativeJudgmentLineageVerifier(runtime=f.runtime, history_authority=history_authority,
             run_plan_sha256=plan.digest(), history_for=lambda case, phase: histories[(case, phase)],
@@ -116,24 +176,54 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
             phase_receipt_for=lambda snapshot: _phase.fictional_phase_receipt(snapshot, f.qualification_key))
         policy = SelectedRunEvidencePolicy(custody=custody, run_id="native-run", permissions=f.policy,
                                            native_lineage=verifier)
-        executions = {}
-        class SuppliedFixtureNativeArm:
-            async def prepare(self, request):
-                return f.runtime._context(context_plan)
-            async def execute(self, request):
-                actual = f.runtime.judge(plan=context_plan, task=request.question,
-                                         invocation_id="paired-native-" + request.phase)
-                for recorded in (actual.delivery, actual.execution.output_record, actual.decision):
-                    custody.register_recorded(recorded)
-                custody.register_context(run_id="native-run", context=actual.context,
-                                         delivery=actual.delivery, occurred_at=f.fabric._time())
-                # Explicit fake metering fixture; production metering is external.
-                result = ArmResult(actual.execution.result.output, actual.delivery, actual.decision,
-                                   MeasuredUsage("fictional-feature", 5, 10, 5, 0))
-                executions[(request.case_id, request.phase, "flora_full")] = (request, result)
-                return result
-        run = asyncio.run(run_paired(plan=plan, histories=histories, questions={"case": question},
-            adapters={"flora_full": SuppliedFixtureNativeArm()}, evidence_policy=policy))
+        judgments = {phase: f.runtime.judge(plan=context_plan, task=question, invocation_id="paired-native-" + phase)
+            for phase in ("before", "after")}
+        # Existing receipts are recovered; the passive callbacks cannot infer.
+        for binding in f.runtime.bindings.values():
+            binding.adapter.invoke = lambda *_: self.fail("passive fixture invoked inference")
+        bridge.lineage = verifier
+        def bind_actual_history(runtime, lineage):
+            owner = copy(runtime.state_approval_verifier)
+            owner.proofs = copy(owner.proofs)
+            owner.proofs.custody = runtime.private
+            runtime.state_approval_verifier = owner
+            owned = copy(custody)
+            owned._physical_custody = getattr(custody, "_physical_custody", custody)
+            owned.connection, owned.registry, owned.objects = runtime.sources.connection, runtime.sources, runtime.objects
+            owned.raw_custody = type(custody.raw_custody)(registry=runtime.sources, objects=runtime.objects)
+            lineage.history_authority = SelectedRunEvidencePolicy(custody=owned, run_id="native-run",
+                permissions=runtime.source_policy)
+        bridge.read_hook = bind_actual_history
+        class PhaseMeter(_native.FixtureMeter):
+            def payload(self, request):
+                judgment = judgments[request.phase]
+                return {"schema": "fictional-native-meter-v1", "run_plan": request.plan.digest(),
+                    "case_id": request.case_id, "phase": request.phase,
+                    "invocation_id": judgment.execution.invocation.invocation_id,
+                    "input_sha256": judgment.execution.invocation.input_sha256,
+                    "output_sha256": hashlib.sha256(judgment.execution.result.output).hexdigest(),
+                    "usage": vars(self.usage)}
+        meter = PhaseMeter(SimpleNamespace())
+        meter.usage = MeasuredUsage("fictional-feature", 5, 10, 5, 0)
+        class Codec(_native.FixtureWorkerCodec):
+            def encode_request(self, *, frozen, entry, request):
+                return canonical_json_bytes({"invocation_id": entry.invocation_id,
+                    "output_event": judgments[request.phase].execution.output_record.event.event_id,
+                    "meter": base64.b64encode(meter.receipt(request)).decode(),
+                    "question_sha256": hashlib.sha256(request.question).hexdigest(),
+                    "context_sha256": hashlib.sha256(_context_bytes(request.context)).hexdigest(),
+                    "frozen_arm_sha256": frozen.lineage_sha256})
+        codec = Codec(SimpleNamespace())
+        native = NativeArmAdapter(run_id="native-run", run_plan=plan, frozen=frozen, custody=custody,
+            worker=worker, codec=codec, reads=reads, meter=meter, writer_guard=writer_guard)
+        async def exercise():
+            try:
+                return await run_paired(plan=plan, histories=histories, questions={"case": question},
+                    adapters={"flora_full": native}, evidence_policy=policy)
+            finally:
+                await reads.aclose()
+        run = asyncio.run(exercise())
+        executions = native.execution_records
         self.assertEqual([attempt.status for attempt in run.attempts if attempt.arm == "flora_full"], ["success"] * 2)
         self.assertEqual(sum(attempt.status == "unavailable" for attempt in run.attempts), 4)
         for request, result in executions.values():

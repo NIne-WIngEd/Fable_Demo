@@ -74,6 +74,29 @@ source registration committed but the XTDB artifact insert failed, retry locates
 and verifies that exact append rather than producing a second event. Conflicting
 content, metadata or parent lineage under the same artifact ID is rejected.
 
+## Unknown after checkpoints: separate capture from evaluation
+
+The prepared-synthetic two-stage path registers an actual experiment anchor
+before any update. `register_preregistered_inputs(...)` records its original
+histories and questions without requiring a final model or context digest.
+Qualified before and after captures later supply the observed bindings. The
+final `PairedRunPlan` uses schema v3 and includes `preregistration_sha256` in its
+digest; its complete phase bindings belong to the final seal.
+
+`register_inputs(..., final_authority=...)` then accepts that plan only through
+the actual `RegisteredExperimentFinalBinding`. Selected evaluation context,
+result verification and run custody check this same current authority. Omitting
+the argument or supplying an older plan cannot make an anchored run a legacy
+run: the store checks its durable anchor, including a committed append whose
+index still needs explicit reconciliation. Guarded copies keep the same physical
+owner identity and check authority at private reads, object writes and canonical
+appends. History-only authority remains available for authorized capture before
+the final seal; it does not grant evaluation authority.
+
+Generic artifact reads refuse preregistration controls. Their dedicated recovery
+route verifies the declared slot table, ordering and current producer proofs.
+These contracts remain infrastructure checks, not evidence that a model learned.
+
 ## Permissions stay separate
 
 Registration records custody; it grants no use permission. Existing signed owner

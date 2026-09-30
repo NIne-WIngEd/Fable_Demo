@@ -12,6 +12,7 @@ from unittest.mock import patch
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from flora.comparator import ProviderRequest, ProviderResponse, encoded, provider_payload, sha
 from flora.comparison_run import ExecutionRequest, PreparationRequest
@@ -81,6 +82,12 @@ def fixture_owner(*, feature_call_budget=1):
             content_digest=sha(content), parent_event_ids=history.event_ids)
     owner.comparison = SimpleNamespace(authority_namespace_id="fixture-authority", scope_digest="a" * 64,
                                       metadata=lambda run, name: comparison_records.get(name))
+    # This object.__new__ fixture replaces selected custody explicitly. Actual
+    # production construction has no duck-typed final-authority fallback.
+    owner._require_final = lambda **kwargs: None
+    # This object.__new__ fixture has no selected SQL authority rows. Real
+    # terminal row fences are covered separately by test_provider_source_fence.
+    owner._permission_fence = lambda *args: SimpleNamespace(verify_final_current_rows=lambda: None)
     def source(event_id):
         event = event_by_id[event_id]
         raw = SimpleNamespace(object_id="fictional-object:" + canonical_sha256(event_id),
@@ -97,7 +104,7 @@ def fixture_owner(*, feature_call_budget=1):
                                         set(req.context.source_event_ids).issubset(history.event_ids))
     owner._phase_history = phase_history
     owner._metadata = lambda task_id, kind: records.get((task_id, kind))
-    owner.objects = SimpleNamespace()
+    owner.objects = SimpleNamespace(backend=SimpleNamespace())
     def save(task_id, kind, body, *, parents, capture_sources, metadata):
         owner._require(capture_sources, capture_purpose(owner.run_id))
         saved = {"event_id": "fictional-provider:" + canonical_sha256([task_id, kind]),
@@ -340,8 +347,10 @@ class ProviderAttemptContractsTest(unittest.TestCase):
                 state["allowed"] = False
                 return value
             objects.backend.get_object = revoke_during_cipher_read
-            with self.assertRaises(PermissionError):
-                guarded.get(raw)
+            with patch.object(AESGCM, "decrypt", side_effect=AssertionError("opened withdrawn plaintext")) as opened:
+                with self.assertRaises(PermissionError):
+                    guarded.get(raw)
+                opened.assert_not_called()
             self.assertNotEqual(capture_purpose("run"), audit_purpose("run"))
 
 

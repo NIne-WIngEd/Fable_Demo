@@ -112,6 +112,7 @@ class PairedRunPlan:
     question_sha256_by_case: Mapping[str, str]
     evidence_kind: str = "contract_fixture"
     phase_bindings: Mapping[tuple[str, str, str], ArmBinding] | None = None
+    preregistration_sha256: str | None = None
 
     def validate(self) -> None:
         self.protocol.validate()
@@ -138,6 +139,10 @@ class PairedRunPlan:
                 if not isinstance(binding, ArmBinding):
                     raise ValueError("invalid phase arm binding")
                 binding.validate()
+        if self.preregistration_sha256 is not None:
+            require_sha256(self.preregistration_sha256, "preregistration_sha256")
+            if self.phase_bindings is None:
+                raise ValueError("preregistered final plans require complete observed phase bindings")
 
     def binding_for(self, case_id: str, phase: str, arm: str) -> ArmBinding:
         if (phase not in PHASES or arm not in ARMS
@@ -163,6 +168,9 @@ class PairedRunPlan:
         if self.phase_bindings is not None:
             material["schema"] = "flora-paired-run-plan-v2"
             material["phase_bindings"] = self.phase_binding_record()
+        if self.preregistration_sha256 is not None:
+            material["schema"] = "flora-paired-run-plan-v3"
+            material["preregistration_sha256"] = self.preregistration_sha256
         return _sha(_bytes(material))
 
 
@@ -378,6 +386,13 @@ async def run_paired(
     in separately terminable workers. No external API is called by this module.
     """
     plan.validate()
+    if plan.preregistration_sha256 is not None:
+        from .selected.comparison_custody import SelectedRunEvidencePolicy
+        if not isinstance(evidence_policy, SelectedRunEvidencePolicy):
+            raise PermissionError("anchored evaluation requires actual selected final authority")
+    final_check = getattr(evidence_policy, "require_final_authority", None)
+    if callable(final_check):
+        final_check(plan=plan)
     digest = plan.digest()
     if set(adapters) - ARMS:
         raise ValueError("unknown execution arm")

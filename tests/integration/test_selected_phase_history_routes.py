@@ -189,7 +189,7 @@ class SelectedPhaseHistoryRoutesTest(unittest.TestCase):
             "qualification_id":"fictional-qualified-personality-after", "manifest_sha256":manifest.manifest_sha256, "runtime_allowed":True}
         receipt = canonical_json_bytes({"payload":q,"signature":base64.b64encode(f.qualification_key.sign(canonical_json_bytes(q))).decode()})
         f.artifacts.admit(manifest=manifest, checkpoint_path=checkpoint, external_receipt=receipt, verifier=f.qualifier,
-            expected_previous_artifact_id="fictional-personality_judgment")
+            expected_previous_artifact_id="fictional-personality_judgment", expected_previous_generation=1)
         f.bindings[role] = replace(f.bindings[role], checkpoint_path=checkpoint)
         f._bind_services(f.connection)
         custody = XTDBPhaseSnapshotCustody(runtime=f.runtime, run_id="phase-run", run_plan_sha256=run_plan.digest(), clock=f.fabric._time)

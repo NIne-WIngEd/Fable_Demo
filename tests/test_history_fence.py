@@ -7,6 +7,8 @@ from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime, timezone
 import hashlib
+import inspect
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -21,6 +23,7 @@ from flora.selected.formation_registry import XTDBFormationSourceRegistry
 from flora.selected.history_fence import authorize_history_metadata, verify_current_history_metadata
 from flora.selected.owner_authorization import OwnerActionProof, owner_action_message
 import test_governed_development as helpers
+from metadata_batch_fixture import install_current_metadata_batch
 
 
 class HistoryFenceTest(unittest.TestCase):
@@ -29,6 +32,7 @@ class HistoryFenceTest(unittest.TestCase):
         self.f.setUp()
         self.addCleanup(self.f.doCleanups)
         f = self.f
+        install_current_metadata_batch(f.connection)
         f.log.replay_committed = lambda: tuple(CommittedExperience(event, i,
             datetime(2026, 9, 29, 14, tzinfo=timezone.utc)) for i, event in enumerate(f.log.events))
         def append(event, *, expected_revision):
@@ -156,6 +160,98 @@ class HistoryFenceTest(unittest.TestCase):
         with patch.object(self.permissions, "current_action", side_effect=action):
             with self.assertRaises(PermissionError):
                 self.verify()
+        self.assertTrue(changed)
+
+    def test_last_final_grant_callback_cannot_withdraw_an_earlier_original(self):
+        original = self.permissions.current_action
+        lines, first_line = inspect.getsourcelines(verify_current_history_metadata)
+        final_line = first_line + next(index for index, line in enumerate(lines)
+            if "action = permissions.current_action(snapshot.event_id, purpose)" in line)
+        changed = False
+        def action(event_id, purpose):
+            nonlocal changed
+            result = original(event_id, purpose)
+            frame = sys._getframe(1)
+            at_final = False
+            while frame is not None:
+                if frame.f_code is verify_current_history_metadata.__code__ and frame.f_lineno == final_line:
+                    at_final = True
+                    break
+                frame = frame.f_back
+            if at_final and event_id == self.before.event_ids[-1] and not changed:
+                changed = True
+                self.grant(self.before.event_ids[0], "before", "revoke")
+            return result
+        original_read = self.f.objects.backend.get_object
+        original_objects = {material.event.payload_reference for material in self.before.sources}
+        def read(namespace, object_id):
+            self.assertNotIn(object_id, original_objects, "metadata fence opened original ciphertext")
+            return original_read(namespace, object_id)
+        with patch.object(self.permissions, "current_action", side_effect=action), \
+             patch.object(self.f.objects.backend, "get_object", side_effect=read):
+            # The independent enrolled owner persists the actual revoke; its
+            # request crypto is separate from original source decryption.
+            with self.assertRaises(PermissionError):
+                self.verify()
+        self.assertTrue(changed)
+
+    def test_initial_private_authentication_ends_with_complete_current_grant_fence(self):
+        original = self.permissions.current_action
+        lines, first_line = inspect.getsourcelines(verify_current_history_metadata)
+        final_line = first_line + next(index for index, line in enumerate(lines)
+            if "action = permissions.current_action(snapshot.event_id, purpose)" in line)
+        changed = False
+        opened = []
+        original_read = self.f.objects.backend.get_object
+        original_objects = {material.event.payload_reference for material in self.before.sources}
+        def read(namespace, object_id):
+            if object_id in original_objects:
+                opened.append(object_id)
+            return original_read(namespace, object_id)
+        def action(event_id, purpose):
+            nonlocal changed
+            result = original(event_id, purpose)
+            frame = sys._getframe(1)
+            at_final = False
+            while frame is not None:
+                if frame.f_code is verify_current_history_metadata.__code__ and frame.f_lineno == final_line:
+                    at_final = True
+                    break
+                frame = frame.f_back
+            if at_final and event_id == self.before.event_ids[-1] and not changed:
+                # The initial path must authenticate both real originals first.
+                self.assertTrue(original_objects.issubset(opened))
+                changed = True
+                self.grant(self.before.event_ids[0], "before", "revoke")
+            return result
+        with patch.object(self.permissions, "current_action", side_effect=action), \
+             patch.object(self.f.objects.backend, "get_object", side_effect=read):
+            self.assertFalse(self.policy.authorize_history(case_id="case", phase="before", history=self.before))
+        self.assertTrue(changed)
+        self.assertTrue(original_objects.issubset(opened))
+
+    def test_final_permission_marker_callback_cannot_restore_a_withdrawn_original(self):
+        method = SelectedRunEvidencePolicy.current_original_permission_marker
+        lines, first_line = inspect.getsourcelines(method)
+        final_line = first_line + max(index for index, line in enumerate(lines)
+            if "action = self.permissions.current_action(event_id, purpose)" in line)
+        original, changed = self.permissions.current_action, False
+        def action(event_id, purpose):
+            nonlocal changed
+            result = original(event_id, purpose)
+            frame, at_final = sys._getframe(1), False
+            while frame is not None:
+                if frame.f_code is method.__code__ and frame.f_lineno == final_line:
+                    at_final = True
+                    break
+                frame = frame.f_back
+            if at_final and event_id == self.before.event_ids[-1] and not changed:
+                changed = True
+                self.grant(self.before.event_ids[0], "before", "revoke")
+            return result
+        with patch.object(self.permissions, "current_action", side_effect=action):
+            self.assertIsNone(self.policy.current_original_permission_marker(
+                case_id="case", phase="before", history=self.before))
         self.assertTrue(changed)
 
     def test_raw_reference_changes_during_grants_cannot_accept_old_held_bytes(self):

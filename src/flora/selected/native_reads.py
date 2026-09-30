@@ -232,6 +232,9 @@ class SelectedNativeReadServices:
                                 authority.permissions, authority.permissions.registry)
             if any(getattr(plane, "connection", None) not in session.connections for plane in authority_planes):
                 raise ValueError("native phase history authority retained an unowned selected-store connection")
+            final = getattr(authority, "final_authority", None)
+            if final is not None:
+                self._check_final_session(session, final)
         proofs = getattr(runtime.state_approval_verifier, "proofs", None)
         if isinstance(proofs, DurableOwnerProofLookup) and proofs.custody.connection not in session.connections:
             raise ValueError("native owner proof lookup retained an unowned selected-store connection")
@@ -239,10 +242,76 @@ class SelectedNativeReadServices:
             if "reconcile" not in inspect.signature(target).parameters:
                 raise ValueError("native runtime has no strictly read-only recovery path")
 
+    @staticmethod
+    def _check_final_session(session, final):
+        # The actual sealed controller must be reconstructed on this read
+        # session. A writer final object cannot be invoked by a passive thread.
+        from .experiment_preregistration import RegisteredExperimentFinalBinding
+        if not isinstance(final, RegisteredExperimentFinalBinding):
+            raise TypeError("native evaluation requires its actual registered final binding")
+        store = final.store
+        planes = (store.comparison, store.comparison.registry, store.permissions,
+                  store.permissions.registry, store.manifests)
+        planes += tuple(plane for authority in store.manifests.authorities.values()
+                        for plane in (authority.registry, authority.permissions, authority.permissions.registry))
+        if store.phase_custody is not None:
+            phase = store.phase_custody
+            runtime = phase.runtime
+            planes += (phase, phase.artifact_permissions, phase.artifact_permissions.registry,
+                       runtime.artifacts, runtime.claims, runtime.sources, runtime.source_policy,
+                       runtime.candidates, runtime.state, runtime.private,
+                       runtime.original_references.custody,
+                       phase.artifact_source_policy.claims, phase.artifact_source_policy.state,
+                       phase.artifact_source_policy.registry, phase.artifact_source_policy.permissions)
+            if runtime.state.episodes is not None:
+                planes += (runtime.state.episodes,)
+        if any(getattr(plane, "connection", None) not in session.connections for plane in planes):
+            raise ValueError("native final binding retained an unowned selected-store connection")
+        if (final.scope != session.runtime.scope
+                or final.authority_namespace_id != session.runtime.authority_namespace_id
+                or final.final_plan_sha256 != session.lineage.run_plan_sha256):
+            raise ValueError("native final binding differs from its exact owned run lineage")
+
+    def _require_owned_final(self, session, entry, request=None):
+        authority = session.lineage.history_authority
+        anchored = entry.phase_snapshot is not None and entry.phase_snapshot.preregistration_sha256 is not None
+        if not isinstance(authority, SelectedRunEvidencePolicy):
+            if anchored or (request is not None and request.plan.preregistration_sha256 is not None):
+                raise PermissionError("anchored native reads require actual selected final authority")
+            return None
+        # Actual custody detects the durable anchor even if an optional object
+        # or caller's plan tries to omit it. This happens before original reads.
+        supplied = getattr(authority, "final_authority", None)
+        if supplied is not None:
+            self._check_final_session(session, supplied)
+        final = authority.require_final_authority(plan=None if request is None else request.plan)
+        if final is None:
+            if anchored:
+                raise PermissionError("anchored native snapshot lacks its actual observed final seal")
+            return None
+        self._check_final_session(session, final)
+        frozen = final.native_plans.get(entry.phase_snapshot.arm if anchored else "flora_full")
+        if (not anchored or frozen is None
+                or entry.record() != frozen.entry(entry.case_id, entry.phase).record()
+                or entry.phase_snapshot.run_id != final.run_id
+                or entry.phase_snapshot.preregistration_sha256 != final.preregistration_sha256):
+            raise PermissionError("native read differs from its actual final invocation and captured snapshot")
+        final.require_evaluation(plan=final.plan if request is None else request.plan,
+            case_id=entry.case_id, phase=entry.phase, arm=entry.phase_snapshot.arm,
+            invocation_id=entry.invocation_id)
+        return final
+
     async def _read(self, action):
         self._check_configuration()
         deadline = asyncio.get_running_loop().time() + self.manifest.maximum_read_wall_time_ms / 1000
         async with asyncio.timeout_at(deadline):
+            # Keep the bounded timer active while physical cleanup owns the
+            # slot. Embedded event loops may delay cross-thread wakeups until
+            # their next timer; a cancelled first await otherwise leaves only
+            # the long operation timeout to service its completion callback.
+            # The callback still releases the slot only after actual cleanup.
+            while self._slots.locked():
+                await asyncio.sleep(.005)
             await self._slots.acquire()
             try:
                 self._check_configuration()
@@ -275,6 +344,10 @@ class SelectedNativeReadServices:
             raise ValueError("native passive request differs from frozen invocation")
         if request.plan.digest() != session.lineage.run_plan_sha256:
             raise ValueError("native passive request changed frozen run plan")
+        if (not isinstance(request.question, bytes)
+                or hashlib.sha256(request.question).hexdigest()
+                    != request.plan.question_sha256_by_case.get(entry.case_id)):
+            raise ValueError("native passive request changed its independently frozen question")
         history = session.lineage.history_for(entry.case_id, entry.phase)
         if isinstance(request, PreparationRequest):
             if request.history != history:
@@ -332,7 +405,17 @@ class SelectedNativeReadServices:
             if not event.parent_event_ids:
                 return event.event_type == "state_activation_approval"
             return all(phase_member(parent, set(visited)) for parent in event.parent_event_ids)
-        policy, context_policy = runtime.source_policy, runtime.context_policy
+        # The initialized runtime may share these current original readers
+        # with its actual final-seal controller or archive custody. Fence only
+        # this model-context view; never replace those controllers' predicates.
+        policy, context_policy = copy(runtime.source_policy), copy(runtime.context_policy)
+        state = copy(runtime.state)
+        state.policy = policy
+        if state.episodes is not None:
+            state.episodes = copy(state.episodes)
+            state.episodes.policy = policy
+        runtime.source_policy, runtime.state, runtime.context_policy = policy, state, context_policy
+        context_policy.permissions, context_policy.state = policy, state
         permits, allow_event = policy.permits, context_policy.allow_event
         def phase_permits(source, purpose):
             return (phase_now()
@@ -350,15 +433,26 @@ class SelectedNativeReadServices:
         the actual selected route and its actual lineage must be kept together.
         """
         entry.record()
+        binding = entry.phase_snapshot
+        if binding is not None and request is not None:
+            if not isinstance(request, (PreparationRequest, ExecutionRequest)):
+                raise TypeError("selected native phase routes require an exact execution/preparation request")
+            if isinstance(request, ExecutionRequest):
+                if request.binding != request.plan.binding_for(entry.case_id, entry.phase, binding.arm):
+                    raise ValueError("native request binding differs from frozen phase snapshot arm")
+                # Before even the history controller opens private originals,
+                # reject caller-supplied changes to the frozen context bytes.
+                self._check_context(entry, request.context)
+        final = self._require_owned_final(session, entry, request)
         history = (session.lineage.history_for(entry.case_id, entry.phase) if request is None
                    else self._history(session, entry, request))
         artifact_permissions = copy(session.runtime.source_policy)
         self._install_phase_source_gate(session, entry, history)
-        binding = entry.phase_snapshot
         if binding is None:
             if not self.manifest.allow_current_fixture_route or session.phase_route_for is not None:
                 raise PermissionError("native production reads require an exact selected phase snapshot route")
             def fixture_guard():
+                self._require_owned_final(session, entry, request)
                 if session.lineage.history_authority.authorize_history(case_id=entry.case_id,
                         phase=entry.phase, history=history) is not True:
                     raise PermissionError("native fixture phase permission changed before private I/O")
@@ -367,12 +461,6 @@ class SelectedNativeReadServices:
             raise PermissionError("native phase snapshot has no qualified fresh-session resolver")
         if arm is not None and arm != binding.arm:
             raise ValueError("native requested arm differs from frozen phase snapshot binding")
-        if request is not None:
-            if not isinstance(request, (PreparationRequest, ExecutionRequest)):
-                raise TypeError("selected native phase routes require an exact execution/preparation request")
-            if isinstance(request, ExecutionRequest) and request.binding != request.plan.binding_for(
-                    entry.case_id, entry.phase, binding.arm):
-                raise ValueError("native request binding differs from frozen phase snapshot arm")
         route = session.phase_route_for(entry=entry, request=request,
                                        artifact_permissions=artifact_permissions)
         def same_phase_authority(actual, expected):
@@ -385,6 +473,7 @@ class SelectedNativeReadServices:
                     and isinstance(expected, SelectedRunEvidencePolicy)
                     and actual.run_id == expected.run_id
                     and actual.permissions is expected.permissions
+                    and getattr(actual, "final_authority", None) is getattr(expected, "final_authority", None)
                     and actual.custody.connection is expected.custody.connection
                     and actual.custody.registry is expected.custody.registry
                     and actual.custody.log is expected.custody.log)
@@ -394,25 +483,39 @@ class SelectedNativeReadServices:
                 or route.history != history
                 or route.history_authority is not session.lineage.history_authority
                 or not same_phase_authority(route.lineage.history_authority, session.lineage.history_authority)
+                or route.final_authority is not final
                 or route.lineage.run_plan_sha256 != session.lineage.run_plan_sha256):
             raise ValueError("native resolver returned an unrelated or unowned selected phase route")
         routed = NativeReadSession(route.runtime, route.lineage, session.connections)
         self._check_session(routed)
         captured = route.snapshot.record
         metadata = route.custody.metadata(binding.snapshot_id)
+        if final is not None:
+            expected_record = (("preregistration_sha256", final.preregistration_sha256),)
+            if (route.custody.preregistration is None
+                    or route.custody.preregistration_sha256 != final.preregistration_sha256
+                    or metadata is None
+                    or any(metadata[name] != getattr(binding, name)
+                           for name in ("preregistration_sha256", "snapshot_sha256", "event_id", "event_sha256"))):
+                raise ValueError("native selected archive changed its anchored body or canonical event binding")
+        else:
+            expected_record = (("run_plan_sha256", session.lineage.run_plan_sha256),)
+            if route.custody.run_plan_sha256 != session.lineage.run_plan_sha256:
+                raise ValueError("native legacy archive differs from exact frozen run lineage")
         if (route.custody.run_id != binding.run_id or route.snapshot.snapshot_id != binding.snapshot_id
-                or route.custody.run_plan_sha256 != session.lineage.run_plan_sha256
                 or metadata is None or metadata["snapshot_sha256"] != route.snapshot.snapshot_sha256
-                or any(captured[name] != value for name, value in (
+                or any(captured[name] != value for name, value in expected_record + (
                     ("run_id", binding.run_id), ("snapshot_id", binding.snapshot_id),
                     ("case_id", entry.case_id), ("phase", entry.phase), ("arm", binding.arm),
-                    ("run_plan_sha256", session.lineage.run_plan_sha256), ("history_sha256", history.digest())))
+                    ("history_sha256", history.digest())))
                 or tuple(captured["original_event_ids"]) != tuple(sorted(history.event_ids))
                 or route.snapshot.plan != entry.context_plan):
             raise ValueError("native selected archive differs from exact frozen invocation/history")
         def guard():
+            self._require_owned_final(routed, entry, request)
             route.custody.authorize(snapshot_id=binding.snapshot_id, history=history,
                 history_authority=route.history_authority, expected=metadata)
+            self._require_owned_final(routed, entry, request)
         guard()
         return routed, history, guard, binding.arm, captured["context_receipt"]
 
@@ -445,14 +548,63 @@ class SelectedNativeReadServices:
             return allowed
         return await self._read(action)
 
+    async def authorize_final_metadata(self, *, entry, request, run_id, physical_custody, expected_final):
+        """Current final detection without invoking the writer on a read thread.
+
+        Supplied writer objects contribute identity only. Actual control and
+        source rows are read by the freshly owned selected controller.
+        """
+        def action(session):
+            authority = session.lineage.history_authority
+            if (not isinstance(authority, SelectedRunEvidencePolicy)
+                    or getattr(authority.custody, "_physical_custody", authority.custody) is not physical_custody
+                    or authority.run_id != run_id
+                    or (entry.phase_snapshot is not None and entry.phase_snapshot.run_id != run_id)):
+                raise PermissionError("native final reader differs from actual selected writer custody")
+            final = self._require_owned_final(session, entry, request)
+            if final is not None:
+                from .experiment_preregistration import RegisteredExperimentFinalBinding
+                if (not isinstance(expected_final, RegisteredExperimentFinalBinding)
+                        or final.run_id != expected_final.run_id
+                        or final.scope != expected_final.scope
+                        or final.authority_namespace_id != expected_final.authority_namespace_id
+                        or final.preregistration_sha256 != expected_final.preregistration_sha256
+                        or final.final_plan_sha256 != expected_final.final_plan_sha256
+                        or final._record != expected_final._record):
+                    raise PermissionError("native actual final authority was omitted or changed")
+            elif expected_final is not None:
+                raise PermissionError("native final reader lacks its supplied durable anchored seal")
+            return final is not None
+        return await self._read(action)
+
+    async def authorize_evaluation(self, *, entry, request):
+        """Full outer seal qualification before dispatch or accepting a result."""
+        def action(session):
+            routed, history, guard, arm, receipt = self._phase_session(session, entry, request)
+            self._check_context(entry, request.context, receipt)
+            final = self._require_owned_final(routed, entry, request)
+            if final is None:
+                raise PermissionError("native outer evaluation needs its actual final authority")
+            guard()
+            allowed = final.authorize_evaluation(plan=request.plan, case_id=entry.case_id,
+                phase=entry.phase, arm=arm, invocation_id=entry.invocation_id)
+            guard()
+            return allowed is True
+        return await self._read(action)
+
     async def recover_judgment(self, *, entry, request) -> JudgmentRun:
         def action(session):
             routed, history, guard, arm, receipt = self._phase_session(session, entry, request)
             self._check_context(entry, request.context, receipt)
             guard()
-            if routed.lineage.authorize_context(case_id=entry.case_id, phase=entry.phase,
-                    history=history, context=request.context, arm=arm, authority_guard=guard) is not True:
-                raise PermissionError("native recovery lost current phase permission")
+            if entry.phase_snapshot is None:
+                # Fixture fallback has no fresh qualified archive constructor.
+                # Production already authenticated exact context and producer
+                # lineage in that constructor; runtime recovery now freshly
+                # qualifies/assembles it, with a full post-recovery proof below.
+                if routed.lineage.authorize_context(case_id=entry.case_id, phase=entry.phase,
+                        history=history, context=request.context, arm=arm, authority_guard=guard) is not True:
+                    raise PermissionError("native recovery lost current phase permission")
             guard()
             actual = routed.runtime.recover_judgment(plan=entry.context_plan, task=request.question,
                 invocation_id=entry.invocation_id, reconcile=False, authority_guard=guard)

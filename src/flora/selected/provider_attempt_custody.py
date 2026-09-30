@@ -30,7 +30,6 @@ from .comparator_memory import verify_window_context
 from .formation_context import register_experience_source
 from .formation_policy import XTDBFormationPermissionPolicy
 from .formation_registry import RegisteredEncryptedFormationCustody
-from .object_store import EncryptedObjectPlane
 
 _TABLE = "flora_provider_attempt_artifacts"
 _RESULTS = {"success", "http_error", "incomplete", "refused", "cancelled", "timeout", "invalid_or_failed"}
@@ -107,9 +106,18 @@ class OriginalMemoryProviderInputVerifier:
 class _CheckedObjects:
     """Gate nested decrypts, including put/recovery's internal get calls."""
     def __init__(self, objects, check: Callable[[], None]):
-        self.objects, self.check = objects, check
+        from .experiment_manifests import _GuardedObjects
+        self.objects, self.check = _GuardedObjects(objects, check), check
+    def __copy__(self):
+        return type(self)(self.objects, self.check)
+    @property
+    def backend(self):
+        return self.objects.backend
+    @backend.setter
+    def backend(self, value):
+        self.objects.backend = value
     def __getattr__(self, name):
-        return getattr(self.objects, name)
+        return getattr(object.__getattribute__(self, "objects"), name)
     def get(self, reference):
         self.check()
         content = self.objects.get(reference)
@@ -117,10 +125,10 @@ class _CheckedObjects:
         return content
     def put(self, content):
         self.check()
-        return EncryptedObjectPlane.put(self, content)
+        return self.objects.put(content)
     def recover_reference(self, **kwargs):
         self.check()
-        return EncryptedObjectPlane.recover_reference(self, **kwargs)
+        return self.objects.recover_reference(**kwargs)
 
 
 @dataclass(frozen=True)
@@ -158,6 +166,45 @@ class XTDBProviderAttemptCustody:
         self._public_bytes, self._public = observer_public_key, Ed25519PublicKey.from_public_bytes(observer_public_key)
         self.clock = clock
 
+    def _require_final(self, *, request=None, task_id=None, arm=None, body=None, qualified=False,
+                       capture_only=False):
+        """Actual durable run mode cannot be omitted from provider dispatch.
+
+        Inner object/append fences use metadata only. Dispatch and accepted
+        answers additionally requalify the actual producer/capture proofs.
+        Already observed failed calls retain their separate capture route.
+        """
+        if not isinstance(self.comparison, XTDBComparisonCustody):
+            raise TypeError("provider custody requires actual selected final authority")
+        plan = None if request is None else request.plan
+        arguments = {"run_id": self.run_id, "plan": plan,
+                     "final_authority": getattr(self.evidence, "final_authority", None)}
+        if capture_only:
+            arguments["capture_only"] = True
+        authority = self.comparison.require_final_authority(**arguments)
+        if authority is None:
+            return None
+        if body is not None:
+            if body["plan_sha256"] != authority.final_plan_sha256:
+                raise PermissionError("provider task changed its actually sealed final plan")
+            task_id, arm = body["task_id"], body["arm"]
+            case_id, phase = body["case_id"], body["phase"]
+        elif request is not None:
+            case_id, phase = request.case_id, request.phase
+        else:
+            return authority
+        if body is None and arm is None and task_id is None:
+            return authority
+        # This preregistration declares the comparator's provider task matrix.
+        # Native feature packets need their own independent declared task port.
+        if arm != "general_model_memory" or task_id is None:
+            raise PermissionError("provider task lacks its predeclared final evaluation identity")
+        method = (authority.authorize_attempt_capture if capture_only else
+                  authority.authorize_evaluation if qualified else authority.require_evaluation)
+        method(plan=authority.plan if plan is None else plan, case_id=case_id, phase=phase,
+            arm=arm, invocation_id=task_id)
+        return authority
+
     def _key(self, task_id, kind):
         identifier(task_id, "task_id")
         if kind not in {"task", "authorization", "observation"}:
@@ -177,10 +224,20 @@ class XTDBProviderAttemptCustody:
         return source, event, raw
 
     def _require(self, source_ids, purpose):
+        capture_only = purpose in {capture_purpose(self.run_id), audit_purpose(self.run_id)}
+        self._require_final(capture_only=capture_only)
+        permission_rows = self._permission_fence(source_ids, purpose)
         for event_id in source_ids:
             source, _, _ = self._source(event_id)
             if self.permissions.permits(source, purpose) is not True:
                 raise PermissionError("private provider source is not currently permitted")
+        self._require_final(capture_only=capture_only)
+        permission_rows.verify_final_current_rows()
+
+    def _permission_fence(self, source_ids, purpose):
+        from .comparator_memory import _current_permission_rows
+        return _current_permission_rows(registry=self.registry, permissions=self.permissions,
+            source_ids=source_ids, purpose=purpose)
 
     def _read_source(self, event_id, purpose):
         source, _, _ = self._source(event_id)
@@ -250,6 +307,9 @@ class XTDBProviderAttemptCustody:
                     derivation_activity_id="provider_attempt:" + key, responsible_component="provider_attempt_custody"),
                 retention_class="ordinary_experience", storage_tier="raw_buffer", parent_event_ids=parents,
                 payload_reference=raw.object_id)
+            # Clock/revision/source calls can be slow; recheck immediately at
+            # the canonical boundary, including an observed failure capture.
+            self._require(capture_sources, capture_purpose(self.run_id))
             self.log.append(event, expected_revision=len(events) - 1)
         source = register_experience_source(event_id=event.event_id, raw=raw, registry=self.registry,
             log=self.log, objects=checked, role="derived_inference", modality="structured")
@@ -283,6 +343,7 @@ class XTDBProviderAttemptCustody:
         gate_ids = request.authorized_event_ids + (history_artifact.event_id,)
         purpose = evaluation_purpose(self.run_id, request.case_id, request.phase)
         reader = copy(self.comparison)
+        reader._physical_custody = getattr(self.comparison, "_physical_custody", self.comparison)
         reader.objects = _CheckedObjects(self.objects, lambda: self._require(gate_ids, purpose))
         reader.raw_custody = RegisteredEncryptedFormationCustody(registry=self.registry, objects=reader.objects)
         history = reader.recover_history(run_id=self.run_id, case_id=request.case_id, phase=request.phase,
@@ -292,11 +353,13 @@ class XTDBProviderAttemptCustody:
         return history, checked_evidence
 
     def _authorized_history(self, arm, request):
+        self._require_final(request=request)
         history, checked_evidence = self._phase_history(request)
         if (history.digest() != request.authorized_history_sha256 or history.event_ids != request.authorized_event_ids
                 or not checked_evidence.authorize_context(case_id=request.case_id, phase=request.phase,
                     history=history, context=request.context, arm=arm)):
             raise PermissionError("provider task lacks current independent phase context lineage")
+        self._require_final(request=request)
         return history
 
     def _live_input(self, arm, request, provider_request):
@@ -320,6 +383,7 @@ class XTDBProviderAttemptCustody:
     def prepare_task(self, *, task_id: str, arm: str, request: ExecutionRequest,
                      provider_request: ProviderRequest):
         identifier(task_id, "task_id")
+        self._require_final(request=request, task_id=task_id, arm=arm, qualified=True)
         if (arm not in ARMS or request.scope != self.scope
                 or request.binding != request.plan.binding_for(request.case_id, request.phase, arm)
                 or request.plan.feature_call_budget < 1
@@ -343,6 +407,7 @@ class XTDBProviderAttemptCustody:
                 or isinstance(count.tokens, bool) or not isinstance(count.tokens, int) or count.tokens < 0
                 or count.tokens > request.plan.context_token_budget):
             raise ValueError("provider task lacks actual frozen preflight count/budget")
+        self._require_final(request=request, task_id=task_id, arm=arm)
         parents = tuple(sorted(set((question.event_id, phase.event_id) + request.context.source_event_ids)))
         bindings = []
         for event_id in parents:
@@ -368,9 +433,11 @@ class XTDBProviderAttemptCustody:
             metadata={"case_id": request.case_id, "phase": request.phase, "arm": arm,
                       "plan_sha256": request.plan.digest(), "request_sha256": sha(provider_request.payload)})
         self._authorized_history(arm, request)
+        self._require_final(request=request, task_id=task_id, arm=arm)
         return BoundProviderAttemptSink(self, body, request, provider_request, verified)
 
-    def _verify_task(self, body, task_id):
+    def _verify_task(self, body, task_id, *, capture_only=False):
+        self._require_final(body=body, capture_only=capture_only)
         plan = self.comparison.metadata(self.run_id, "plan")
         question = self.comparison.metadata(self.run_id, "question:" + body["case_id"])
         history = self.comparison.metadata(self.run_id, f"history:{body['case_id']}:{body['phase']}")
@@ -398,6 +465,7 @@ class XTDBProviderAttemptCustody:
                 or not set(verification["disclosed_context_source_ids"]).issubset(body["context_source_ids"])
                 or body["disclosure_source_ids"] != list(dict.fromkeys((question.event_id,) + tuple(verification["disclosed_context_source_ids"])))):
             raise ValueError("private provider task no longer binds exact frozen inputs and qualified components")
+        self._require_final(body=body, capture_only=capture_only)
 
     def _verify_authorization(self, body, authorization):
         purpose = "comparison_external:" + body["provider_configuration"]["provider_id"]
@@ -428,6 +496,9 @@ class XTDBProviderAttemptCustody:
                     or list(event.parent_event_ids) != binding["parent_event_ids"]):
                 raise ValueError("provider task source registration or exact raw lineage changed")
             self._require((binding["event_id"],), purpose)
+        # One binding's late callback can revoke an earlier, unrelated source.
+        # End with the complete task closure, not several individual allows.
+        self._require(tuple(binding["event_id"] for binding in body["source_bindings"]), purpose)
 
     @staticmethod
     def _task_marker(body, source_marker):
@@ -441,7 +512,9 @@ class XTDBProviderAttemptCustody:
             "task_sha256": sha(encoded(body)), "source_authorization_marker": source_marker})
 
     def _external_snapshot(self, body):
+        self._require_final(body=body)
         purpose = "comparison_external:" + body["provider_configuration"]["provider_id"]
+        permission_rows = self._permission_fence(body["disclosure_source_ids"], purpose)
         sources = []
         for event_id in body["disclosure_source_ids"]:
             source, _, _ = self._source(event_id)
@@ -460,6 +533,8 @@ class XTDBProviderAttemptCustody:
         source_marker = canonical_sha256({"provider_configuration_sha256": body["dispatch"]["configuration_sha256"],
             "payload_sha256": body["dispatch"]["payload_sha256"], "purpose": purpose,
             "sources": [(value["event_id"], value["registration_sha256"], value["action_sha256"]) for value in sources]})
+        self._require_final(body=body)
+        permission_rows.verify_final_current_rows()
         return {"purpose": purpose, "source_authorization_marker": source_marker,
             "authorization_marker": self._task_marker(body, source_marker), "sources": sources}
 
@@ -509,7 +584,7 @@ class XTDBProviderAttemptCustody:
         purpose = audit_purpose(self.run_id)
         bodies = {kind: json.loads(self._read_source(record["event_id"], purpose)) for kind, record in records.items()}
         task, authorization, saved = bodies["task"], bodies["authorization"], bodies["observation"]
-        self._verify_task(task, task_id)
+        self._verify_task(task, task_id, capture_only=True)
         if (authorization["task_sha256"] != records["task"]["content_sha256"]
                 or saved["task_sha256"] != records["task"]["content_sha256"]
                 or saved["authorization_sha256"] != records["authorization"]["content_sha256"]
@@ -536,6 +611,7 @@ class BoundProviderAttemptSink:
     def wrap_authorize_transfer(self, callback: Callable[[], str]) -> Callable[[], str]:
         def authorize():
             owner, body = self.owner, self.body
+            owner._require_final(request=self.request, body=body, qualified=True)
             if owner._metadata(body["task_id"], "authorization") is not None:
                 raise PermissionError("task already has a dispatch authorization; retry needs a new task ID")
             current = owner._live_input(body["arm"], self.request, self.provider_request)
@@ -558,11 +634,17 @@ class BoundProviderAttemptSink:
             owner._authorized_history(body["arm"], self.request)
             if owner._external_snapshot(body) != snapshot:
                 raise PermissionError("external permission changed before actual dispatch")
+            # This callback is called by the actual transport immediately at
+            # transfer; neither a stored grant nor an earlier proof is an allow.
+            owner._require_final(request=self.request, body=body, qualified=True)
+            if owner._external_snapshot(body) != snapshot:
+                raise PermissionError("external permission changed during final dispatch qualification")
             return snapshot["authorization_marker"]
         return authorize
 
     def record(self, observation: TransportAttempt) -> None:
         owner, body = self.owner, self.body
+        owner._require_final(body=body, capture_only=True)
         task = owner._metadata(body["task_id"], "task")
         authorization = owner._metadata(body["task_id"], "authorization")
         if task is None or authorization is None or task["content_sha256"] != sha(encoded(body)):
@@ -572,7 +654,7 @@ class BoundProviderAttemptSink:
         if authorization["content_sha256"] != sha(encoded(auth_body)):
             raise ValueError("dispatch snapshot differs from committed authorization bytes")
         usage = owner._verify_observation(body, snapshot, observation)
-        owner._verify_task(body, body["task_id"])
+        owner._verify_task(body, body["task_id"], capture_only=True)
         owner._verify_authorization(body, snapshot)
         owner._verify_task_sources(body, capture_purpose(owner.run_id))
         saved = {"schema": "flora-provider-observed-attempt-v1", "task_sha256": task["content_sha256"],
@@ -594,6 +676,7 @@ class BoundProviderAttemptSink:
         substituted for the independently granted public audit recovery route.
         """
         owner, body = self.owner, self.body
+        owner._require_final(body=body, capture_only=True)
         task = owner._metadata(body["task_id"], "task")
         authorization = owner._metadata(body["task_id"], "authorization")
         observation = owner._metadata(body["task_id"], "observation")
@@ -602,7 +685,7 @@ class BoundProviderAttemptSink:
                 or authorization["parent_event_ids"] != [task["event_id"]]
                 or observation["parent_event_ids"] != [authorization["event_id"]]):
             raise ValueError("bound task has no exact durable captured observation")
-        owner._verify_task(body, body["task_id"])
+        owner._verify_task(body, body["task_id"], capture_only=True)
         snapshot = authorization["metadata"]["snapshot"]
         auth_body = {"schema": "flora-provider-dispatch-authorization-v1", "task_sha256": task["content_sha256"], **snapshot}
         if authorization["content_sha256"] != sha(encoded(auth_body)):
@@ -635,6 +718,7 @@ class BoundProviderAttemptSink:
 
     def verify_response(self, response: ProviderResponse) -> None:
         """A successful answer cannot omit or change its captured denominator."""
+        self.owner._require_final(request=self.request, body=self.body, qualified=True)
         actual, usage = self._captured_observation()
         if not isinstance(response, ProviderResponse):
             raise ValueError("answer is not an actual provider response")
@@ -668,3 +752,4 @@ class BoundProviderAttemptSink:
         output = "".join(text).encode()
         if not output or response.output != output:
             raise ValueError("answer text differs from actual captured response text")
+        self.owner._require_final(request=self.request, body=self.body, qualified=True)

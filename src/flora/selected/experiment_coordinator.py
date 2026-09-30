@@ -124,7 +124,7 @@ class RegisteredExperimentCoordinator:
                  question_entry_ids: Mapping[str, str],
                  provider_task_ids: Mapping[tuple[str, str], str],
                  clock: Callable[[], str], phase_router: SelectedPhaseLineageRouter | None = None,
-                 provider_custody: XTDBProviderAttemptCustody | None = None):
+                 provider_custody: XTDBProviderAttemptCustody | None = None, final_authority=None):
         if (not isinstance(manifests, XTDBExperimentManifestCustody)
                 or not isinstance(comparison, XTDBComparisonCustody)
                 or not isinstance(evidence, SelectedRunEvidencePolicy)
@@ -141,6 +141,15 @@ class RegisteredExperimentCoordinator:
                 or comparison.scope != manifests.scope or comparison.authority_namespace_id != manifests.namespace):
             raise ValueError("coordinator controllers do not share exact physical host custody")
         plan.validate()
+        actual_final = comparison.require_final_authority(run_id=evidence.run_id, plan=plan,
+            final_authority=final_authority)
+        if actual_final is not None:
+            if (actual_final.store.manifests is not manifests or actual_final.store.cohort_id != cohort_id
+                    or actual_final.store.recipe_id != recipe_id or actual_final.native_plans != native_plans
+                    or actual_final.store.spec.provider_task_ids != provider_task_ids
+                    or evidence.final_authority is not actual_final):
+                raise ValueError("coordinator differs from actual sealed preregistration services")
+        self.final_authority = actual_final
         expected = {(case.case_id, phase) for case in plan.protocol.cases for phase in ("before", "after")}
         cases = {case.case_id for case in plan.protocol.cases}
         if (plan.phase_bindings is None or set(histories) != expected
@@ -267,7 +276,14 @@ class RegisteredExperimentCoordinator:
             "provider_tasks": [{"case_id": case, "phase": phase, "task_id": task}
                                for (case, phase), task in sorted(self.provider_task_ids.items())],
             "phase_router_sha256": None if self.phase_router is None else self.phase_router.binding_sha256,
-            "mode": "prepared_history", "part1_accepted": False}
+            "mode": "prepared_history" if self.final_authority is None else "prepared_synthetic_two_stage",
+            "part1_accepted": False}
+        if self.final_authority is not None:
+            record["schema"] = "flora-registered-experiment-coordinator-v2"
+            record["final_binding"] = {
+                "preregistration_sha256": self.final_authority.preregistration_sha256,
+                "final_plan_sha256": self.final_authority.final_plan_sha256,
+                "record_sha256": self.final_authority._record.record["record_sha256"]}
         return json.loads(encoded(record))
 
     def record(self):
@@ -295,6 +311,8 @@ class RegisteredExperimentCoordinator:
             if self.comparison.metadata(self.run_id, artifact_id) != frozen:
                 raise PermissionError("coordinator exact registered inputs changed")
         self.manifests._check_gates(self._source_gates)
+        self.comparison.require_final_authority(run_id=self.run_id, plan=self.plan,
+            final_authority=self.final_authority)
         # Slow dependency/registry checks must be followed by all foreign and
         # local original-purpose gates, not an earlier allow result.
         for frozen in self._manifest_records.values():
@@ -307,6 +325,8 @@ class RegisteredExperimentCoordinator:
         if qualified:
             if self.phase_router is None:
                 raise PermissionError("actual qualified phase router is absent")
+            if self.final_authority is not None:
+                self.final_authority.authorize_plan(plan=self.plan, metadata_only=False)
             router = self._guarded_router()
             for case, phase in sorted(self.histories):
                 for arm in sorted(_NATIVE_ARMS):
@@ -365,6 +385,9 @@ class RegisteredExperimentCoordinator:
         owned.manifests, owned.comparison, owned.evidence, owned.assessment = manifests, selected, evidence, assessment
         owned._controllers = (manifests.local.registry, manifests.local.log, manifests.local.objects,
                               manifests.local.permissions, connection)
+        if self.final_authority is not None:
+            owned.final_authority = self.final_authority.bind_read_connection(connection)
+            evidence.final_authority = owned.final_authority
         return owned._base_current
 
     def _guarded_comparison(self, check):

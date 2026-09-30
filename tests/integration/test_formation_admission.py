@@ -301,7 +301,7 @@ class FormationAdmissionIntegrationTest(unittest.TestCase):
         recreated_policy = XTDBFormationPermissionPolicy(scope=self.scope,
             authority_namespace_id=self.namespace, connection=self.connection, registry=recreated_registry)
         self.assertFalse(recreated_policy.permits(recreated_registry.lookup(correction.event_id), "memory_formation"))
-        with self.assertRaisesRegex(ValueError, "revoked"):
+        with self.assertRaisesRegex(PermissionError, "permission was withdrawn"):
             self._admit(corrected, corrected_decision, corrected_store,
                         expected_previous=previous, conflict=conflict)
 

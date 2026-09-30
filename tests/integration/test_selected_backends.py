@@ -352,10 +352,10 @@ class SelectedBackendIntegrationTest(unittest.TestCase):
                     self.assertEqual(recreated.current_action(events[0].event_id,
                         "memory_formation"), revoked[0])
                     self.assertFalse(recreated.permits(sources[1], "memory_formation"))
-                    with self.assertRaisesRegex(CognitiveKernelContractError, "permission revoked"):
+                    with self.assertRaisesRegex(PermissionError, "permission was withdrawn"):
                         candidates.read_candidate(bundle.bundle_id, log=log,
                             objects=objects, source_store=prepared.store)
-                    with self.assertRaisesRegex(CognitiveKernelContractError, "source changed"):
+                    with self.assertRaisesRegex(PermissionError, "permission was withdrawn"):
                         record_selected_formation_delivery(
                             prepared=prepared, log=log, objects=objects,
                             occurred_at=datetime.now(timezone.utc).isoformat(), expected_revision=6,

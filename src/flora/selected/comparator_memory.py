@@ -6,6 +6,7 @@ tokenization and frontier inference are externally supplied qualified components
 from __future__ import annotations
 
 import base64
+from copy import copy
 from dataclasses import dataclass
 import math
 import re
@@ -30,6 +31,46 @@ from .comparison_custody import SelectedRunEvidencePolicy, XTDBComparisonCustody
 from .context import ContextPlan, LocalContext, LocalContextItem
 from .decision_outcome import RecordedEvent, record_decision
 from .formation_policy import XTDBFormationPermissionPolicy
+
+
+def _current_permission_rows(*, registry, permissions, source_ids, purpose):
+    """Sample one exact purpose's real source/ancestor authority, not allows.
+
+    Callers retain their actual canonical-source and permission predicates.
+    They finish with this fence after every slow control callback, so a last
+    callback cannot withdraw an earlier grant unnoticed.
+    """
+    from .phase_source_fence import OneGuardSelectedMetadata
+    sample = OneGuardSelectedMetadata(registry=registry, permissions=permissions)
+    pending, seen = list(source_ids), set()
+    while pending:
+        event_id = pending.pop()
+        if event_id in seen:
+            continue
+        source, _ = sample.observe_source(event_id, purpose)
+        seen.add(event_id)
+        pending.extend(source.evidence.parent_refs)
+    if not seen:
+        raise PermissionError("provider permission fence has no source closure")
+    return sample
+
+
+def _require_final(custody, run_id, evidence, configuration, request, *, qualified=False):
+    """Use actual durable run mode, including a committed orphan anchor."""
+    if not isinstance(custody, XTDBComparisonCustody):
+        raise TypeError("comparator requires actual selected final authority")
+    authority = custody.require_final_authority(run_id=run_id, plan=request.plan,
+        final_authority=getattr(evidence, "final_authority", None))
+    if authority is None:
+        return None
+    if (authority.store.spec.comparator.digest() != configuration.digest()
+            or sha(request.question) != authority.plan.question_sha256_by_case.get(request.case_id)):
+        raise PermissionError("comparator changed its preregistered provider/question contract")
+    task_id = authority.store.spec.provider_task_ids.get((request.case_id, request.phase))
+    method = authority.authorize_evaluation if qualified else authority.require_evaluation
+    method(plan=request.plan, case_id=request.case_id, phase=request.phase,
+        arm="general_model_memory", invocation_id=task_id)
+    return authority
 
 
 @dataclass(frozen=True)
@@ -188,27 +229,40 @@ class QdrantOriginalMemory:
 
     async def prepare(self, request: PreparationRequest) -> OriginalWindowContext:
         config = self.configuration.memory
-        if not self.evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=request.history):
-            raise ArmStopped("refused")
+        def final_current():
+            _require_final(self.custody, self.run_id, self.evidence, self.configuration, request)
+            return True
+        _require_final(self.custody, self.run_id, self.evidence, self.configuration, request, qualified=True)
+        evidence = copy(self.evidence)
+        evidence.custody = self.custody._authority_fenced_copy(final_current)
+        def current():
+            final_current()
+            if not evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=request.history):
+                raise ArmStopped("refused")
+            final_current()
+        current()
         windows = source_windows(request.history, self.configuration)
         content = tuple(value for _, value in windows)
         batch = await self.embeddings.embed(content + (request.question,))
         self._verify_embeddings(content + (request.question,), batch)
-        if not self.evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=request.history):
-            raise ArmStopped("refused")
+        current()
         collection = self.collection(request)
         if not self.client.collection_exists(collection):
+            current()
             self.client.create_collection(collection_name=collection, vectors_config={"text": models.VectorParams(
                 size=config.dimension, distance=models.Distance.COSINE)})
+        current()
         actual = self.client.get_collection(collection).config.params.vectors
         if not isinstance(actual, dict) or actual["text"].size != config.dimension or actual["text"].distance != models.Distance.COSINE:
             raise ValueError("comparator Qdrant collection has a different vector contract")
         point_ids = [str(uuid.uuid5(uuid.NAMESPACE_OID, collection + canonical_sha256(w.record()))) for w, _ in windows]
+        current()
         self.client.upsert(collection_name=collection, wait=True, points=[models.PointStruct(
             id=point_ids[index], vector={"text": list(batch.vectors[index])}, payload={
                 "source_window": window.record(), "history_sha256": request.history.digest(),
                 "comparator_configuration_sha256": self.configuration.digest()})
             for index, (window, _) in enumerate(windows)])
+        current()
         found = self.client.query_points(collection_name=collection, query=list(batch.vectors[-1]),
             using="text", with_payload=True, limit=min(len(windows), config.dense_candidates)).points
         by_point = {point: index for index, point in enumerate(point_ids)}
@@ -251,8 +305,7 @@ class QdrantOriginalMemory:
         if not selected:
             raise ArmStopped("unavailable")
         context = self._context(request, selected, windows)
-        if not self.evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=request.history):
-            raise ArmStopped("refused")
+        current()
         return context
 
 
@@ -269,12 +322,17 @@ class SelectedComparatorDisclosure:
         self.wire_compiler = wire_compiler
 
     def authorize(self, *, request: ExecutionRequest, provider_request: ProviderRequest) -> str:
+        _require_final(self.custody, self.run_id, self.evidence, self.configuration, request, qualified=True)
+        def final_current():
+            _require_final(self.custody, self.run_id, self.evidence, self.configuration, request)
+            return True
         if (provider_request.configuration != self.configuration.provider
                 or provider_request.payload != provider_payload(self.configuration, question=request.question,
                     context=request.context, response_token_budget=request.plan.protocol.response_token_budget,
                     wire_compiler=self.wire_compiler)):
             raise PermissionError("provider request differs from the exact authorized input")
-        history = self.custody.recover_history(run_id=self.run_id, case_id=request.case_id,
+        reader = self.custody._authority_fenced_copy(final_current)
+        history = reader.recover_history(run_id=self.run_id, case_id=request.case_id,
                                                phase=request.phase, permissions=self.permissions)
         if (history.digest() != request.authorized_history_sha256 or history.event_ids != request.authorized_event_ids
                 or not self.evidence.authorize_history(case_id=request.case_id, phase=request.phase, history=history)):
@@ -285,6 +343,8 @@ class SelectedComparatorDisclosure:
         if question is None or question.record["content_sha256"] != sha(request.question):
             raise PermissionError("provider question differs from frozen custody")
         source_ids = tuple(dict.fromkeys((question.event_id,) + request.context.source_event_ids))
+        permission_rows = _current_permission_rows(registry=self.custody.registry,
+            permissions=self.permissions, source_ids=source_ids, purpose=purpose)
         markers = []
         for event_id in source_ids:
             source = self.custody.registry.lookup(event_id)
@@ -298,6 +358,8 @@ class SelectedComparatorDisclosure:
             if (source is None or action is None or source.registration_sha256 != registration
                     or action.action_sha256 != action_hash or not self.permissions.permits(source, purpose)):
                 raise PermissionError("external disclosure authority changed during verification")
+        _require_final(self.custody, self.run_id, self.evidence, self.configuration, request, qualified=True)
+        permission_rows.verify_final_current_rows()
         return canonical_sha256({"provider_configuration_sha256": provider_request.configuration.digest(),
             "payload_sha256": sha(provider_request.payload), "purpose": purpose, "sources": markers})
 
@@ -353,10 +415,37 @@ class SelectedComparatorRecorder:
                 or authorization_marker != response.authorization_marker):
             raise ValueError("comparator recorder lacks its frozen producer/exchange binding")
         token_count.verify(provider_request.payload, self.configuration.memory)
+        evidence = self.disclosure.evidence
+        _require_final(self.custody, self.run_id, evidence, self.configuration, request, qualified=True)
         self.exchange_verifier.verify(request=provider_request, response=response)
         self.disclosure.authorize(request=request, provider_request=provider_request)
+        def final_current():
+            _require_final(self.custody, self.run_id, evidence, self.configuration, request)
+            return True
+        reader = self.custody._authority_fenced_copy(final_current)
+        history = reader.recover_history(run_id=self.run_id, case_id=request.case_id,
+            phase=request.phase, permissions=self.disclosure.permissions)
+        question = self.custody.metadata(self.run_id, "question:" + request.case_id)
+        if question is None or question.record["content_sha256"] != sha(request.question):
+            raise ValueError("comparator exchange lost its exact frozen question custody")
+        def current():
+            final_current()
+            purpose = "comparison_external:" + self.configuration.provider.provider_id
+            source_ids = (question.event_id, *request.context.source_event_ids)
+            permission_rows = _current_permission_rows(registry=self.custody.registry,
+                permissions=self.disclosure.permissions, source_ids=source_ids, purpose=purpose)
+            if not evidence.authorize_history_metadata(case_id=request.case_id, phase=request.phase, history=history):
+                raise PermissionError("comparator result lost current original source authority")
+            for event_id in source_ids:
+                if not self.disclosure.permissions.permits(self.custody.registry.lookup(event_id), purpose):
+                    raise PermissionError("comparator result lost current external source authority")
+            final_current()
+            permission_rows.verify_final_current_rows()
+            return True
+        selected = self.custody._authority_fenced_copy(current)
+        _require_final(self.custody, self.run_id, evidence, self.configuration, request, qualified=True)
         material = encoded(request.context.receipt_record())
-        raw = self.custody.objects.put(material)
+        raw = selected.objects.put(material)
         event = ExperienceEvent.create(event_type="context_delivery", scope=request.scope,
             occurred_at=normalize_timestamp(self.clock(), "occurred_at"), content_digest=raw.plaintext_sha256,
             provenance=ProvenanceReference.create(provenance_type="derived_inference",
@@ -365,26 +454,23 @@ class SelectedComparatorRecorder:
                 responsible_component=self.configuration.producer_component),
             retention_class="ordinary_experience", storage_tier="raw_buffer",
             parent_event_ids=request.context.source_event_ids, payload_reference=raw.object_id)
-        self.custody.log.append(event, expected_revision=len(self.custody.log.replay()) - 1)
+        selected.log.append(event, expected_revision=len(selected.log.replay()) - 1)
         delivery = RecordedEvent(event, raw)
-        self.custody.register_recorded(delivery)
-        self.custody.register_context(run_id=self.run_id, context=request.context, delivery=delivery, occurred_at=self.clock())
-        decision = record_decision(log=self.custody.log, objects=self.custody.objects, verdict=response.output,
+        selected.register_recorded(delivery)
+        selected.register_context(run_id=self.run_id, context=request.context, delivery=delivery, occurred_at=self.clock())
+        decision = record_decision(log=selected.log, objects=selected.objects, verdict=response.output,
             consumed_event_ids=(event.event_id,) + request.context.source_event_ids,
-            references=self.custody.registry, model_artifact_sha256=request.binding.model_artifact_sha256,
-            occurred_at=self.clock(), expected_revision=len(self.custody.log.replay()) - 1,
-            producer_component=self.configuration.producer_component)
-        self.custody.register_recorded(decision)
+            references=selected.registry, model_artifact_sha256=request.binding.model_artifact_sha256,
+            occurred_at=self.clock(), expected_revision=len(selected.log.replay()) - 1,
+            producer_component=self.configuration.producer_component, source_authorizer=lambda _: current())
+        selected.register_recorded(decision)
         exchange = {"schema": "flora-comparator-provider-exchange-v1", "dispatch": provider_request.record(),
             "observation": response.observation(), "proof_base64": base64.b64encode(response.proof).decode(),
             "actual_request_base64": base64.b64encode(provider_request.payload).decode(),
             "actual_response_base64": base64.b64encode(response.raw_response).decode(),
             "token_count": vars(token_count), "authorization_marker": authorization_marker,
             "decision_event_id": decision.event.event_id}
-        question = self.custody.metadata(self.run_id, "question:" + request.case_id)
-        if question is None or question.record["content_sha256"] != sha(request.question):
-            raise ValueError("comparator exchange lost its exact frozen question custody")
-        self.custody._put(run_id=self.run_id, artifact_id="provider_exchange:" + decision.event.event_id,
+        selected._put(run_id=self.run_id, artifact_id="provider_exchange:" + decision.event.event_id,
             kind="comparator_provider_exchange", content=encoded(exchange),
             parents=(decision.event.event_id, question.event_id),
             metadata={"decision_event_id": decision.event.event_id,
@@ -392,6 +478,8 @@ class SelectedComparatorRecorder:
                 "request_sha256": sha(provider_request.payload), "response_sha256": sha(response.raw_response)},
             occurred_at=self.clock())
         self.disclosure.authorize(request=request, provider_request=provider_request)
+        _require_final(self.custody, self.run_id, evidence, self.configuration, request, qualified=True)
+        current()
         return ArmResult(response.output, delivery, decision,
             MeasuredUsage(self.configuration.provider.feature_engine_id, response.input_tokens,
                 response.input_tokens, response.output_tokens, 1, response.cost_microunits, response.currency))

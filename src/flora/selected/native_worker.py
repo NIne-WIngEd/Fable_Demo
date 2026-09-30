@@ -162,6 +162,8 @@ class NativeWorkerManifest:
     maximum_wall_time_ms: int
     terminate_grace_ms: int
     maximum_artifact_bytes: int
+    writer_guard_artifact_sha256: str | None = None
+    writer_guard_configuration_sha256: str | None = None
 
     def record(self) -> dict:
         self.scope.validate()
@@ -172,12 +174,19 @@ class NativeWorkerManifest:
         for name in self.__dataclass_fields__:
             if name.endswith("_sha256"):
                 value = getattr(self, name)
+                if name.startswith("writer_guard_") and value is None:
+                    continue
                 if require_sha256(value, name) != value:
                     raise ValueError("worker digests must be canonical")
             elif name.startswith("maximum_") or name == "terminate_grace_ms":
                 _positive(getattr(self, name), name)
-        return {"schema": "flora-native-worker-manifest-v1", **vars(self),
-                "scope": self.scope.metadata_record()}
+        writer = (self.writer_guard_artifact_sha256, self.writer_guard_configuration_sha256)
+        if any(value is not None for value in writer) and any(value is None for value in writer):
+            raise ValueError("native writer guard artifact/configuration hashes must be supplied together")
+        values = {name: value for name, value in vars(self).items()
+                  if not (name.startswith("writer_guard_") and value is None)}
+        return {"schema": "flora-native-worker-manifest-v2" if writer[0] is not None else "flora-native-worker-manifest-v1",
+                **values, "scope": self.scope.metadata_record()}
 
     @property
     def manifest_sha256(self) -> str:
@@ -204,7 +213,8 @@ class NativeWorkerQualificationVerifier(Protocol):
     """Qualification covers actual factory, transitive code and async ports.
 
     It includes pipe isolation, stateless task handling, backend read deadlines,
-    owned/serialized connections, no inference in parent read callbacks and the
+    owned/serialized connections, exclusive qualified bounded native writer
+    guard/factory ownership when its hashes are declared, no inference in parent read callbacks and the
     actual codec/meter adapters. An arbitrary signature is not qualification.
     """
     def verify_worker(self, *, manifest: NativeWorkerManifest,

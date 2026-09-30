@@ -352,8 +352,16 @@ class CoordinatorContractTest(unittest.IsolatedAsyncioTestCase):
         async def unavailable(request):
             raise ArmStopped("unavailable")
         native_ports = {arm: SimpleNamespace(prepare=unavailable, execute=AsyncMock(), execution_records={}) for arm in self.native}
+        # This fictional row port cannot satisfy the real selected-engine
+        # terminal metadata fence. Supply an explicit fixture predicate only
+        # for this unavailable-denominator custody check, never a model result.
+        def fixture_history_metadata(*, case_id, phase, history):
+            return (history == self.histories[(case_id, phase)]
+                and all(self.local.permissions.permits(self.local.registry.lookup(event_id),
+                    evaluation_purpose("run", case_id, phase)) for event_id in history.event_ids))
         with patch.object(self.coordinator, "readiness", return_value=ready), patch.object(self.coordinator, "_current"), \
-                patch.object(self.coordinator, "_execution_adapters", return_value=native_ports):
+                patch.object(self.coordinator, "_execution_adapters", return_value=native_ports), \
+                patch.object(self.evidence, "authorize_history_metadata", side_effect=fixture_history_metadata):
             outcome = await self.coordinator.execute(adapters={})
         self.assertEqual(outcome.status, "completed_custody")
         self.assertEqual(len(outcome.run.attempts), 6)

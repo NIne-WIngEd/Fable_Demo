@@ -25,6 +25,12 @@ No SQLite substitute or model stub is used as the selected store. IDs are scoped
 to the actual host, authority namespace and experiment. Retries preserve the same
 body; an identity cannot be reused for a changed manifest.
 
+Copied private readers execute the actual encryption codec through their guarded
+facade. They do not trust an instance-bound `get`, `put` or recovery method: a
+method restored after instrumentation can still reference the original plane
+and bypass a copied backend. Current cross-host checks remain between the actual
+ciphertext fetch and AEAD decryption, including nested guarded copies.
+
 The manifests have the private `experiment_manifest_artifact` event type. Generic
 comparison recovery and `SelectedSourceAuthority.read` refuse internal artifacts
 before opening payload bytes; native original history also excludes them.

@@ -259,6 +259,25 @@ class ExperimentManifestContractsTest(unittest.TestCase):
                 self.store.recover(kind="cohort", manifest_id="cohort")
             decrypt.assert_not_called()
 
+    def test_restored_instance_bound_codec_cannot_bypass_copied_cipher_fence(self):
+        # Restoring an instrumentation patch as a bound INSTANCE method leaves
+        # __self__ on the original plane. A shallow copy must never trust it.
+        record = self.prepared_cohort()
+        local, foreign = self.authorities
+        local.objects.get = local.objects.get
+        local.objects.recover_reference = local.objects.recover_reference
+        original = local.objects.backend.get_object
+        def withdraw(namespace, object_id):
+            value = original(namespace, object_id)
+            if object_id == record["object_id"] and any(frame.function == "get" and frame.filename.endswith("object_store.py") for frame in inspect.stack()):
+                foreign.permissions.allowed.discard((self.events[1].event_id, cohort_source_purpose("exp", "heldout")))
+            return value
+        with patch.object(local.objects.backend, "get_object", side_effect=withdraw), \
+                patch.object(AESGCM, "decrypt", side_effect=AssertionError("withdrawn manifest reached AEAD")) as decrypt:
+            with self.assertRaises(PermissionError):
+                self.store.recover(kind="cohort", manifest_id="cohort")
+            decrypt.assert_not_called()
+
     def test_original_source_reader_checks_current_authority_before_and_after_actual_decrypt(self):
         authority = self.authorities[1]
         gate = self.store._gate(authority.authority_id, self.events[1].event_id, cohort_source_purpose("exp", "heldout"))

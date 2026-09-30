@@ -16,6 +16,7 @@ from cognitive_kernel.canonical import canonical_json_bytes, normalize_timestamp
 from ..comparison_run import HistorySnapshot
 from .formation_policy import XTDBFormationPermissionPolicy
 from .formation_registry import XTDBFormationSourceRegistry
+from .phase_source_fence import OneGuardSelectedMetadata
 
 
 @dataclass(frozen=True)
@@ -140,8 +141,8 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
     manifest_entry = entries.get(artifact.event_id)
     if manifest_entry is None or manifest_entry.event.event_sha256 != record["event_sha256"]:
         raise PermissionError("history manifest has no exact canonical commit")
-    local_registry, local_permissions = _sampled(registry), _sampled(permissions)
-    local_permissions.registry = local_registry
+    sampled = OneGuardSelectedMetadata(registry=registry, permissions=permissions)
+    local_registry, local_permissions = sampled.local_registry, sampled.local_permissions
     references, captured = [], []
     event_ids = set(history.event_ids)
     for material in history.sources:
@@ -174,7 +175,7 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
             raise PermissionError("history original lacks exact durable raw-reference metadata")
         if local_permissions.permits(source, purpose) is not True:
             raise PermissionError("history original/parent purpose permission was withdrawn")
-        action = local_permissions.current_action(event_id, purpose)
+        _, action = sampled.observe_source(event_id, purpose)
         if (action is None or action.decision != "allow"
                 or action.source_registration_sha256 != source.registration_sha256):
             raise PermissionError("history original lacks its current exact purpose grant")
@@ -225,6 +226,11 @@ def verify_current_history_metadata(*, policy: Any, case_id: str, phase: str,
         if (action is None or action.decision != "allow"
                 or canonical_json_bytes(action.metadata_record()) != snapshot.grant_metadata):
             raise PermissionError("history source/parent grant changed after current metadata verification")
+    bindings()
+    # A final grant callback for one original can withdraw an earlier grant.
+    # Observe all actual sampled source/raw/action/head rows together after
+    # those callbacks, rather than return another sequential cached allow.
+    sampled.verify_final_current_rows()
     bindings()
     return CurrentHistoryAuthority(run_id, case_id, phase, history_digest, body_digest,
                                    record["event_sha256"], tuple(captured))

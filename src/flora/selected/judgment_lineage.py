@@ -257,6 +257,18 @@ class NativeJudgmentLineageVerifier:
         return ClaimLineageBinding(claim_id, version_id, version["version_sha256"], current["projection_id"],
                                    current["projection_sha256"], relations)
 
+    def _phase_request(self, *, case_id, phase, history_digest, original_event_ids,
+                       context_lineage_sha256, artifact):
+        """Build the exact producer request for this verifier's authority domain.
+
+        Native execution keeps the final paired-plan identity. A separately
+        typed capture-only verifier can use a preregistration request without
+        assigning its anchor hash to the final run-plan field.
+        """
+        return PhaseArtifactSnapshotRequest(self.runtime.scope, self.runtime.authority_namespace_id,
+            case_id, phase, self.run_plan_sha256, history_digest, original_event_ids,
+            context_lineage_sha256, artifact)
+
     def context_lineage(self, *, case_id: str, phase: str, history: Any,
                         context: LocalContext,
                         authority_guard: Callable[[], None] | None = None) -> JudgmentContextLineage:
@@ -414,9 +426,9 @@ class NativeJudgmentLineageVerifier:
             if not callable(verify_phase):
                 raise RuntimeBlocked((RoleReadiness(
                     artifact.role, False, ("actual_qualifier_phase_snapshot_adapter",)),))
-            request = PhaseArtifactSnapshotRequest(runtime.scope, runtime.authority_namespace_id, case_id, phase,
-                self.run_plan_sha256, history_digest, tuple(sorted(history_events)),
-                canonical_sha256(lineage.record(include_phase_snapshots=False)), artifact)
+            request = self._phase_request(case_id=case_id, phase=phase, history_digest=history_digest,
+                original_event_ids=tuple(sorted(history_events)),
+                context_lineage_sha256=canonical_sha256(lineage.record(include_phase_snapshots=False)), artifact=artifact)
             opaque_receipt = self.phase_receipt_for(request)
             verified = verify_phase(request=request, receipt=opaque_receipt)
             if not isinstance(verified, VerifiedPhaseArtifactSnapshot):
