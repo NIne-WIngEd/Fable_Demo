@@ -88,3 +88,42 @@ Frozen `src/flora/selected/experience.py` SHA-256:
 The method trace is saved only in FloRA under `docs/fbm-seeds/`.
 Fresh CI against the published candidate is required for physical latency,
 restart and recovery qualification.
+
+## Aggregate physical-boundary diagnostic
+
+The published codec repair improved the physical paired receipts to BEFORE
+**17,585 ms** and AFTER **22,604 ms**; both still exceed the unchanged 10,000 ms
+limit. The provider callback fixture passed. Before another source repair, the
+transport shard now reruns only the existing standalone comparator fixture
+**after its ordinary gate fails**, as an independent diagnostic. The original
+failed gate stays failed; all ordinary tests and response/RPC budgets stay intact.
+
+The diagnostic observes original synchronous code objects with `sys.setprofile`:
+actual Kurrent `get_stream`, psycopg `execute`/`fetchall`, and fixed replay,
+decoder, policy, metadata and fence boundaries. It changes no callable. Its JSON
+contains fixed tags, counts, inclusive/exclusive wall and thread CPU clocks, and
+loaded source hashes. Wall minus thread CPU includes waiting, scheduling and
+other-thread work; it is not an exact wire-time measurement. Fixture output goes
+to `os.devnull`; unittest failures retain counts only, without tracebacks or text.
+
+The **180-second soft cap** stops before the next outer selected RPC body. Nested
+RPCs within an active observed RPC complete normally, using the original native
+timeout. No signal, stack dump or asynchronous interruption is used. A delayed
+return or lack of another RPC can exceed the cap; elapsed time and overshoot are
+reported. Existing Python or reserved C profiler hooks cause a safe skip and
+remain untouched; every installed diagnostic hook is restored after cleanup.
+
+The same complete controlled workload took **9.930 s** without observation and
+**34.297 s** with the frozen observer. Both made 6,120 SQL statements, 3,419 fresh
+stream reads and read 87,350 records / 98,302,270 encoded bytes. The observed
+native codec still decoded only 35 unique envelopes and materialized 87,315
+fresh copies; all loaded production hashes stayed unchanged. Controlled engine
+ports do not execute the actual SDK RPC bodies, so their observer counts are
+zero in this local check. Physical CI supplies those counts. The substantial
+profiler overhead is disclosed; profiled receipts cannot qualify latency.
+
+Twelve observer regressions cover nested clocks, outer-entry cap deferral,
+original code identity, hook restoration/refusal (including active Python 3.12
+`cProfile`), resumable-code exclusion, payload-free outcome counts and Python/fd
+output suppression. Together with codec and trace-contract checks, 36 tests
+passed in 0.989 s. The procedure seed lives only in FloRA.

@@ -138,12 +138,13 @@ final canonical and metadata fences still reject withdrawal, new stage or
 evaluation evidence, previously absent keys and changed frozen inputs. These
 counts do not establish physical latency or a completed BEFORE capture.
 
-## Second combined repair — partial receipts
+## Second combined repair — completed receipts
 
 Implementation: `8a8f41e26163aeb48f9b871fea6c198204a4d38e`.
 Tree: `cf2fc78ea271eff42610cb8ec65da9055897c5c1`.
 [Run 36778736018](https://github.com/NIne-WIngEd/FloRA/actions/runs/36778736018).
-The remaining jobs are still running; this is not a qualifying all-job receipt.
+All jobs have completed. The timing failures and unfinished cases prevent an
+all-job qualification at this implementation.
 
 | Completed gate | Observed result |
 | --- | --- |
@@ -154,6 +155,9 @@ The remaining jobs are still running; this is not a qualifying all-job receipt.
 | Provider fault fixture | Success: 147.974 seconds. Restoring the independent race precondition lets the actual final callback run and deny the private read. |
 | Standalone comparator | Failure: BEFORE 23,041 milliseconds and AFTER 31,976 milliseconds, both `budget_exceeded` against the unchanged 10,000-millisecond budget. |
 | Native comparison | Failure: both attempts timed out during context preparation/authorization, BEFORE 60,116 milliseconds and AFTER 60,226 milliseconds against the unchanged 60,000-millisecond budget. The earlier owner-custody binding error is cleared. |
+| Native pilot | Cancelled at the unchanged one-hour cap. One positive case passed in 2,667.285 seconds; the remaining three have no completed receipt. This clears the earlier source-port error for that case, not a response deadline. |
+| Chronological history | Cancelled at the unchanged one-hour cap. Coordinator passed in 131.935 seconds; preregistration reached original-input registration at 133.000 seconds, then published no first BEFORE capture in the remaining 54 minutes 42 seconds. |
+| History routes | Cancelled at the unchanged one-hour cap; no completed route or internal stage receipt. |
 
 The core assessment case completed its arithmetic, then its last unblind callback
 persisted an actual typed owner withdrawal. `analyze_after_seal` denied release.
@@ -183,6 +187,28 @@ BEFORE/AFTER fell from 6,841/9,402 to 3,534/5,795 milliseconds. Native decodes f
 from 87,350 to 35. Custom records, generators, delegates and callback machinery
 retain the original uncached path. These receipts identify a useful controlled
 repair; a new exact-commit engine run must establish physical response timing.
+
+## Immutable envelope repair — partial physical receipts
+
+Implementation: `f3cddfd2b849b00580a95842e349e9f985505db8`.
+Tree: `7425ee3cf6b991ea9af07b11cb1e958e047fe0e3`.
+[Run 36784876518](https://github.com/NIne-WIngEd/FloRA/actions/runs/36784876518).
+Other jobs remain running; the implementation is not fully qualified.
+
+| Completed gate | Observed result |
+| --- | --- |
+| Component contracts | Success: 643 tests in 62 isolated suites; no failures, errors or skips. |
+| Core selected engines | Success: all 28 cases, 951.157 seconds for the suite. Storage restart, persistent Temporal resume and the actual final assessment callback withdrawal denial passed. |
+| Guarded readers | Success: both cases, 99.487 seconds for the suite. Session/recovery/revocation took 98.618 seconds; actual blocked PGconn retirement took 0.869 seconds. |
+| Native lineage | Success: both cases, 1,887.451 seconds for the suite. Episode/control/state recreation took 1,730.209 seconds; approved-state/history/output recreation and revocation took 157.242 seconds. Whole-fixture durations are not response timings. |
+| Provider fault fixture | Success: 109.136 seconds. |
+| Standalone comparator | Failure: BEFORE 17,585 milliseconds and AFTER 22,604 milliseconds, both `budget_exceeded` against the unchanged 10,000-millisecond budget. They improve by 5,456 and 9,372 milliseconds over the prior run but do not pass. |
+| Native comparison | Failure: BEFORE 60,102 milliseconds and AFTER 60,184 milliseconds, both `timeout` against the unchanged 60,000-millisecond budget. Both now reach context authorization; neither response qualifies. |
+
+The remaining same-workload query profile still has 6,120 SQL calls and 3,419
+fresh stream reads. Actual transport/CPU attribution is the next diagnostic;
+query counts alone do not prove which remaining transport dominates latency.
+The recorded failures remain part of the evidence. No budget is raised.
 
 ## Stopping boundary
 

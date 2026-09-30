@@ -111,7 +111,13 @@ jobs:
         run: python scripts/temporal_restart_probe.py health --retry-seconds 120
 
       - name: Run real selected-backend integration tests
+        id: selected_backend_gate
         run: python scripts/run_selected_integration_shard.py --shard '${{ matrix.shard }}'
+
+      - name: Profile failed transport boundaries
+        if: ${{ failure() && matrix.shard == 'transport' && steps.selected_backend_gate.outcome == 'failure' }}
+        continue-on-error: true
+        run: python scripts/profile_selected_transport_boundaries.py --cap-seconds 180 --output selected-transport-profile.json
 
       - name: Write restart persistence probes
         if: matrix.shard == 'core'
@@ -193,6 +199,7 @@ jobs:
           path: |
             selected-backend-ps.txt
             selected-backend-logs.txt
+            selected-transport-profile.json
 
       - name: Tear down selected services
         if: always()

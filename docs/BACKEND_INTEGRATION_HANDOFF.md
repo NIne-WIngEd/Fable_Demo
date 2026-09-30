@@ -6,12 +6,17 @@ This note is the takeover point after provisioning the first Docker-capable succ
 
 The latest [verification checkpoint](VERIFICATION_CHECKPOINT_2026-09-30.md)
 records completed receipts for `c6150be27d2623eae12061ccab4924c669234ef3`
-and partial receipts for `8a8f41e26163aeb48f9b871fea6c198204a4d38e`.
-At the latter implementation, all 622 component tests, 28 core cases, storage
-restart, persistent Temporal resume and both guarded-reader cases passed.
+and `8a8f41e26163aeb48f9b871fea6c198204a4d38e`, plus the ongoing
+`f3cddfd2b849b00580a95842e349e9f985505db8` run. At this latest implementation,
+all 643 component tests, 28 core cases, storage
+restart, persistent Temporal resume, both guarded-reader cases and both lineage
+recreation/revocation cases passed.
 The provider race fixture also passed. The standalone comparator still exceeds
 its 10-second deadline; native context preparation/authorization reaches its
-60-second deadline. Later physical gates remain pending. Historical results
+60-second deadline. The latest standalone BEFORE/AFTER attempts took
+17,585/22,604 milliseconds. The prior native-pilot and both history groups
+reached their one-hour job caps without completing all included cases; the
+latest corresponding receipts remain pending. Historical results
 below qualify only their named checkpoints. This is not a model-only pause.
 
 The repaired checkpoint `950fe8321902b681ae798f455779e281985d04a0`
