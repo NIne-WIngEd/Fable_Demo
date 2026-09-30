@@ -7,6 +7,7 @@ attests a trusted transport's observations, not a provider's signature.
 from __future__ import annotations
 
 import base64
+import asyncio
 from dataclasses import dataclass, field
 import hashlib
 import json
@@ -18,6 +19,7 @@ from cognitive_kernel.canonical import canonical_sha256, require_identifier, req
 
 from .comparison_run import (
     ArmExecutionFailure, ArmResult, ArmStopped, ExecutionRequest, MeasuredUsage, PreparationRequest,
+    _context_bytes,
 )
 from .selected.context import LocalContext
 
@@ -258,9 +260,28 @@ class Ed25519TransportObservationVerifier:
 
 class ExternallySuppliedFrontierClient(Protocol):
     configuration: ProviderConfiguration
-    async def generate(self, request: ProviderRequest, *, authorize_transfer: Callable[[], str]) -> ProviderResponse:
+    async def generate(self, request: ProviderRequest, *, authorize_transfer: Callable[[], str],
+                       attempt_sink: BoundProviderTaskSink) -> ProviderResponse:
         """Recheck callback immediately before dispatch; honor async cancellation."""
         ...
+
+
+class BoundProviderTaskSink(Protocol):
+    """One durable task's capture boundary, supplied to this exact dispatch.
+
+    Permission to transfer and permission to keep a private attempt are separate.
+    Recovery authenticates an enrolled observer; caller-declared metering is not
+    a receipt. This protocol creates no permission and makes no provider call.
+    """
+    def wrap_authorize_transfer(self, callback: Callable[[], str]) -> Callable[[], str]: ...
+    def record(self, observation: object) -> None: ...
+    def verify_response(self, response: ProviderResponse) -> None: ...
+    def verified_usage(self) -> MeasuredUsage | None: ...
+
+
+class ProviderTaskCustody(Protocol):
+    def prepare_task(self, *, task_id: str, arm: str, request: ExecutionRequest,
+                     provider_request: ProviderRequest) -> BoundProviderTaskSink: ...
 
 
 class GeneralMemoryRetriever(Protocol):
@@ -283,7 +304,9 @@ class GeneralMemoryArmAdapter:
                  tokenizer: ExactTokenCounter, wire_compiler: ProviderWireCompiler,
                  client: ExternallySuppliedFrontierClient,
                  exchange_verifier: ProviderExchangeVerifier,
-                 disclosure: ComparatorDisclosurePolicy, recorder: ComparatorRecorder):
+                 disclosure: ComparatorDisclosurePolicy, recorder: ComparatorRecorder,
+                 attempt_custody: ProviderTaskCustody | None = None,
+                 task_id_for: Callable[[ExecutionRequest], str] | None = None):
         configuration.record()
         if memory.configuration != configuration or client.configuration != configuration.provider:
             raise ValueError("comparator components have different frozen configuration")
@@ -292,18 +315,45 @@ class GeneralMemoryArmAdapter:
         self.configuration, self.memory, self.tokenizer, self.client = configuration, memory, tokenizer, client
         self.wire_compiler = wire_compiler
         self.exchange_verifier, self.disclosure, self.recorder = exchange_verifier, disclosure, recorder
+        self.attempt_custody, self.task_id_for = attempt_custody, task_id_for
+        self._observed_usage: dict[tuple[str, str, str, str], MeasuredUsage] = {}
+        self._in_flight: set[tuple[str, str, str, str]] = set()
+
+    def measured_stop_usage(self, *, case_id: str, phase: str, plan_sha256: str,
+                            context_sha256: str | None) -> MeasuredUsage | None:
+        """Failure-only bridge: cached verified metadata, never private reads."""
+        if context_sha256 is None:
+            return None
+        return self._observed_usage.get((plan_sha256, case_id, phase, context_sha256))
 
     async def prepare(self, request: PreparationRequest) -> LocalContext:
         return await self.memory.prepare(request)
 
     async def execute(self, request: ExecutionRequest) -> ArmResult:
+        key = (request.plan.digest(), request.case_id, request.phase, sha(_context_bytes(request.context)))
+        if key in self._in_flight:
+            raise ValueError("same comparator task cannot execute concurrently")
+        self._observed_usage.pop(key, None)
+        self._in_flight.add(key)
+        try:
+            return await self._execute(request, key)
+        finally:
+            self._in_flight.remove(key)
+
+    async def _execute(self, request: ExecutionRequest,
+                       usage_key: tuple[str, str, str, str]) -> ArmResult:
         configuration = self.configuration
-        if (request.binding.model_artifact_sha256 != configuration.provider.digest()
+        if (request.binding != request.plan.binding_for(request.case_id, request.phase, "general_model_memory")
+                or request.binding.model_artifact_sha256 != configuration.provider.digest()
                 or request.binding.lineage_sha256 != configuration.digest()
                 or request.binding.producer_component != configuration.producer_component
                 or request.plan.protocol.feature_engine_id != configuration.provider.feature_engine_id):
             raise ValueError("comparator does not match the frozen arm/provider binding")
         if request.plan.feature_call_budget < 1:
+            raise ArmStopped("unavailable")
+        # A global transport sink cannot bind concurrent/retried denominator
+        # tasks. Missing per-execution custody is unavailable before dispatch.
+        if self.attempt_custody is None or self.task_id_for is None:
             raise ArmStopped("unavailable")
         payload = provider_payload(configuration, question=request.question, context=request.context,
                                    response_token_budget=request.plan.protocol.response_token_budget,
@@ -314,41 +364,110 @@ class GeneralMemoryArmAdapter:
         if count.tokens > request.plan.context_token_budget:
             raise ArmStopped("unavailable")
         dispatch = ProviderRequest(configuration.provider, payload, request.plan.protocol.response_token_budget)
-        transfer_markers = []
-        def authorize():
+        task_id = self.task_id_for(request)
+        identifier(task_id, "task_id")
+        try:
+            sink = self.attempt_custody.prepare_task(task_id=task_id, arm="general_model_memory",
+                request=request, provider_request=dispatch)
+        except PermissionError:
+            raise ArmStopped("refused") from None
+        def authorize_source():
             try:
                 marker = self.disclosure.authorize(request=request, provider_request=dispatch)
             except PermissionError as exc:
                 raise ArmStopped("refused") from exc
             require_sha256(marker, "authorization_marker")
-            transfer_markers.append(marker)
             return marker
-        authorize()
-        preflight_checks = len(transfer_markers)
+        authorize_source()
         if self.client.configuration != configuration.provider:
             raise ValueError("provider configuration changed before dispatch")
-        response = await self.client.generate(dispatch, authorize_transfer=authorize)
-        if (len(transfer_markers) <= preflight_checks
-                or response.authorization_marker != transfer_markers[-1]):
-            raise ValueError("transport lacks its actual transfer-boundary authorization binding")
-        self.exchange_verifier.verify(request=dispatch, response=response)
-        # Only an authenticated observation can supply metering for a rejected
-        # result. Subsequent permission or recording failures cannot undo a call.
-        observed_usage = MeasuredUsage(configuration.provider.feature_engine_id, count.tokens,
-            response.input_tokens, response.output_tokens, 1, response.cost_microunits, response.currency)
-        observed_usage.validate()
+        transfer_markers = []
+        wrapped_authorize = sink.wrap_authorize_transfer(authorize_source)
+        def authorize_transfer():
+            marker = wrapped_authorize()
+            require_sha256(marker, "task-bound authorization marker")
+            transfer_markers.append(marker)
+            return marker
+        def captured_usage():
+            try:
+                usage = sink.verified_usage()
+                if usage is not None:
+                    if (not isinstance(usage, MeasuredUsage)
+                            or usage.feature_engine_id != configuration.provider.feature_engine_id
+                            or usage.feature_calls != 1):
+                        raise ValueError("captured metering differs from the exact one-call provider task")
+                    usage.validate()
+                    self._observed_usage[usage_key] = usage
+                return usage
+            except Exception:
+                return None
         try:
-            authorize()  # Refuse acceptance if authority changed during generation.
+            response = await self.client.generate(dispatch, authorize_transfer=authorize_transfer,
+                                                   attempt_sink=sink)
+        except asyncio.CancelledError:
+            captured_usage()
+            raise
+        except TimeoutError:
+            captured_usage()
+            raise TimeoutError("provider request timed out") from None
+        except (ArmStopped, ArmExecutionFailure) as stopped:
+            # Failure responses are also denominator rows. Use the durable,
+            # authenticated observation, never usage supplied by an exception.
+            usage = captured_usage()
+            if isinstance(stopped, ArmExecutionFailure):
+                if usage is None:
+                    raise ValueError("provider failure lacks authenticated attempt metering") from None
+                raise ArmExecutionFailure(stopped.status, usage) from None
+            raise ArmStopped(stopped.status, usage) from None
+        except Exception as failure:
+            usage = captured_usage()
+            if usage is not None:
+                status = "invalid_result" if isinstance(failure, ValueError) else "failed"
+                raise ArmExecutionFailure(status, usage) from None
+            raise
+        try:
+            if (len(transfer_markers) != 1 or response.authorization_marker != transfer_markers[0]):
+                raise ValueError("transport lacks its actual transfer-boundary authorization binding")
+            self.exchange_verifier.verify(request=dispatch, response=response)
+        except Exception:
+            # Reject the returned response. A separate authentic capture may
+            # still prove that this exact task consumed resources.
+            captured_usage()
+            raise
+        try:
+            # The observer must also have stored this exact completed response
+            # under this task, rather than an earlier retry or another arm.
+            sink.verify_response(response)
+            metered = captured_usage()
+            if metered is None:
+                raise ValueError("completed provider response lacks durable authenticated task metering")
+            # Use independent parsing of the actual captured body, not counters
+            # declared by a signed response that may differ from that body.
+            observed_usage = MeasuredUsage(configuration.provider.feature_engine_id, count.tokens,
+                metered.input_tokens, metered.output_tokens, metered.feature_calls,
+                metered.cost_microunits, metered.currency)
+            observed_usage.validate()
+            self._observed_usage[usage_key] = observed_usage
+            authorize_source()  # Refuse acceptance if authority changed during generation.
             if self.client.configuration != configuration.provider:
                 raise ValueError("provider configuration changed during dispatch")
             return self.recorder.record(request=request, provider_request=dispatch, response=response,
                                         token_count=count, authorization_marker=response.authorization_marker)
         except ArmExecutionFailure as failure:
-            raise ArmExecutionFailure(failure.status, observed_usage) from None
+            usage = captured_usage() or self._observed_usage.get(usage_key)
+            if usage is None:
+                raise ValueError("provider failure lacks durable authenticated task metering") from None
+            raise ArmExecutionFailure(failure.status, usage) from None
         except ArmStopped as stop:
-            raise ArmStopped(stop.status, observed_usage) from None
+            raise ArmStopped(stop.status, captured_usage() or self._observed_usage.get(usage_key)) from None
         except ValueError:
-            raise ArmExecutionFailure("invalid_result", observed_usage) from None
+            usage = captured_usage() or self._observed_usage.get(usage_key)
+            if usage is None:
+                raise ValueError("provider result lacks exact durable task validation") from None
+            raise ArmExecutionFailure("invalid_result", usage) from None
         except Exception:
             # Retain metering without returning private exception text or output.
-            raise ArmExecutionFailure("failed", observed_usage) from None
+            usage = captured_usage() or self._observed_usage.get(usage_key)
+            if usage is None:
+                raise RuntimeError("provider result acceptance failed") from None
+            raise ArmExecutionFailure("failed", usage) from None

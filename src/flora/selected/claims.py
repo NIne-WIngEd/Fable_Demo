@@ -67,6 +67,10 @@ def configure_xtdb_connection(connection: Any) -> None:
         oid = text_oid
 
     connection.adapters.register_dumper(str, XTDBTextDumper)
+    # XTDB learns table columns from committed documents. A prepared SELECT
+    # issued before first insertion can otherwise retain an empty result shape.
+    if hasattr(connection, "prepare_threshold"):
+        connection.prepare_threshold = None
 
 
 def _dml_placeholder(value: object) -> str:

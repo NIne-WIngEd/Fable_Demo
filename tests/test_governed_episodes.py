@@ -162,8 +162,8 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
         episode, artifact, summary, content = self.candidate()
         receipt, _, event = self.accept(episode, artifact)
         self.f.policy.allowed.remove((event.event_id, "personal_judgment"))
-        opened, original = [], self.f.objects.get
-        self.f.objects.get = lambda raw: (opened.append(raw.object_id), original(raw))[1]
+        opened = []
+        self.enterContext(helpers.observe_private_opens(opened))
         with self.assertRaisesRegex(ValueError, "request authority"):
             self.episodes.read_accepted(episode.episode_id, **self.inputs())
         self.assertEqual(opened, [])
@@ -175,8 +175,8 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
         self.assertIn(f.source_two.event_id, self.episodes.current_lineage(episode.episode_id,
             claims=f.claims, log=f.log)[3])
         f.policy.allowed.remove((f.source_two.event_id, "personal_judgment"))
-        opened, original = [], f.objects.get
-        f.objects.get = lambda raw: (opened.append(raw.object_id), original(raw))[1]
+        opened = []
+        self.enterContext(helpers.observe_private_opens(opened))
         with self.assertRaisesRegex(ValueError, "source use"):
             self.episodes.current_lineage(episode.episode_id, claims=f.claims, log=f.log)
         self.assertEqual(opened, [])
@@ -232,8 +232,8 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
         self.assertEqual(governed.read_latest_candidate(**f.identity(),**self.inputs()).record["source_episode_ids"],
                          [episode.episode_id])
         f.policy.allowed.remove((f.source_one.event_id,"personal_judgment"))
-        opened,original=[],f.objects.get
-        f.objects.get=lambda ref:(opened.append(ref.object_id),original(ref))[1]
+        opened=[]
+        self.enterContext(helpers.observe_private_opens(opened))
         with self.assertRaisesRegex(ValueError,"source use"):
             governed.read_latest_candidate(**f.identity(),**self.inputs())
         self.assertNotIn(raw.object_id,opened)
@@ -247,8 +247,8 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
             connection=f.connection,registry=f.registry,policy=f.policy,episodes=self.episodes)
         governed.put_candidate(version,content=raw,**self.inputs())
         self.admission.adjudicated.clear()
-        opened,original=[],f.objects.get
-        f.objects.get=lambda ref:(opened.append(ref.object_id),original(ref))[1]
+        opened=[]
+        self.enterContext(helpers.observe_private_opens(opened))
         with self.assertRaisesRegex(ValueError,"qualified formation and independent"):
             governed.read_latest_candidate(**f.identity(),**self.inputs())
         self.assertNotIn(raw.object_id,opened)
@@ -294,16 +294,16 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
 
     def test_candidate_permission_revocation_during_derived_read_cannot_return_bytes(self):
         f=self.f
-        _,_,summary,_=self.candidate()
-        original=f.objects.get
-        def revoke(raw):
-            content=original(raw)
-            if raw.object_id==summary.object_id:
+        _,_,summary,content=self.candidate()
+        opened=[]
+        def revoke(object_id):
+            if object_id==summary.object_id:
                 f.policy.allowed.discard((f.source_one.event_id,"personal_judgment"))
-            return content
-        f.objects.get=revoke
+        self.enterContext(helpers.observe_private_opens(opened, revoke))
         with self.assertRaisesRegex(ValueError,"not currently permitted"):
             self.episodes.read_latest_candidate(thread_id="fictional-thread",**self.inputs())
+        self.assertIn(summary.object_id,opened)
+        self.assertNotIn(content.object_id,opened)
 
     def test_rollback_cannot_restore_a_superseded_episode_derived_state(self):
         f=self.f
@@ -332,8 +332,8 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
         approve(second_state.metadata_record(),version.version_id)
         second_episode,a2,_,_=self.candidate(2,first.episode_id)
         self.accept(second_episode,a2,p1)
-        opened,original=[],f.objects.get
-        f.objects.get=lambda ref:(opened.append(ref.object_id),original(ref))[1]
+        opened=[]
+        self.enterContext(helpers.observe_private_opens(opened))
         with self.assertRaisesRegex(ValueError,"stale, superseded"):
             governed.register_rollback(rollback_id="unsafe-episode-rollback",version_id="restored-state-v3",
                 target_version_id=version.version_id,expected_active_version_id=second_state.version_id,
@@ -348,34 +348,30 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
         episode,artifact,summary,content=self.candidate()
         self.accept(episode,artifact)
         denied=[]
-        original=f.objects.get
+        opened=[]
         after_denial=[]
         def revoke():
             denied.append(True)
             f.policy.allowed.discard((f.source_one.event_id,"personal_judgment"))
         self.admission.on_adjudication=revoke
-        def track(raw):
+        def track(object_id):
             if denied:
-                after_denial.append(raw.object_id)
-            return original(raw)
-        f.objects.get=track
+                after_denial.append(object_id)
+        self.enterContext(helpers.observe_private_opens(opened, before_open=track))
         with self.assertRaisesRegex(ValueError,"source use"):
             self.episodes.read_accepted(episode.episode_id,**self.inputs())
+        self.assertTrue(denied)
         self.assertEqual(after_denial,[])
 
     def test_summary_read_revocation_prevents_content_open_inside_private_custody(self):
         f=self.f
         episode,artifact,summary,content=self.candidate()
         self.accept(episode,artifact)
-        original=f.objects.get
         opened=[]
-        def revoke_on_summary(raw):
-            value=original(raw)
-            opened.append(raw.object_id)
-            if raw.object_id==summary.object_id:
+        def revoke_on_summary(object_id):
+            if object_id==summary.object_id:
                 f.policy.allowed.discard((f.source_one.event_id,"personal_judgment"))
-            return value
-        f.objects.get=revoke_on_summary
+        self.enterContext(helpers.observe_private_opens(opened, revoke_on_summary))
         with self.assertRaisesRegex(ValueError,"source use"):
             self.episodes.read_accepted(episode.episode_id,**self.inputs())
         self.assertIn(summary.object_id,opened)
@@ -385,15 +381,11 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
         f=self.f
         episode,artifact,summary,content=self.candidate()
         self.accept(episode,artifact)
-        original=f.objects.get
         opened=[]
-        def revoke_on_manifest(raw):
-            value=original(raw)
-            opened.append(raw.object_id)
-            if raw.object_id==artifact.manifest.object_id:
+        def revoke_on_manifest(object_id):
+            if object_id==artifact.manifest.object_id:
                 f.policy.allowed.discard((f.source_one.event_id,"personal_judgment"))
-            return value
-        f.objects.get=revoke_on_manifest
+        self.enterContext(helpers.observe_private_opens(opened, revoke_on_manifest))
         with self.assertRaisesRegex(ValueError,"source use"):
             self.episodes.read_accepted(episode.episode_id,**self.inputs())
         self.assertIn(artifact.manifest.object_id,opened)
@@ -404,17 +396,14 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
         f=self.f
         episode,artifact,summary,content=self.candidate()
         request,event=self.request(episode,artifact)
-        original=f.objects.get
         opened=[]
-        def revoke_on_request(raw):
-            value=original(raw)
-            opened.append(raw.object_id)
-            if raw.object_id==event.payload_reference:
+        def revoke_on_request(object_id):
+            if object_id==event.payload_reference:
                 f.policy.allowed.discard((f.source_one.event_id,"personal_judgment"))
-            return value
-        f.objects.get=revoke_on_request
+        self.enterContext(helpers.observe_private_opens(opened, revoke_on_request))
         with self.assertRaisesRegex(ValueError,"source use"):
             self.episodes.accept(request=request,request_event_id=event.event_id,**self.inputs())
+        self.assertIn(event.payload_reference,opened)
         self.assertNotIn(artifact.manifest.object_id,opened)
         self.assertNotIn(summary.object_id,opened)
         self.assertNotIn(content.object_id,opened)
@@ -423,15 +412,11 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
     def test_candidate_read_summary_denial_blocks_later_content_plaintext(self):
         f=self.f
         _,_,summary,content=self.candidate()
-        original=f.objects.get
         opened=[]
-        def deny_on_summary(raw):
-            value=original(raw)
-            opened.append(raw.object_id)
-            if raw.object_id==summary.object_id:
+        def deny_on_summary(object_id):
+            if object_id==summary.object_id:
                 f.policy.allowed.discard((f.source_one.event_id,"personal_judgment"))
-            return value
-        f.objects.get=deny_on_summary
+        self.enterContext(helpers.observe_private_opens(opened, deny_on_summary))
         with self.assertRaisesRegex(ValueError,"source use"):
             self.episodes.read_latest_candidate(thread_id="fictional-thread",**self.inputs())
         self.assertIn(summary.object_id,opened)
@@ -440,15 +425,11 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
     def test_candidate_put_summary_denial_blocks_later_content_plaintext(self):
         f=self.f
         episode,_,summary,content=self.candidate()
-        original=f.objects.get
         opened=[]
-        def deny_on_summary(raw):
-            value=original(raw)
-            opened.append(raw.object_id)
-            if raw.object_id==summary.object_id:
+        def deny_on_summary(object_id):
+            if object_id==summary.object_id:
                 f.policy.allowed.discard((f.source_one.event_id,"personal_judgment"))
-            return value
-        f.objects.get=deny_on_summary
+        self.enterContext(helpers.observe_private_opens(opened, deny_on_summary))
         with self.assertRaisesRegex(ValueError,"source use"):
             self.episodes.put_candidate(episode,thread_id="fictional-thread",summary=summary,
                 content=content,**self.inputs())
@@ -460,8 +441,8 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
         first,artifact,summary,content=self.candidate()
         request,event=self.request(first,artifact)
         self.candidate(2,first.episode_id)
-        opened,original=[],f.objects.get
-        f.objects.get=lambda ref:(opened.append(ref.object_id),original(ref))[1]
+        opened=[]
+        self.enterContext(helpers.observe_private_opens(opened))
         with self.assertRaisesRegex(ValueError,"stale candidate head"):
             self.episodes.accept(request=request,request_event_id=event.event_id,**self.inputs())
         self.assertNotIn(artifact.manifest.object_id,opened)
@@ -473,7 +454,6 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
         episode,artifact,_,_=self.candidate()
         request,event=self.request(episode,artifact)
         backend_get=f.objects.backend.get_object
-        original_get=f.objects.get
         opened=[]
         def deny_on_cipher(namespace,object_id):
             cipher=backend_get(namespace,object_id)
@@ -481,7 +461,7 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
                 f.policy.allowed.discard((f.source_one.event_id,"personal_judgment"))
             return cipher
         f.objects.backend.get_object=deny_on_cipher
-        f.objects.get=lambda ref:(opened.append(ref.object_id),original_get(ref))[1]
+        self.enterContext(helpers.observe_private_opens(opened))
         with self.assertRaisesRegex(ValueError,"source use"):
             self.episodes.accept(request=request,request_event_id=event.event_id,**self.inputs())
         self.assertNotIn(event.payload_reference,opened)
@@ -499,8 +479,8 @@ class GovernedEpisodeBoundaryTest(unittest.TestCase):
                     f.connection.rows[(table,key)]["episode_id"]="fictional-newer-draft"
             return original_fetch(table,key,**kwargs)
         self.episodes._fetch=advance_during_capture
-        opened,original_get=[],f.objects.get
-        f.objects.get=lambda raw:(opened.append(raw.object_id),original_get(raw))[1]
+        opened=[]
+        self.enterContext(helpers.observe_private_opens(opened))
         with self.assertRaisesRegex(ValueError,"changed before private read"):
             self.episodes.read_latest_candidate(thread_id="fictional-thread",**self.inputs())
         self.assertEqual(opened,[])

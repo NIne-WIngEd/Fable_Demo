@@ -15,9 +15,15 @@ Material build decisions and failures are captured as [FBM process seeds](docs/f
 
 **Status: infrastructure under construction.** There is no conversational demo, trained personality model, Memory Formation Model (MFM), builder, qualified behavioral result, or consumer release here yet. The personality and MFM are being developed in separate workstreams. This repository builds the other demo infrastructure and will integrate their qualified outputs when ready.
 
-**Re-audit — 2026-09-29:** we have **not** finished all work independent of those models. Selected-backend components still need current MFM source/planner integration, proposal-to-authority wiring, governed update/rollback, a runnable slice, and the comparator/evaluation pipeline. The [readiness re-audit](docs/READINESS_REAUDIT_2026-09-29.md) records the gaps, repairs, source refs, and actual stopping rule. Green infrastructure checks do not place FloRA at a model-only waiting point.
+**Re-audit follow-up — 2026-09-30:** the registered MFM interfaces, governed admission and development, runtime integration, paired comparator and blinded assessment now have implementations. The remaining work is being checked through actual phase routing, native pilot transitions, cohort/builder preparation and recovery after interrupted writes. The [readiness re-audit](docs/READINESS_REAUDIT_2026-09-29.md) preserves the original findings. We have not declared a model-only waiting point.
 
-The current registered source/context path has passed the selected-backend gate. [Governed proposal admission](docs/FORMATION_ADMISSION.md), [personal-state rollback](docs/GOVERNED_PERSONAL_DEVELOPMENT.md), [artifact qualification](docs/ARTIFACT_ADMISSION.md), persistent Temporal and blinded human assessment are now being connected and qualified. Durable private-state recovery, runnable model integration and the complete comparison pipeline remain work in progress.
+The selected source/context path and earlier custody components have physical backend evidence. The latest expanded checkpoint failed on an XTDB cached-query plan and native comparison latency; restart probes did not run. Those repairs and the new paths must pass the real engine gate before their backend qualification is claimed. Fictional producer receipts exercise wiring only; actual learned formation, native judgment and update-exclusion proofs still come from the other model workstreams.
+
+Current additions include [bounded native execution](docs/NATIVE_EXECUTION_BRIDGE.md), [private provider attempts](docs/PROVIDER_ATTEMPT_CUSTODY.md), [comparator transport wiring](docs/COMPARATOR_ATTEMPT_WIRING.md), [bounded local embeddings](docs/BOUNDED_LOCAL_EMBEDDINGS.md), [native pilot transitions](docs/NATIVE_PILOT_LIFECYCLE.md), [phase-specific bindings](docs/PHASE_BINDINGS.md) and [current private-read authority](docs/CURRENT_AUTHORITY_BARRIERS.md). Their documents separate implementation, mechanical tests and missing qualification.
+
+The phase path now has [historical selected snapshots](docs/SELECTED_PHASE_SNAPSHOTS.md) and [current history](docs/CURRENT_HISTORY_FENCE.md) and [context](docs/CURRENT_CONTEXT_GUARD.md) fences. [Cohort and builder manifests](docs/EXPERIMENT_MANIFEST_CUSTODY.md) keep procedure recipes separate from qualified transfer evidence. [Bounded XTDB readers](docs/BOUNDED_XTDB_PASSIVE_READS.md) retain cancelled slots until physical reads retire. These are infrastructure boundaries awaiting the expanded physical gate; they do not supply learned model behavior.
+
+The [registered experiment coordinator](docs/EXPERIMENT_COORDINATOR.md) connects prepared cohorts, frozen native arms, comparator custody and sealed assessment while retaining incomplete attempts. A genuine live before/update/after run still needs two-stage capture: the before archive cannot require an after checkpoint or context digest that does not exist yet. That workflow repair is independent of the model workstreams and remains open.
 
 ## Architecture boundary
 
@@ -62,13 +68,16 @@ Secure owner-key enrollment, complete conflict/deletion lineage, multi-device re
 The component checks run with Python 3.11+, `cryptography`, `kurrentdbclient~=1.3`, and A.L.I.C.E.'s product-neutral scope and formation contracts from `research/mfm-foundation-20260923@4f287a488bc908bd04f99255ee01b794bacba50b` (formation schema 1.2.0):
 
 ```bash
-PYTHONPATH=../ALICE/src:src python -m unittest discover -s tests -v
+export PYTHONPATH=../ALICE/src:src
+for test_file in tests/test_*.py; do
+  python -m unittest discover -s tests -p "${test_file##*/}" -v || exit 1
+done
 ```
 
 Use synthetic data only. A repeatable Docker environment for the first selected backends now lives in `compose.integration.yml`. The GitHub Actions gate starts real KurrentDB, XTDB, NATS JetStream, and Qdrant services, runs the integration tests, restarts the authority services, verifies persistence, captures logs, and tears the stack down. For local use:
 
 ```bash
-python -m pip install -e '.[backends]'
+python -m pip install -e '.[backends,providers,embeddings]'
 docker compose -f compose.integration.yml up -d
 PYTHONPATH=../ALICE/src:src python -m unittest discover -s tests/integration -v
 docker compose -f compose.integration.yml down -v

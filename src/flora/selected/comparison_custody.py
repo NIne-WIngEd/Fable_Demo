@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass
+from copy import copy
 import hashlib
 import json
 from typing import Any, Mapping
@@ -33,6 +34,7 @@ from .formation_registry import (
     RegisteredEncryptedFormationCustody, XTDBFormationSourceRegistry,
 )
 from .object_store import EncryptedObjectPlane
+from .personal_artifact_custody import _SourceAuthorizedObjectReads
 
 
 _ARTIFACTS = "flora_comparison_artifacts"
@@ -63,13 +65,16 @@ def evaluation_purpose(run_id: str, case_id: str, phase: str) -> str:
 
 def _plan_record(plan: PairedRunPlan) -> dict:
     plan.validate()
-    return {"protocol": plan.protocol.record(),
+    record = {"protocol": plan.protocol.record(),
             "arm_bindings": {arm: vars(binding) for arm, binding in plan.arm_bindings.items()},
             "context_token_budget": plan.context_token_budget,
             "context_byte_budget": plan.context_byte_budget,
             "feature_call_budget": plan.feature_call_budget,
             "question_sha256_by_case": dict(plan.question_sha256_by_case),
             "evidence_kind": plan.evidence_kind}
+    if plan.phase_bindings is not None:
+        record["phase_bindings"] = plan.phase_binding_record()
+    return record
 
 
 def _plan_from_record(record: dict) -> PairedRunPlan:
@@ -82,7 +87,9 @@ def _plan_from_record(record: dict) -> PairedRunPlan:
         EvaluationProtocol(**protocol_record),
         {arm: ArmBinding(**binding) for arm, binding in record["arm_bindings"].items()},
         record["context_token_budget"], record["context_byte_budget"],
-        record["feature_call_budget"], record["question_sha256_by_case"], record["evidence_kind"])
+        record["feature_call_budget"], record["question_sha256_by_case"], record["evidence_kind"],
+        None if "phase_bindings" not in record else {
+            (e["case_id"], e["phase"], e["arm"]): ArmBinding(**e["binding"]) for e in record["phase_bindings"]})
     if _plan_record(plan) != record:
         raise ValueError("stored plan is not canonical")
     return plan
@@ -261,6 +268,8 @@ class XTDBComparisonCustody:
     def read(self, *, run_id: str, artifact_id: str,
              permissions: XTDBFormationPermissionPolicy, purpose: str) -> bytes:
         artifact = self.metadata(run_id, artifact_id)
+        if artifact is not None and artifact.record["kind"].startswith("coordinator_"):
+            raise PermissionError("experiment coordinator controls require their dedicated recovery route")
         if artifact is not None and artifact.record["kind"] == "blind_key":
             raise PermissionError("blind identity key requires sealed assessment release")
         if (artifact is not None and purpose.startswith("comparison_assessment:")
@@ -287,7 +296,16 @@ class XTDBComparisonCustody:
         source = self.registry.lookup(artifact.event_id)
         if not permissions.permits(source, purpose):
             raise PermissionError("comparison artifact is not currently permitted for this purpose")
-        content = self.raw_custody.read(self.scope, source.object_ref)
+        def current():
+            return (self.metadata(run_id, artifact_id) == artifact
+                    and self.registry.lookup(artifact.event_id) == source
+                    and permissions.permits(source, purpose) is True)
+        if not current():
+            raise PermissionError("comparison artifact changed or permission was withdrawn before read")
+        reader = copy(self.raw_custody)
+        if hasattr(reader, "objects"):
+            reader.objects = _SourceAuthorizedObjectReads(reader.objects, current)
+        content = reader.read(self.scope, source.object_ref)
         if (self.metadata(run_id, artifact_id) != artifact
                 or _digest(content) != artifact.record["content_sha256"]
                 or not permissions.permits(source, purpose)):
@@ -414,7 +432,7 @@ class XTDBComparisonCustody:
                     delivery_id, context_sources = consumed[offset], consumed[offset + 1:]
                     originals_only = set(context_sources).issubset(attempt.authorized_event_ids)
                     native_required = (native_output or not originals_only
-                        or (attempt.arm == "flora_full" and evidence_policy is not None
+                        or (attempt.arm in {"flora_full", "same_evidence_ablation"} and evidence_policy is not None
                             and evidence_policy.requires_native_result))
                     request = result = None
                     if native_required:
@@ -429,7 +447,7 @@ class XTDBComparisonCustody:
                         if (not isinstance(request, ExecutionRequest) or not isinstance(result, ArmResult)
                                 or request.case_id != attempt.case_id or request.phase != attempt.phase
                                 or request.scope != self.scope or request.plan.digest() != run.plan.digest()
-                                or request.binding != run.plan.arm_bindings[attempt.arm]
+                                or request.binding != run.plan.binding_for(attempt.case_id, attempt.phase, attempt.arm)
                                 or request.question != run.questions[attempt.case_id]
                                 or request.authorized_event_ids != attempt.authorized_event_ids
                                 or request.authorized_history_sha256 != attempt.authorized_history_sha256
@@ -450,9 +468,9 @@ class XTDBComparisonCustody:
                     if (material.get("schema") != "flora-decision-v1"
                             or base64.b64decode(material["verdict_base64"], validate=True) != attempt.output
                             or recorded.event != decision_hint or material.get("consumed_event_ids") != list(consumed)
-                            or material.get("model_artifact_sha256") != run.plan.arm_bindings[attempt.arm].model_artifact_sha256
-                            or recorded.event.provenance.model_id != run.plan.arm_bindings[attempt.arm].model_artifact_sha256
-                            or recorded.event.provenance.responsible_component != run.plan.arm_bindings[attempt.arm].producer_component):
+                            or material.get("model_artifact_sha256") != run.plan.binding_for(attempt.case_id, attempt.phase, attempt.arm).model_artifact_sha256
+                            or recorded.event.provenance.model_id != run.plan.binding_for(attempt.case_id, attempt.phase, attempt.arm).model_artifact_sha256
+                            or recorded.event.provenance.responsible_component != run.plan.binding_for(attempt.case_id, attempt.phase, attempt.arm).producer_component):
                         raise ValueError("run output differs from canonical recorded verdict")
                     if native_required:
                         if result.decision != recorded:
@@ -500,6 +518,8 @@ class XTDBComparisonCustody:
         event = next((event for event in self.log.replay() if event.event_id == event_id), None)
         if source is None or event is None:
             raise ValueError("recorded comparison event has no durable registration")
+        if event.event_type in {"comparison_artifact", "provider_attempt_artifact", "phase_snapshot_artifact", "experiment_manifest_artifact"}:
+            raise PermissionError("private experiment controls require their separately authorized audit route")
         raw = self.registry.raw_reference(source.object_ref)
         content = self.raw_custody.read(self.scope, source.object_ref)
         if (raw is None or event.scope != self.scope or event.payload_reference != raw.object_id
@@ -636,8 +656,11 @@ class SelectedRunEvidencePolicy:
         if native_lineage is not None:
             from .judgment_lineage import NativeJudgmentLineageVerifier
             plan = custody.metadata(run_id, "plan")
-            if (not isinstance(native_lineage, NativeJudgmentLineageVerifier)
-                    or native_lineage.runtime.scope != custody.scope
+            if not isinstance(native_lineage, NativeJudgmentLineageVerifier):
+                from .phase_routes import SelectedPhaseLineageRouter
+                if not isinstance(native_lineage, SelectedPhaseLineageRouter):
+                    raise TypeError("native evidence requires an actual selected lineage verifier or phase router")
+            if (native_lineage.runtime.scope != custody.scope
                     or native_lineage.runtime.authority_namespace_id != custody.authority_namespace_id
                     or plan is None
                     or plan.record["metadata"]["plan_sha256"] != native_lineage.run_plan_sha256):
@@ -654,10 +677,14 @@ class SelectedRunEvidencePolicy:
         return self.native_lineage.authorize_context(case_id=case_id, phase=phase,
             history=history, context=context, arm=arm)
 
-    def verify_native_result(self, request, result) -> RecordedEvent:
+    def verify_native_result(self, request, result, *, arm: str = "flora_full") -> RecordedEvent:
         if self.native_lineage is None:
             raise PermissionError("qualified native comparison lineage is not configured")
-        return self.native_lineage.verify_native_result(request, result)
+        return self.native_lineage.verify_native_result(request, result, arm=arm)
+
+    def authorize_history_metadata(self, *, case_id: str, phase: str, history: HistorySnapshot) -> bool:
+        from .history_fence import authorize_history_metadata
+        return authorize_history_metadata(policy=self, case_id=case_id, phase=phase, history=history)
 
     def authorize_history(self, *, case_id: str, phase: str, history: HistorySnapshot) -> bool:
         try:

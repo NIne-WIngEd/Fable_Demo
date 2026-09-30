@@ -13,7 +13,9 @@ import re
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
@@ -29,6 +31,23 @@ from flora.selected.owner_authorization import (
     Ed25519OwnerActionVerifier, OwnerActionProof, owner_action_message,
 )
 from flora.selected.personal_state import activation_request
+
+
+@contextmanager
+def observe_private_opens(opened, after_open=None, *, before_open=None):
+    """Observe actual AEAD opens, including reads through copied guard views."""
+    original = AESGCM.decrypt
+    def decrypt(cipher, nonce, sealed, aad):
+        object_id = aad.decode().rsplit(":", 1)[1]
+        opened.append(object_id)
+        if before_open is not None:
+            before_open(object_id)
+        plaintext = original(cipher, nonce, sealed, aad)
+        if after_open is not None:
+            after_open(object_id)
+        return plaintext
+    with patch.object(AESGCM, "decrypt", new=decrypt):
+        yield
 
 
 class _Cursor:
@@ -293,15 +312,15 @@ class GovernedDevelopmentContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not currently permitted"):
             self.put(first, content)
         self.policy.allowed.add((self.source_one.event_id, "personal_judgment"))
-        original_get = self.objects.get
-        def revoke_on_read(raw):
-            plaintext = original_get(raw)
-            if raw.object_id == self.source_one.payload_reference:
+        opened = []
+        def revoke_on_read(object_id):
+            if object_id == self.source_one.payload_reference:
                 self.policy.allowed.discard((self.source_one.event_id, "personal_judgment"))
-            return plaintext
-        self.objects.get = revoke_on_read
-        with self.assertRaisesRegex(ValueError, "authority changed during read"):
-            self.put(first, content)
+        with observe_private_opens(opened, revoke_on_read):
+            with self.assertRaisesRegex(ValueError, "authority changed during read"):
+                self.put(first, content)
+        self.assertIn(self.source_one.payload_reference, opened)
+        self.assertNotIn(content.object_id, opened)
 
     def test_rollback_restores_exact_target_as_candidate_then_requires_new_signed_approval(self):
         first, second = self.two_states()
@@ -424,20 +443,18 @@ class GovernedDevelopmentContractTest(unittest.TestCase):
             "conflict_state": "none", "adjudication_state": "accepted"}
         self.claims.current["race-claim"] = projection
         self.policy.allowed.remove((self.source_two.event_id, "personal_judgment"))
-        original_load, original_get = self.claims.load_current, self.objects.get
+        original_load = self.claims.load_current
         reads, opened = [], []
         def advance_head(claim_id):
             reads.append(claim_id)
             if len(reads) == 2:
                 projection["current_claim_version_id"] = "race-claim-v2"
             return original_load(claim_id)
-        def track_open(raw):
-            opened.append(raw.object_id)
-            return original_get(raw)
-        self.claims.load_current, self.objects.get = advance_head, track_open
+        self.claims.load_current = advance_head
         first, content = self.version(1, claim_ids=("race-claim-v1",))
-        with self.assertRaisesRegex(PermissionError, "not permitted before raw read"):
-            self.put(first, content)
+        with observe_private_opens(opened):
+            with self.assertRaisesRegex(PermissionError, "not permitted before raw read"):
+                self.put(first, content)
         self.assertNotIn(self.source_two.payload_reference, opened)
 
     def test_stale_and_unsigned_approval_and_episode_self_promotion_fail(self):

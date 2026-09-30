@@ -1,6 +1,7 @@
 """Derived custody contract tests; SQL/record-time fixtures are not engines."""
 from datetime import datetime, timezone
 import unittest
+from unittest.mock import patch
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
@@ -9,6 +10,7 @@ from flora.selected.governed_development import _version_from_record
 from flora.selected.owner_authorization import Ed25519OwnerActionVerifier
 from flora.selected.personal_artifact_custody import (
     DurableOwnerProofLookup, DurablePersonalReferences, XTDBPersonalArtifactCustody,
+    _SourceAuthorizedObjectReads,
 )
 import test_governed_development as fixture_helpers
 
@@ -35,6 +37,46 @@ class PersonalArtifactCustodyContractTest(unittest.TestCase):
         f = self.fixture
         return XTDBPersonalArtifactCustody(scope=f.scope, authority_namespace_id=f.namespace,
                                          connection=f.connection)
+
+    def test_withdrawal_during_cipher_fetch_stops_before_plaintext_decryption(self):
+        f = self.fixture
+        raw = f.objects.put(b"private source guard fixture")
+        allowed = [True]
+        original = f.objects.backend.get_object
+        def withdraw(namespace, object_id):
+            sealed = original(namespace, object_id)
+            allowed[0] = False
+            return sealed
+        reader = _SourceAuthorizedObjectReads(f.objects, lambda: allowed[0])
+        with patch.object(f.objects.backend, "get_object", side_effect=withdraw), patch(
+                "flora.selected.object_store.AESGCM", side_effect=AssertionError("revoked ciphertext was decrypted")):
+            with self.assertRaises(PermissionError):
+                reader.get(raw)
+        self.assertIs(reader.objects.backend.backend, f.objects.backend)
+
+    def test_reference_recovery_obeys_current_gate_before_decryption(self):
+        f = self.fixture
+        raw = f.objects.put(b"private reference fixture")
+        reader = _SourceAuthorizedObjectReads(f.objects, lambda: False)
+        with patch("flora.selected.object_store.AESGCM", side_effect=AssertionError("revoked reference was decrypted")):
+            with self.assertRaises(PermissionError):
+                reader.recover_reference(object_id=raw.object_id, plaintext_sha256=raw.plaintext_sha256)
+
+    def test_nested_current_gates_both_fence_the_actual_cipher_fetch(self):
+        f = self.fixture
+        raw = f.objects.put(b"nested authority fixture")
+        allowed = [True]
+        original = f.objects.backend.get_object
+        def withdraw(namespace, object_id):
+            sealed = original(namespace, object_id)
+            allowed[0] = False
+            return sealed
+        inner = _SourceAuthorizedObjectReads(f.objects, lambda: True)
+        outer = _SourceAuthorizedObjectReads(inner, lambda: allowed[0])
+        with patch.object(f.objects.backend, "get_object", side_effect=withdraw), patch(
+                "flora.selected.object_store.AESGCM", side_effect=AssertionError("nested gate allowed decryption")):
+            with self.assertRaises(PermissionError):
+                outer.get(raw)
 
     def inputs(self):
         f = self.fixture
@@ -129,8 +171,9 @@ class PersonalArtifactCustodyContractTest(unittest.TestCase):
         recorded = self.record(version, raw)
         event = f.log.events.pop()
         opened = []
-        original_get = f.objects.get
-        f.objects.get = lambda ref: (opened.append(ref.object_id), original_get(ref))[1]
+        original_get = f.objects.backend.get_object
+        f.objects.backend.get_object = lambda namespace, object_id: (
+            opened.append(object_id), original_get(namespace, object_id))[1]
         with self.assertRaisesRegex(ValueError, "canonical event binding"):
             self.custody.read(recorded.artifact_id, log=f.log, objects=f.objects)
         self.assertEqual(opened, [])
@@ -150,8 +193,9 @@ class PersonalArtifactCustodyContractTest(unittest.TestCase):
         self.record(version, raw)
         f.policy.allowed.remove((f.source_one.event_id, "personal_judgment"))
         opened = []
-        original_get = f.objects.get
-        f.objects.get = lambda ref: (opened.append(ref.object_id), original_get(ref))[1]
+        original_get = f.objects.backend.get_object
+        f.objects.backend.get_object = lambda namespace, object_id: (
+            opened.append(object_id), original_get(namespace, object_id))[1]
         with self.assertRaisesRegex(ValueError, "not currently permitted"):
             f.state.put_candidate(version, content=raw, **self.inputs())
         self.assertEqual(opened, [])

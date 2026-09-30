@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass, field
+from copy import copy
 import hashlib
 import json
 from pathlib import Path
@@ -47,6 +48,42 @@ from .personal_artifact_custody import DurablePersonalReferences
 
 def _hash(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
+
+
+class _AuthorizedRuntimeBackend:
+    def __init__(self, backend, revalidate):
+        self.backend, self.revalidate = backend, revalidate
+
+    def __getattr__(self, name):
+        return getattr(object.__getattribute__(self, "backend"), name)
+
+    def get_object(self, namespace, object_id):
+        self.revalidate()
+        sealed = self.backend.get_object(namespace, object_id)
+        self.revalidate()
+        return sealed
+
+
+class _AuthorizedRuntimeReads:
+    """Check live authority around every private ciphertext/plaintext read."""
+    def __init__(self, objects, revalidate):
+        self.objects, self.revalidate = copy(objects), revalidate
+        self.objects.backend = _AuthorizedRuntimeBackend(objects.backend, revalidate)
+
+    def __getattr__(self, name):
+        return getattr(object.__getattribute__(self, "objects"), name)
+
+    def get(self, raw):
+        self.revalidate()
+        material = EncryptedObjectPlane.get(self.objects, raw)
+        self.revalidate()
+        return material
+
+    def recover_reference(self, **kwargs):
+        self.revalidate()
+        reference = EncryptedObjectPlane.recover_reference(self.objects, **kwargs)
+        self.revalidate()
+        return reference
 
 
 def _binding_record(binding: RuntimeWiringManifest) -> dict[str, object]:
@@ -236,13 +273,17 @@ class _RuntimePrivateCustody:
         self.connection.execute(f"INSERT INTO {table} ({', '.join(values)}) VALUES ("
             + ", ".join(_dml_placeholder(value) for value in values.values()) + ")", tuple(values.values()))
 
-    def register(self, recorded: RecordedEvent, invocation_id: str, stage: str) -> None:
+    def register(self, recorded: RecordedEvent, invocation_id: str, stage: str, *,
+                 revalidate: Callable[[], None] | None = None) -> None:
+        if revalidate is not None:
+            revalidate()
         event = recorded.event
         if (event.scope != self.runtime.scope or recorded.raw.scope != self.runtime.scope
                 or event not in self.runtime.log.replay() or event.payload_reference != recorded.raw.object_id
                 or event.content_digest != recorded.raw.plaintext_sha256):
             raise ValueError("runtime custody lacks its exact canonical event/raw binding")
-        raw = _raw_record(recorded.raw, self.runtime.objects)
+        objects = self.runtime.objects if revalidate is None else _AuthorizedRuntimeReads(self.runtime.objects, revalidate)
+        raw = _raw_record(recorded.raw, objects)
         raw_record = self._seal({"schema": "flora-runtime-private-reference-v1", "raw": raw})
         step_record = self._seal({"schema": "flora-runtime-private-step-v1", "invocation_id": invocation_id,
             "stage": stage, "event_id": event.event_id, "event_sha256": event.event_sha256,
@@ -259,6 +300,8 @@ class _RuntimePrivateCustody:
         if pending:
             with self.connection.transaction():
                 for table, key, record in pending:
+                    if revalidate is not None:
+                        revalidate()
                     self._insert(table, key, record)
 
     def raw_reference(self, object_id: str) -> RawObjectReference | None:
@@ -271,9 +314,13 @@ class _RuntimePrivateCustody:
         return RawObjectReference(self.runtime.scope, object_id, raw["plaintext_sha256"], raw["size"])
 
     def read(self, invocation_id: str, stage: str, *, event_id: str | None = None,
-             parent_event_id: str | None = None) -> tuple[RecordedEvent, bytes]:
+             parent_event_id: str | None = None, allow_replay: bool = True,
+             revalidate: Callable[[], None] | None = None) -> tuple[RecordedEvent, bytes]:
+        objects = self.runtime.objects if revalidate is None else _AuthorizedRuntimeReads(self.runtime.objects, revalidate)
         record = self._fetch(self.records, self._key(stage, invocation_id))
         if record is None:
+            if not allow_replay:
+                raise ValueError("read-only runtime recovery requires registered private custody")
             # Replay recovery after append succeeded but the XTDB index failed.
             # The caller must check live authority BEFORE calling this method
             # and authenticate the complete typed step before registering it.
@@ -284,9 +331,9 @@ class _RuntimePrivateCustody:
             if len(events) != 1 or events[0].scope != self.runtime.scope or events[0].payload_reference is None:
                 raise ValueError("runtime private step is absent or ambiguous in canonical replay")
             event = events[0]
-            raw = self.runtime.objects.recover_reference(
+            raw = objects.recover_reference(
                 object_id=event.payload_reference, expected_plaintext_sha256=event.content_digest)
-            return RecordedEvent(event, raw), self.runtime.objects.get(raw)
+            return RecordedEvent(event, raw), objects.get(raw)
         if (record["schema"] != "flora-runtime-private-step-v1"
                 or record["invocation_id"] != invocation_id or record["stage"] != stage):
             raise ValueError("runtime private step is absent or changed")
@@ -295,7 +342,12 @@ class _RuntimePrivateCustody:
                 or event.payload_reference != record["raw"]["object_id"]
                 or event.content_digest != record["raw"]["plaintext_sha256"]):
             raise ValueError("runtime private step lacks its canonical event")
-        raw, material = _read_raw(record["raw"], self.runtime.objects)
+        if not allow_replay:
+            reference = self._fetch(self.raw_refs, self._key("raw", record["raw"]["object_id"]))
+            expected = self._seal({"schema": "flora-runtime-private-reference-v1", "raw": record["raw"]})
+            if reference != expected:
+                raise ValueError("read-only runtime recovery requires exact registered raw reference")
+        raw, material = _read_raw(record["raw"], objects)
         return RecordedEvent(event, raw), material
 
 
@@ -356,7 +408,10 @@ class FloRAExperimentRuntime:
         self.context_policy, self.state_approval_verifier = context_policy, state_approval_verifier
         self.clock, self.vector, self.graph = clock, vector, graph
 
-    def _resolve(self, role: str) -> tuple[RuntimeRoleBinding, RuntimeWiringManifest]:
+    def _resolve(self, role: str, *, authority_guard: Callable[[], None] | None = None
+                 ) -> tuple[RuntimeRoleBinding, RuntimeWiringManifest]:
+        if authority_guard is not None:
+            authority_guard()
         binding = self.bindings.get(role)
         missing = []
         if binding is None:
@@ -376,7 +431,11 @@ class FloRAExperimentRuntime:
         if missing:
             raise RuntimeBlocked((RoleReadiness(role, False, tuple(missing)),))
         codec = binding.codec
-        resolved = self.artifacts.resolve_current_for_runtime(role=role,
+        artifacts = self.artifacts
+        if authority_guard is not None:
+            artifacts = copy(artifacts)
+            artifacts.objects = _AuthorizedRuntimeReads(artifacts.objects, authority_guard)
+        resolved = artifacts.resolve_current_for_runtime(role=role,
             checkpoint_path=binding.checkpoint_path,
             expected_input_contract_id=codec.input_contract_id,
             expected_input_contract_sha256=codec.input_contract_sha256,
@@ -388,6 +447,8 @@ class FloRAExperimentRuntime:
         if binding.adapter.execution_location != "host_local":
             raise ValueError("personal model execution must be host local")
         require_identifier(binding.adapter.adapter_id, "adapter_id")
+        if authority_guard is not None:
+            authority_guard()
         return binding, resolved
 
     def readiness(self) -> tuple[RoleReadiness, ...]:
@@ -413,7 +474,10 @@ class FloRAExperimentRuntime:
         return len(self.log.replay()) - 1
 
     def _append(self, *, payload: bytes, event_type: str, parents: tuple[str, ...],
-                invocation_id: str, model_digest: str) -> RecordedEvent:
+                invocation_id: str, model_digest: str,
+                revalidate: Callable[[], None] | None = None) -> RecordedEvent:
+        if revalidate is not None:
+            revalidate()
         raw = self.objects.put(payload)
         event = ExperienceEvent.create(event_type=event_type, scope=self.scope,
             occurred_at=normalize_timestamp(self.clock(), "occurred_at"), content_digest=raw.plaintext_sha256,
@@ -422,22 +486,30 @@ class FloRAExperimentRuntime:
                 responsible_component="flora-qualified-runtime", model_id=model_digest),
             retention_class="ordinary_experience", storage_tier="raw_buffer",
             parent_event_ids=parents, payload_reference=raw.object_id)
-        self.log.append(event, expected_revision=self._revision())
+        revision = self._revision()
+        if revalidate is not None:
+            revalidate()
+        self.log.append(event, expected_revision=revision)
         recorded = RecordedEvent(event, raw)
-        self.private.register(recorded, invocation_id, event_type)
+        if revalidate is not None:
+            revalidate()
+        self.private.register(recorded, invocation_id, event_type, revalidate=revalidate)
         return recorded
 
     def _execute(self, *, role: str, invocation_id: str, operation: str,
-                 delivery: RecordedEvent, payload: bytes, revalidate: Callable[[], None]) -> ExecutedModelOutput:
+                 delivery: RecordedEvent, payload: bytes, revalidate: Callable[[], None],
+                 private_guard: Callable[[], None] | None = None) -> ExecutedModelOutput:
         require_identifier(invocation_id, "invocation_id")
         if not isinstance(payload, bytes) or not payload:
             raise ValueError("qualified producer codec returned no exact input bytes")
-        binding, artifact = self._resolve(role)
+        guard = private_guard or revalidate
+        objects = _AuthorizedRuntimeReads(self.objects, guard)
+        binding, artifact = self._resolve(role, authority_guard=guard)
         revalidate()
         replayed = self.log.replay()
         if (delivery.event not in replayed or delivery.event.scope != self.scope
                 or delivery.raw.scope != self.scope or delivery.event.payload_reference != delivery.raw.object_id
-                or self.objects.get(delivery.raw) == b"" or delivery.event.content_digest != delivery.raw.plaintext_sha256):
+                or objects.get(delivery.raw) == b"" or delivery.event.content_digest != delivery.raw.plaintext_sha256):
             raise ValueError("runtime input lacks its actual scoped delivery")
         input_material = {"schema": "flora-qualified-model-input-v1", "scope": self.scope.metadata_record(),
             "authority_namespace_id": self.authority_namespace_id, "invocation_id": invocation_id,
@@ -446,10 +518,10 @@ class FloRAExperimentRuntime:
             "input_base64": base64.b64encode(payload).decode()}
         input_record = self._append(payload=canonical_json_bytes(input_material),
             event_type="qualified_model_input", parents=(delivery.event.event_id,),
-            invocation_id=invocation_id, model_digest=artifact.checkpoint_sha256)
+            invocation_id=invocation_id, model_digest=artifact.checkpoint_sha256, revalidate=guard)
         try:
             revalidate()
-            if self._resolve(role)[1] != artifact:
+            if self._resolve(role, authority_guard=guard)[1] != artifact:
                 raise ValueError("current model artifact changed before inference")
             invocation = RuntimeInvocation(self.scope, self.authority_namespace_id, invocation_id,
                 operation, artifact, delivery.event.event_id, input_record.event.event_id, _hash(payload), payload)
@@ -464,7 +536,7 @@ class FloRAExperimentRuntime:
                     adapter=binding.adapter, invocation=invocation, result=result) is not True:
                 raise ValueError("runtime execution is not independently verified")
             revalidate()
-            if self._resolve(role)[1] != artifact:
+            if self._resolve(role, authority_guard=guard)[1] != artifact:
                 raise ValueError("current model artifact changed during inference")
             output_material = {"schema": "flora-qualified-model-output-v1", "invocation": invocation.binding_record(),
                 "adapter_id": binding.adapter.adapter_id, "execution_location": binding.adapter.execution_location,
@@ -472,7 +544,7 @@ class FloRAExperimentRuntime:
                 "execution_proof_base64": base64.b64encode(result.execution_proof).decode()}
             output_record = self._append(payload=canonical_json_bytes(output_material),
                 event_type="qualified_model_output", parents=(input_record.event.event_id,),
-                invocation_id=invocation_id, model_digest=artifact.checkpoint_sha256)
+                invocation_id=invocation_id, model_digest=artifact.checkpoint_sha256, revalidate=guard)
             revalidate()
             return ExecutedModelOutput(invocation, result, input_record, output_record)
         except Exception as failure:
@@ -496,14 +568,18 @@ class FloRAExperimentRuntime:
             raise
 
     def _recover_execution(self, *, role: str, invocation_id: str, current_payload: bytes,
-                           revalidate: Callable[[], None]) -> ExecutedModelOutput:
+                           revalidate: Callable[[], None], reconcile: bool = True,
+                           private_guard: Callable[[], None] | None = None) -> ExecutedModelOutput:
         # Live source/state checks and artifact qualification precede opening
         # the private input/output. A stored receipt is not current permission.
         revalidate()
-        binding, artifact = self._resolve(role)
-        input_record, input_bytes = self.private.read(invocation_id, "qualified_model_input")
+        guard = private_guard or revalidate
+        binding, artifact = self._resolve(role, authority_guard=guard)
+        input_record, input_bytes = self.private.read(invocation_id, "qualified_model_input",
+            allow_replay=reconcile, revalidate=guard)
         revalidate()
-        output_record, output_bytes = self.private.read(invocation_id, "qualified_model_output")
+        output_record, output_bytes = self.private.read(invocation_id, "qualified_model_output",
+            allow_replay=reconcile, revalidate=guard)
         revalidate()
         input_material, output_material = json.loads(input_bytes), json.loads(output_bytes)
         if (input_material["artifact"] != _binding_record(artifact)
@@ -517,16 +593,19 @@ class FloRAExperimentRuntime:
             base64.b64decode(output_material["output_base64"], validate=True),
             base64.b64decode(output_material["execution_proof_base64"], validate=True))
         execution = ExecutedModelOutput(invocation, result, input_record, output_record)
-        self._assert_execution(execution, role)
+        self._assert_execution(execution, role, revalidate=guard)
         revalidate()
-        self.private.register(input_record, invocation_id, "qualified_model_input")
-        revalidate()
-        self.private.register(output_record, invocation_id, "qualified_model_output")
+        if reconcile:
+            self.private.register(input_record, invocation_id, "qualified_model_input", revalidate=guard)
+            revalidate()
+            self.private.register(output_record, invocation_id, "qualified_model_output", revalidate=guard)
         revalidate()
         return execution
 
-    def _assert_execution(self, execution: ExecutedModelOutput, role: str) -> None:
-        binding, artifact = self._resolve(role)
+    def _assert_execution(self, execution: ExecutedModelOutput, role: str, *,
+                          revalidate: Callable[[], None] | None = None) -> None:
+        objects = self.objects if revalidate is None else _AuthorizedRuntimeReads(self.objects, revalidate)
+        binding, artifact = self._resolve(role, authority_guard=revalidate)
         invocation, result = execution.invocation, execution.result
         replayed = self.log.replay()
         if (invocation.scope != self.scope or invocation.authority_namespace_id != self.authority_namespace_id
@@ -558,7 +637,7 @@ class FloRAExperimentRuntime:
                     or recorded.event.provenance.responsible_component != "flora-qualified-runtime"
                     or recorded.event.provenance.model_id != artifact.checkpoint_sha256
                     or recorded.event.provenance.derivation_activity_id != invocation.invocation_id
-                    or self.objects.get(recorded.raw) != canonical_json_bytes(expected)):
+                    or objects.get(recorded.raw) != canonical_json_bytes(expected)):
                 raise ValueError("execution lacks its exact durable input/output receipts")
         ids = [event.event_id for event in replayed]
         if (invocation.delivery_event_id not in ids
@@ -566,21 +645,28 @@ class FloRAExperimentRuntime:
                 < ids.index(execution.output_record.event.event_id)):
             raise ValueError("execution delivery/input/output order changed")
         if binding.execution_verifier.verified_execution(adapter=binding.adapter,
-                invocation=invocation, result=result) is not True or self._resolve(role)[1] != artifact:
+                invocation=invocation, result=result) is not True or self._resolve(role, authority_guard=revalidate)[1] != artifact:
             raise ValueError("runtime execution is not independently verified")
 
     def form_experience(self, *, request: FormationPlanningRequest, invocation_id: str,
                         value_resolver: FormationValueResolver, routes: tuple[FormationRoute, ...] = (),
                         providers: Mapping[str, FormationCandidatePlane] | None = None) -> FormationRun:
-        binding, _ = self._resolve("memory_formation")
+        role = {}
+        def qualify(metadata_guard):
+            role["resolved"] = self._resolve("memory_formation", authority_guard=metadata_guard)
         prepared = prepare_selected_formation(request=request, registry=self.sources, objects=self.objects,
             permits=self.source_policy.permits, routes=routes, providers=providers,
-            selector=select_all_registered)  # Explicit exact experiment policy, never learned selection.
-        delivery = record_selected_formation_delivery(prepared=prepared, log=self.log, objects=self.objects,
+            selector=select_all_registered,
+            before_private_assembly=qualify)  # Exact experiment policy, never learned selection.
+        binding, _ = role["resolved"]
+        objects = _AuthorizedRuntimeReads(self.objects, prepared.metadata_current)
+        delivery = record_selected_formation_delivery(prepared=prepared, log=self.log, objects=objects,
             occurred_at=self.clock(), expected_revision=self._revision(), request_id=invocation_id)
-        self.private.register(delivery, invocation_id, "formation_context_delivery")
+        self.private.register(delivery, invocation_id, "formation_context_delivery",
+                              revalidate=prepared.metadata_current)
         execution = self._execute(role="memory_formation", invocation_id=invocation_id, operation="memory_formation",
-            delivery=delivery, payload=binding.codec.formation_input(prepared), revalidate=prepared.revalidate)
+            delivery=delivery, payload=binding.codec.formation_input(prepared), revalidate=prepared.revalidate,
+            private_guard=prepared.metadata_current)
         bundle = binding.codec.decode_formation(execution.result.output)
         validate_formation_binding(prepared.assembled.packet, bundle)
         if (binding.codec.encode_formation_output(bundle) != execution.result.output
@@ -588,7 +674,7 @@ class FloRAExperimentRuntime:
                 or bundle.inference_run_id != invocation_id):
             raise ValueError("decoded formation output differs from qualified execution")
         candidate = self.candidates.record(prepared=prepared, delivery=delivery, bundle=bundle,
-            log=self.log, objects=self.objects,
+            log=self.log, objects=objects,
             expected_model_artifact_sha256=execution.invocation.artifact.checkpoint_sha256,
             occurred_at=self.clock(), expected_revision=self._revision(), value_resolver=value_resolver)
         prepared.revalidate()
@@ -596,32 +682,57 @@ class FloRAExperimentRuntime:
 
     def recover_formation(self, *, request: FormationPlanningRequest, bundle_id: str,
                           invocation_id: str, routes: tuple[FormationRoute, ...] = (),
-                          providers: Mapping[str, FormationCandidatePlane] | None = None) -> FormationRun:
-        binding, _ = self._resolve("memory_formation")
-        prepared = prepare_selected_formation(request=request, registry=self.sources, objects=self.objects,
-            permits=self.source_policy.permits, routes=routes, providers=providers, selector=select_all_registered)
-        recovered = self.candidates.read_candidate(bundle_id, log=self.log, objects=self.objects,
+                          providers: Mapping[str, FormationCandidatePlane] | None = None,
+                          reconcile: bool = True,
+                          authority_guard: Callable[[], None] | None = None) -> FormationRun:
+        if not isinstance(reconcile, bool):
+            raise TypeError("reconcile must be an explicit boolean")
+        objects = self.objects if authority_guard is None else _AuthorizedRuntimeReads(self.objects, authority_guard)
+        role = {}
+        def qualify(metadata_guard):
+            role["resolved"] = self._resolve("memory_formation", authority_guard=metadata_guard)
+        def permits(source, purpose):
+            if authority_guard is not None:
+                authority_guard()
+            return self.source_policy.permits(source, purpose)
+        prepared = prepare_selected_formation(request=request, registry=self.sources, objects=objects,
+            permits=permits, routes=routes, providers=providers, selector=select_all_registered,
+            before_private_assembly=qualify)
+        binding, _ = role["resolved"]
+        def metadata_current():
+            if authority_guard is not None:
+                authority_guard()
+            prepared.metadata_current()
+        objects = _AuthorizedRuntimeReads(objects, metadata_current)
+        def revalidate():
+            if authority_guard is not None:
+                authority_guard()
+            prepared.revalidate()
+        recovered = self.candidates.read_candidate(bundle_id, log=self.log, objects=objects,
                                                    source_store=prepared.store)
         if recovered.packet != prepared.assembled.packet:
             raise ValueError("recovered formation differs from current registered context")
         execution = self._recover_execution(role="memory_formation", invocation_id=invocation_id,
-            current_payload=binding.codec.formation_input(prepared), revalidate=prepared.revalidate)
+            current_payload=binding.codec.formation_input(prepared), revalidate=revalidate,
+            reconcile=reconcile, private_guard=metadata_current)
         delivery, delivery_bytes = self.private.read(invocation_id, "formation_context_delivery",
-                                                    event_id=execution.invocation.delivery_event_id)
+                                                    event_id=execution.invocation.delivery_event_id,
+                                                    allow_replay=reconcile, revalidate=revalidate)
         if (execution.invocation.delivery_event_id != delivery.event.event_id
                 or delivery_bytes != json.dumps(prepared.receipt_record(), sort_keys=True,
                     separators=(",", ":"), allow_nan=False).encode()
                 or binding.codec.encode_formation_output(recovered.bundle) != execution.result.output
                 or recovered.bundle.inference_run_id != invocation_id):
             raise ValueError("recovered formation lacks exact qualified output/delivery")
-        prepared.revalidate()
-        self.private.register(delivery, invocation_id, "formation_context_delivery")
+        revalidate()
+        if reconcile:
+            self.private.register(delivery, invocation_id, "formation_context_delivery", revalidate=revalidate)
         return FormationRun(prepared, delivery, execution, recovered.recorded, recovered.bundle)
 
     def admit_proposal(self, formation: FormationRun, supplied: SuppliedClaimAdmission) -> FormationAdmissionReceipt:
         # Exact semantic acceptance remains independent of model execution.
         formation.prepared.revalidate()
-        self._assert_execution(formation.execution, "memory_formation")
+        self._assert_execution(formation.execution, "memory_formation", revalidate=formation.prepared.revalidate)
         if (formation.execution.invocation.operation != "memory_formation"
                 or formation.execution.invocation.delivery_event_id != formation.delivery.event.event_id
                 or self.bindings["memory_formation"].codec.encode_formation_output(formation.bundle)
@@ -642,28 +753,57 @@ class FloRAExperimentRuntime:
             expected_active_version_id=supplied.expected_active_version_id,
             verifier=self.state_approval_verifier, **inputs)
 
-    def _context(self, plan: ContextPlan) -> LocalContext:
+    def _guarded_state_verifier(self, objects):
+        from .owner_authorization import Ed25519OwnerActionVerifier
+        from .personal_artifact_custody import DurableOwnerProofLookup
+        verifier = self.state_approval_verifier
+        if isinstance(verifier, Ed25519OwnerActionVerifier) and isinstance(verifier.proofs, DurableOwnerProofLookup):
+            verifier = copy(verifier)
+            verifier.proofs = copy(verifier.proofs)
+            verifier.proofs.objects = objects
+        return verifier
+
+    def _context(self, plan: ContextPlan, *, authority_guard: Callable[[], None] | None = None) -> LocalContext:
+        objects = self.objects if authority_guard is None else _AuthorizedRuntimeReads(self.objects, authority_guard)
+        if authority_guard is not None:
+            authority_guard()
         return assemble_context(plan=plan, claims=self.claims, state=self.state, log=self.log,
+            objects=objects, references=self.references, policy=self.context_policy,
+            approval_verifier=self._guarded_state_verifier(objects), vector=self.vector, graph=self.graph)
+
+    def _prepare_current_context(self, plan: ContextPlan, *,
+                                 authority_guard: Callable[[], None] | None = None,
+                                 before_private_assembly: Callable | None = None):
+        from .context_guard import prepare_current_context
+        def approval_verifier_factory(metadata_guard):
+            return self._guarded_state_verifier(_AuthorizedRuntimeReads(self.objects, metadata_guard))
+        return prepare_current_context(plan=plan, claims=self.claims, state=self.state, log=self.log,
             objects=self.objects, references=self.references, policy=self.context_policy,
-            approval_verifier=self.state_approval_verifier, vector=self.vector, graph=self.graph)
+            approval_verifier_factory=approval_verifier_factory, authority_guard=authority_guard,
+            before_private_assembly=before_private_assembly)
 
     def judge(self, *, plan: ContextPlan, task: bytes, invocation_id: str) -> JudgmentRun:
-        binding, _ = self._resolve("personality_judgment")
         if not isinstance(task, bytes) or not task:
             raise ValueError("native judgment requires an exact task input")
-        context = self._context(plan)
+        role = {}
+        def qualify(metadata_guard):
+            role["resolved"] = self._resolve("personality_judgment", authority_guard=metadata_guard)
+        prepared = self._prepare_current_context(plan, before_private_assembly=qualify)
+        binding, _ = role["resolved"]
+        context = prepared.context
         if not context.sufficient_by_declared_count:
             raise ValueError("explicit experiment context minimum is not met")
-        def revalidate() -> None:
-            if self._context(plan).receipt_record() != context.receipt_record():
-                raise ValueError("native personal context changed during inference")
+        revalidate = prepared.revalidate
+        objects = _AuthorizedRuntimeReads(self.objects, prepared.metadata_current)
         delivery = record_context_delivery(context=context, claims=self.claims, state=self.state,
-            log=self.log, objects=self.objects, references=self.references, policy=self.context_policy,
-            approval_verifier=self.state_approval_verifier, vector=self.vector, graph=self.graph,
-            occurred_at=self.clock(), expected_revision=self._revision())
-        self.private.register(delivery, invocation_id, "context_delivery")
+            log=self.log, objects=objects, references=self.references, policy=self.context_policy,
+            approval_verifier=self._guarded_state_verifier(objects), vector=self.vector, graph=self.graph,
+            occurred_at=self.clock(), expected_revision=self._revision(), authority_guard=prepared.metadata_current)
+        prepared.metadata_current()
+        self.private.register(delivery, invocation_id, "context_delivery", revalidate=prepared.metadata_current)
         execution = self._execute(role="personality_judgment", invocation_id=invocation_id, operation="native_judgment",
-            delivery=delivery, payload=binding.codec.judgment_frame(context=context, task=task), revalidate=revalidate)
+            delivery=delivery, payload=binding.codec.judgment_frame(context=context, task=task), revalidate=revalidate,
+            private_guard=prepared.metadata_current)
         binding.codec.validate_identity_decision(output=execution.result.output, context=context)
         revalidate()
         linked = _LinkedReferences(self.references, {
@@ -671,30 +811,45 @@ class FloRAExperimentRuntime:
             execution.output_record.raw.object_id: execution.output_record.raw})
         consumed = tuple(dict.fromkeys((execution.output_record.event.event_id, delivery.event.event_id,
                                        *context.source_event_ids)))
-        decision = record_decision(log=self.log, objects=self.objects, verdict=execution.result.output,
+        def authorize_consumed(_event_id):
+            prepared.metadata_current()
+            return True
+        decision = record_decision(log=self.log, objects=objects, verdict=execution.result.output,
             consumed_event_ids=consumed, references=linked,
             model_artifact_sha256=execution.invocation.artifact.checkpoint_sha256,
-            occurred_at=self.clock(), expected_revision=self._revision(), producer_component=binding.adapter.adapter_id)
-        self.private.register(decision, invocation_id, "decision")
+            occurred_at=self.clock(), expected_revision=self._revision(), producer_component=binding.adapter.adapter_id,
+            source_authorizer=authorize_consumed)
+        prepared.metadata_current()
+        self.private.register(decision, invocation_id, "decision", revalidate=prepared.metadata_current)
         revalidate()
         return JudgmentRun(context, delivery, execution, decision)
 
-    def recover_judgment(self, *, plan: ContextPlan, task: bytes, invocation_id: str) -> JudgmentRun:
-        binding, _ = self._resolve("personality_judgment")
-        context = self._context(plan)
+    def recover_judgment(self, *, plan: ContextPlan, task: bytes, invocation_id: str,
+                         reconcile: bool = True,
+                         authority_guard: Callable[[], None] | None = None) -> JudgmentRun:
+        if not isinstance(reconcile, bool):
+            raise TypeError("reconcile must be an explicit boolean")
+        role = {}
+        def qualify(metadata_guard):
+            role["resolved"] = self._resolve("personality_judgment", authority_guard=metadata_guard)
+        prepared = self._prepare_current_context(plan, authority_guard=authority_guard,
+                                                 before_private_assembly=qualify)
+        binding, _ = role["resolved"]
+        context = prepared.context
         if not context.sufficient_by_declared_count:
             raise ValueError("current context minimum is not met for judgment recovery")
-        def revalidate() -> None:
-            if self._context(plan).receipt_record() != context.receipt_record():
-                raise ValueError("native personal context changed during recovery")
+        revalidate = prepared.revalidate
         execution = self._recover_execution(role="personality_judgment", invocation_id=invocation_id,
-            current_payload=binding.codec.judgment_frame(context=context, task=task), revalidate=revalidate)
+            current_payload=binding.codec.judgment_frame(context=context, task=task), revalidate=revalidate,
+            reconcile=reconcile, private_guard=prepared.metadata_current)
         binding.codec.validate_identity_decision(output=execution.result.output, context=context)
         delivery, delivery_bytes = self.private.read(invocation_id, "context_delivery",
-                                                    event_id=execution.invocation.delivery_event_id)
+                                                    event_id=execution.invocation.delivery_event_id,
+                                                    allow_replay=reconcile, revalidate=prepared.metadata_current)
         revalidate()
         decision, material = self.private.read(invocation_id, "decision",
-                                             parent_event_id=execution.output_record.event.event_id)
+                                             parent_event_id=execution.output_record.event.event_id,
+                                             allow_replay=reconcile, revalidate=prepared.metadata_current)
         record = json.loads(material)
         expected_consumed = list(dict.fromkeys((execution.output_record.event.event_id, delivery.event.event_id,
                                                *context.source_event_ids)))
@@ -710,9 +865,10 @@ class FloRAExperimentRuntime:
                 or record["model_artifact_sha256"] != execution.invocation.artifact.checkpoint_sha256):
             raise ValueError("recovered decision lacks its exact native execution lineage")
         revalidate()
-        self.private.register(delivery, invocation_id, "context_delivery")
-        revalidate()
-        self.private.register(decision, invocation_id, "decision")
+        if reconcile:
+            self.private.register(delivery, invocation_id, "context_delivery", revalidate=prepared.metadata_current)
+            revalidate()
+            self.private.register(decision, invocation_id, "decision", revalidate=prepared.metadata_current)
         revalidate()
         return JudgmentRun(context, delivery, execution, decision)
 

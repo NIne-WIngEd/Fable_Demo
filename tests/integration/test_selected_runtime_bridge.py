@@ -219,8 +219,13 @@ class SelectedExperimentRuntimeIntegrationTest(unittest.TestCase):
         recovered = self.runtime.recover_formation(request=request, bundle_id=formed.bundle.bundle_id,
                                                    invocation_id="actual-fixture-formation")
         self.assertEqual(recovered.execution.result, formed.execution.result)
-        recovered_judgment = self.runtime.recover_judgment(plan=plan, task=b"same fictional task",
-                                                          invocation_id="actual-fixture-judgment")
+        register = self.runtime.private.register
+        self.runtime.private.register = lambda *_: self.fail("strict recovery attempted a registry write")
+        try:
+            recovered_judgment = self.runtime.recover_judgment(plan=plan, task=b"same fictional task",
+                invocation_id="actual-fixture-judgment", reconcile=False)
+        finally:
+            self.runtime.private.register = register
         self.assertEqual(recovered_judgment.decision, judged.decision)
 
         # A failed producer proof remains a delivered attempt in canonical

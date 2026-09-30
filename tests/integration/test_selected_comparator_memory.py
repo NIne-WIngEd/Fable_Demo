@@ -4,6 +4,7 @@ No frontier request, real embedding, tokenizer or model prediction occurs.
 """
 import asyncio
 import base64
+from dataclasses import replace
 from datetime import datetime, timezone
 import json
 import os
@@ -21,12 +22,13 @@ from qdrant_client import QdrantClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from comparator_fixtures import (
-    FixtureByteCounter, FixtureCompiler, FixtureEmbeddings, configuration, inputs, signed_response,
+    FixtureByteCounter, FixtureCompiler, FixtureEmbeddings, configuration, inputs,
 )
 
 from cognitive_kernel.contracts import ProductHostScope, ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
-from flora.comparator import Ed25519TransportObservationVerifier, GeneralMemoryArmAdapter
+from flora.comparator import (Ed25519TransportObservationVerifier, GeneralMemoryArmAdapter,
+    ProviderResponse, encoded, sha)
 from flora.comparison_run import PreparationRequest, SourceMaterial, run_paired
 from flora.selected.comparator_memory import (
     QdrantOriginalMemory, SelectedComparatorDisclosure, SelectedComparatorRecorder,
@@ -43,6 +45,10 @@ from flora.selected.formation_registry import XTDBFormationSourceRegistry
 from flora.selected.object_store import EncryptedObjectPlane, LocalObjectBackend
 from flora.selected.owner_authorization import (
     Ed25519OwnerActionVerifier, OwnerActionProof, owner_action_message,
+)
+from flora.providers.openai_responses import TransportAttempt
+from flora.selected.provider_attempt_custody import (
+    OriginalMemoryProviderInputVerifier, XTDBProviderAttemptCustody, capture_purpose,
 )
 
 
@@ -135,19 +141,50 @@ class SelectedComparatorIntegrationTest(unittest.TestCase):
                 transport_key = Ed25519PrivateKey.generate()
                 exchange_verifier = Ed25519TransportObservationVerifier(configuration=config.provider,
                     public_key=transport_key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw))
+                for event_id in (sources[0].event.event_id, sources[1].event.event_id,
+                                 custody.metadata("run", "question:case").event_id,
+                                 custody.metadata("run", "history:case:before").event_id,
+                                 custody.metadata("run", "history:case:after").event_id):
+                    grant(event_id, capture_purpose("run"))
+                observer_public = transport_key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)
+                attempt_custody = XTDBProviderAttemptCustody(comparison=custody, evidence=evidence,
+                    permissions=permissions, input_verifier=OriginalMemoryProviderInputVerifier(
+                        configuration=config, compiler=compiler), tokenizer=tokenizer,
+                    tokenizer_artifact_sha256=config.memory.tokenizer_artifact_sha256,
+                    tokenizer_configuration_sha256=config.memory.tokenizer_configuration_sha256,
+                    observer_public_key=observer_public,
+                    approved_observer_public_key_sha256=sha(observer_public), clock=now)
                 class SuppliedContractClient:
                     configuration = config.provider
                     calls = 0
-                    async def generate(self, request, *, authorize_transfer):
+                    async def generate(self, request, *, authorize_transfer, attempt_sink):
                         self.calls += 1
                         marker = authorize_transfer()
-                        return signed_response(request, marker, transport_key)
+                        output = b"Supplied fictional output. No model inference occurred."
+                        response_bytes = encoded({"model": "fixture-snapshot", "status": "completed",
+                            "output": [{"type": "message", "role": "assistant", "status": "completed", "content": [
+                                {"type": "output_text", "text": output.decode()}]}],
+                            "usage": {"input_tokens": len(request.payload), "output_tokens": 9}})
+                        metadata = {"schema": "flora-openai-transport-attempt-v1",
+                            "configuration_sha256": config.provider.digest(), "request_sha256": sha(request.payload),
+                            "authorization_marker": marker, "response_sha256": sha(response_bytes), "http_status": 200,
+                            "response_complete": True, "request_id": "fixture-request", "result": "success",
+                            "returned_model_id": "fixture-snapshot", "usage": {"feature_engine_id": "fixture-feature",
+                                "context_tokens": len(request.payload), "input_tokens": len(request.payload),
+                                "output_tokens": 9, "feature_calls": 1, "cost_microunits": None, "currency": None},
+                            "cost_microunits": None, "observer_public_key_sha256": sha(observer_public)}
+                        attempt_sink.record(TransportAttempt(metadata, request.payload, response_bytes,
+                            transport_key.sign(encoded(metadata))))
+                        response = ProviderResponse(config.provider.digest(), sha(request.payload), "fixture-request",
+                            "fixture-snapshot", response_bytes, output, len(request.payload), 9, marker, b"unsigned")
+                        return replace(response, proof=transport_key.sign(encoded(response.observation())))
                 supplied = SuppliedContractClient()
                 recorder = SelectedComparatorRecorder(custody=custody, run_id="run", configuration=config,
                     disclosure=disclosure, exchange_verifier=exchange_verifier, clock=now)
                 adapter = GeneralMemoryArmAdapter(configuration=config, memory=memory, tokenizer=tokenizer,
                     wire_compiler=compiler, client=supplied, exchange_verifier=exchange_verifier,
-                    disclosure=disclosure, recorder=recorder)
+                    disclosure=disclosure, recorder=recorder, attempt_custody=attempt_custody,
+                    task_id_for=lambda request: "fixture-task-" + uuid.uuid4().hex)
                 async def run():
                     return await run_paired(plan=plan, histories=histories, questions={"case": question},
                         adapters={"general_model_memory": adapter}, evidence_policy=evidence)

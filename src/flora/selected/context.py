@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import hashlib
 import json
-from typing import Mapping, Protocol, Sequence
+from typing import Callable, Mapping, Protocol, Sequence
 
 from cognitive_kernel.canonical import canonical_sha256, require_identifier
 from cognitive_kernel.contracts import ProvenanceReference
@@ -299,6 +299,7 @@ def record_context_delivery(
     vector: QdrantClaimProjection | None = None,
     graph: LadybugEvidenceGraph | None = None,
     occurred_at: str, expected_revision: int,
+    authority_guard: Callable[[], None] | None = None,
 ) -> RecordedEvent:
     """Append a receipt for material delivered to a judgment interface.
 
@@ -306,6 +307,8 @@ def record_context_delivery(
     """
     if log.scope != objects.scope:
         raise ValueError("context delivery crosses host scope")
+    if authority_guard is not None:
+        authority_guard()
     fresh = assemble_context(
         plan=context.plan, claims=claims, state=state, log=log,
         objects=objects, references=references, policy=policy,
@@ -350,6 +353,8 @@ def record_context_delivery(
         parent_event_ids=context.source_event_ids,
         payload_reference=raw.object_id,
     )
+    if authority_guard is not None:
+        authority_guard()
     log.append(event, expected_revision=expected_revision)
     return RecordedEvent(event, raw)
 

@@ -217,7 +217,7 @@ _INTERNAL_EVENT_TYPES = frozenset({
     "formation_context_delivery", "context_delivery", "qualified_model_input", "qualified_model_output",
     "qualified_model_attempt_failure", "decision",
     "episode_acceptance",
-    "comparison_artifact", "provider_attempt_artifact",
+    "comparison_artifact", "provider_attempt_artifact", "phase_snapshot_artifact", "experiment_manifest_artifact",
 })
 
 
@@ -258,8 +258,19 @@ class NativeJudgmentLineageVerifier:
                                    current["projection_sha256"], relations)
 
     def context_lineage(self, *, case_id: str, phase: str, history: Any,
-                        context: LocalContext) -> JudgmentContextLineage:
+                        context: LocalContext,
+                        authority_guard: Callable[[], None] | None = None) -> JudgmentContextLineage:
         runtime = self.runtime
+        def guard():
+            from .comparison_custody import SelectedRunEvidencePolicy
+            authorize = (self.history_authority.authorize_history_metadata
+                         if isinstance(self.history_authority, SelectedRunEvidencePolicy)
+                         else self.history_authority.authorize_history)
+            if authorize(case_id=case_id, phase=phase, history=history) is not True:
+                raise PermissionError("native phase history was withdrawn before private I/O")
+            if authority_guard is not None:
+                authority_guard()
+        from .experiment_runtime import _AuthorizedRuntimeReads
         if (phase not in PHASES or history.scope != runtime.scope
                 or context.plan.purpose != "personal_judgment"
                 or self.history_authority.authorize_history(case_id=case_id, phase=phase, history=history) is not True):
@@ -269,8 +280,11 @@ class NativeJudgmentLineageVerifier:
         if any(event.event_type in _INTERNAL_EVENT_TYPES for event in history_events.values()):
             raise ValueError("internal approvals/execution cannot become shared original user history")
         expected = context.receipt_record()
-        if runtime._context(context.plan).receipt_record() != expected:
+        prepared = runtime._prepare_current_context(context.plan, authority_guard=guard)
+        if prepared.context.receipt_record() != expected:
             raise ValueError("native context content/value/current authority differs from prepared input")
+        objects = _AuthorizedRuntimeReads(runtime.objects, prepared.metadata_current)
+        approval_verifier = runtime._guarded_state_verifier(objects)
         claims, states, internal, accepted_episodes = {}, {}, {}, {}
         source_roots = set()
         events = {event.event_id: event for event in runtime.log.replay()}
@@ -291,8 +305,8 @@ class NativeJudgmentLineageVerifier:
                     raise ValueError("personal-state lineage lacks one exact subject route")
                 route = routes[0]
                 active = runtime.state.read_active(subject_type=route.subject_type, subject_id=route.subject_id,
-                    projection_id=route.projection_id, claims=runtime.claims, log=runtime.log, objects=runtime.objects,
-                    references=runtime.references, verifier=runtime.state_approval_verifier)
+                    projection_id=route.projection_id, claims=runtime.claims, log=runtime.log, objects=objects,
+                    references=runtime.references, verifier=approval_verifier)
                 state = active.record
                 if (state["version_id"] != item.version_id or state["projection_sha256"] != item.projection_sha256
                         or hashlib.sha256(item.content).hexdigest() != state["content_digest"]
@@ -306,7 +320,7 @@ class NativeJudgmentLineageVerifier:
                     episode_lineage = episodes.current_lineage(episode_id, claims=runtime.claims, log=runtime.log)
                     episode, publication, request, source_ids, published = episode_lineage
                     accepted = episodes.read_accepted(episode_id, claims=runtime.claims, log=runtime.log,
-                        objects=runtime.objects, references=runtime.references)
+                        objects=objects, references=runtime.references)
                     control = events.get(publication.acceptance_event_id)
                     registered_control = runtime.sources.lookup(publication.acceptance_event_id)
                     if (accepted.record != episode.metadata_record() or accepted.publication != publication
@@ -384,7 +398,8 @@ class NativeJudgmentLineageVerifier:
             originals[event_id] = OriginalEvidenceBinding(event_id, event.event_sha256, event.content_digest,
                 source.registration_sha256, source.evidence.role, source.evidence.parent_refs)
             pending.extend(source.evidence.parent_refs)
-        artifacts = tuple(runtime._resolve(role)[1] for role in ("memory_formation", "personality_judgment"))
+        artifacts = tuple(runtime._resolve(role, authority_guard=guard)[1]
+                          for role in ("memory_formation", "personality_judgment"))
         item_hashes = tuple((item["kind"], item["record_id"], item["version_id"], item["content_sha256"],
                              item["claim_value_sha256"]) for item in expected["items"])
         lineage = JudgmentContextLineage(runtime.scope, runtime.authority_namespace_id, case_id, phase, history_digest,
@@ -412,40 +427,56 @@ class NativeJudgmentLineageVerifier:
                 raise PermissionError("frozen phase history authority changed during producer verification")
         # Phase verification may involve slow producer I/O. Current context,
         # original registration/permission and artifact generation are fresh.
-        if history.digest() != history_digest or runtime._context(context.plan).receipt_record() != expected:
+        prepared.revalidate()
+        if history.digest() != history_digest:
             raise ValueError("phase history/current context changed during artifact verification")
         for original in originals.values():
             source = runtime.sources.lookup(original.event_id)
             if (source is None or source.registration_sha256 != original.registration_sha256
                     or runtime.context_policy.allow_event(original.event_id, "personal_judgment") is not True):
                 raise PermissionError("original source authority changed during lineage verification")
-        if tuple(runtime._resolve(artifact.role)[1] for artifact in artifacts) != artifacts:
+        if tuple(runtime._resolve(artifact.role, authority_guard=guard)[1] for artifact in artifacts) != artifacts:
             raise ValueError("artifact role changed during phase snapshot verification")
         if self.history_authority.authorize_history(case_id=case_id, phase=phase, history=history) is not True:
             raise PermissionError("frozen phase history authority changed before lineage return")
         return JudgmentContextLineage(**{**vars(lineage), "phase_snapshots": tuple(snapshots)})
 
     def authorize_context(self, *, case_id: str, phase: str, history: Any,
-                          context: LocalContext, arm: str) -> bool:
+                          context: LocalContext, arm: str,
+                          authority_guard: Callable[[], None] | None = None) -> bool:
         if arm not in {"flora_full", "same_evidence_ablation"}:
             return False
         try:
-            self.context_lineage(case_id=case_id, phase=phase, history=history, context=context)
+            self.context_lineage(case_id=case_id, phase=phase, history=history, context=context,
+                                 authority_guard=authority_guard)
         except (ValueError, TypeError, KeyError, PermissionError, InvalidSignature, InvalidTag, RuntimeBlocked):
             return False
         return True
 
-    def verify_native_result_details(self, request: Any, result: Any) -> VerifiedNativeJudgmentResult:
+    def verify_native_result_details(self, request: Any, result: Any, *,
+                                     reconcile: bool = True,
+                                     authority_guard: Callable[[], None] | None = None) -> VerifiedNativeJudgmentResult:
         history = self.history_for(request.case_id, request.phase)
         if (request.scope != self.runtime.scope or request.plan.digest() != self.run_plan_sha256
                 or history.digest() != request.authorized_history_sha256
                 or tuple(history.event_ids) != request.authorized_event_ids):
             raise ValueError("native result differs from independently frozen phase history")
         lineage = self.context_lineage(case_id=request.case_id, phase=request.phase, history=history,
-                                       context=request.context)
+                                       context=request.context, authority_guard=authority_guard)
         invocation_id = self.invocation_id_for(request, result)
+        def guard():
+            from .comparison_custody import SelectedRunEvidencePolicy
+            authorize = (self.history_authority.authorize_history_metadata
+                         if isinstance(self.history_authority, SelectedRunEvidencePolicy)
+                         else self.history_authority.authorize_history)
+            if authorize(case_id=request.case_id,
+                    phase=request.phase, history=history) is not True:
+                raise PermissionError("native phase history was withdrawn before execution recovery")
+            if authority_guard is not None:
+                authority_guard()
         actual = self.runtime.recover_judgment(plan=request.context.plan, task=request.question,
-                                              invocation_id=invocation_id)
+                                              invocation_id=invocation_id, reconcile=reconcile,
+                                              authority_guard=guard)
         if (actual.context.receipt_record() != request.context.receipt_record()
                 or actual.execution.result.output != result.output or actual.delivery != result.delivery
                 or actual.decision != result.decision
@@ -454,11 +485,13 @@ class NativeJudgmentLineageVerifier:
             raise ValueError("native result does not match actual qualified execution and context")
         # Recovery/proof I/O must not outrun a changed phase source/state.
         if self.context_lineage(case_id=request.case_id, phase=request.phase, history=history,
-                                context=request.context).lineage_sha256 != lineage.lineage_sha256:
+                                context=request.context, authority_guard=authority_guard).lineage_sha256 != lineage.lineage_sha256:
             raise ValueError("native phase lineage changed during result verification")
         return VerifiedNativeJudgmentResult(lineage, actual.execution.output_record, actual.delivery.event.event_id,
                                             actual.decision.event.event_id, invocation_id)
 
-    def verify_native_result(self, request: Any, result: Any) -> RecordedEvent:
+    def verify_native_result(self, request: Any, result: Any, *, arm: str = "flora_full") -> RecordedEvent:
         """Runner hook: return precisely the extra verified output parent."""
+        if arm != "flora_full":
+            raise PermissionError("native ablation requires the actual arm-specific selected phase route")
         return self.verify_native_result_details(request, result).qualified_output

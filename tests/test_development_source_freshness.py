@@ -1,5 +1,7 @@
 """Current original-use grants must precede each derived-source plaintext read."""
 import unittest
+from unittest.mock import patch
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from flora.selected.development_sources import RegisteredDevelopmentSourceGuard
 import test_governed_development as helpers
 
@@ -19,21 +21,22 @@ class DevelopmentSourceFreshnessTest(unittest.TestCase):
 
     def test_one_original_read_revoking_a_later_source_never_opens_later_plaintext(self):
         f=self.f
-        opened,original=[],f.objects.get
+        opened,original=[],AESGCM.decrypt
         expected={f.source_one.payload_reference:f.source_one.event_id,
                   f.source_two.payload_reference:f.source_two.event_id}
         victim=[]
-        def revoke_other(raw):
-            content=original(raw)
-            opened.append(raw.object_id)
+        def revoke_other(cipher,nonce,sealed,aad):
+            content=original(cipher,nonce,sealed,aad)
+            object_id=aad.decode().rsplit(":",1)[1]
+            opened.append(object_id)
             if len(opened)==1:
-                other=next(item for item in expected if item!=raw.object_id)
+                other=next(item for item in expected if item!=object_id)
                 victim.append(other)
                 f.policy.allowed.discard((expected[other],"personal_judgment"))
             return content
-        f.objects.get=revoke_other
-        with self.assertRaisesRegex(ValueError,"authority changed before raw read"):
-            self.check(evidence=(f.source_one.event_id,f.source_two.event_id))
+        with patch.object(AESGCM,"decrypt",new=revoke_other):
+            with self.assertRaisesRegex(ValueError,"authority changed before raw read"):
+                self.check(evidence=(f.source_one.event_id,f.source_two.event_id))
         self.assertEqual(len(opened),1)
         self.assertNotIn(victim[0],opened)
 
@@ -56,7 +59,7 @@ class DevelopmentSourceFreshnessTest(unittest.TestCase):
     def test_claim_reader_live_denial_is_checked_before_second_plaintext_open(self):
         f=self.f
         version=self.claim()
-        original_load,original_get=f.claims.load_current,f.objects.get
+        original_load,original_get=f.claims.load_current,AESGCM.decrypt
         current_reads,opened=[],[]
         def deny_at_claim_reader(claim_id):
             current_reads.append(claim_id)
@@ -64,25 +67,28 @@ class DevelopmentSourceFreshnessTest(unittest.TestCase):
                 f.policy.allowed.discard((f.source_one.event_id,"personal_judgment"))
             return original_load(claim_id)
         f.claims.load_current=deny_at_claim_reader
-        f.objects.get=lambda raw:(opened.append(raw.object_id),original_get(raw))[1]
-        with self.assertRaisesRegex(PermissionError,"not permitted before raw read"):
-            self.check(claims=(version,))
+        def opened_original(cipher,nonce,sealed,aad):
+            opened.append(aad.decode().rsplit(":",1)[1])
+            return original_get(cipher,nonce,sealed,aad)
+        with patch.object(AESGCM,"decrypt",new=opened_original):
+            with self.assertRaisesRegex(PermissionError,"not permitted before raw read"):
+                self.check(claims=(version,))
         self.assertEqual(opened,[f.source_one.payload_reference])
 
     def test_claim_reader_denial_during_raw_read_never_returns_a_packet(self):
         f=self.f
         version=self.claim()
-        original=f.objects.get
+        original=AESGCM.decrypt
         opened=[]
-        def revoke_on_claim_read(raw):
-            content=original(raw)
-            opened.append(raw.object_id)
+        def revoke_on_claim_read(cipher,nonce,sealed,aad):
+            content=original(cipher,nonce,sealed,aad)
+            opened.append(aad.decode().rsplit(":",1)[1])
             if len(opened)==2:
                 f.policy.allowed.discard((f.source_one.event_id,"personal_judgment"))
             return content
-        f.objects.get=revoke_on_claim_read
-        with self.assertRaisesRegex(PermissionError,"permission changed during raw read"):
-            self.check(claims=(version,))
+        with patch.object(AESGCM,"decrypt",new=revoke_on_claim_read):
+            with self.assertRaisesRegex(PermissionError,"source permission changed"):
+                self.check(claims=(version,))
         self.assertEqual(opened,[f.source_one.payload_reference]*2)
 
     def test_original_cipher_lookup_denial_prevents_plaintext_get(self):

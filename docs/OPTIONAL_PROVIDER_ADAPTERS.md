@@ -12,10 +12,10 @@ lookup, weight download or real model prediction was performed for this mileston
 | `OpenAIResponsesWireCompiler` | Emits the exact stateless text request body, including the system instruction, common question, extractive source context and output limit | Exact approved deployment, response-model allowlist and generation settings |
 | `OpenAIResponsesAsyncClient` | Dispatches that body asynchronously to the fixed official Responses endpoint; parses actual returned model, text and usage; signs their binding to request and raw response | Explicit credential callable, independently enrolled observation key, current disclosure authority and private attempt sink |
 | `SuppliedBodyTokenizer` | Loads an explicitly supplied `tokenizer.json`; counts the actual UTF-8 request body without truncation or a characters-per-token estimate | Exact artifact, package version and suitability as a local preflight tokenizer |
-| `SuppliedONNXSentenceEmbeddings` | Loads an explicitly supplied inline ONNX export and tokenizer; returns that graph's finite sentence vectors | Existing embedding weights/export, input/output semantics, rights, package versions, retrieval quality and bounded worker deployment |
+| `SuppliedONNXSentenceEmbeddings` | Runs an explicitly supplied inline ONNX export and tokenizer in a terminable CPU child; returns that graph's finite sentence vectors | Existing embedding weights/export, input/output semantics, rights, transitive runtime qualification and retrieval/latency pilot |
 
 The OpenAI client implements the existing `ExternallySuppliedFrontierClient`
-port. Its successful observations can be verified with the existing
+port with an explicit per-call attempt sink. Its successful observations can be verified with the existing
 `Ed25519TransportObservationVerifier`. The tokenizer and embedding adapters
 implement the existing local comparator ports; they are not additional FloRA
 memory models. Their artifact manifest binds file bytes, adapter source,
@@ -62,18 +62,23 @@ not a TLS packet capture or proof of provider internal computation.
   A request may pass local preflight yet exceed the server input budget. Such a
   result is not a successful comparison answer. No remote token-count call is
   made as an extra disclosure or feature request.
-- **Failure-inclusive accounting:** refusals and incomplete responses retain
-  actual usage when supplied. After a successful exchange proof, later permission
-  refusal or recording/validation failure retains verified usage through the
-  runner's metered stop/failure contract. An invalid exchange proof supplies no
-  trusted usage. Ordinary missing cost remains unavailable, never zero or an
+- **Failure-inclusive accounting:** the comparator uses the selected ledger's
+  independently verified capture for actual usage. Signed response counters or
+  exception counters alone cannot replace it. Later refusal or acceptance failure
+  retains previously verified metering; timeout and cancellation expose only
+  cached verified metadata to the runner. An invalid response supplies no trusted
+  usage unless a separate authentic exact-task capture proves the call. Ordinary
+  missing cost remains unavailable, never zero or an
   estimated bill.
 - **Private transport attempts:** the mandatory `PrivateTransportAttemptSink`
   receives signed metadata and actual request/response bytes. It must be supplied
   as a host-authorized encrypted, append-only custody implementation, not public
-  telemetry. This milestone defines the port; it does not implement or qualify
-  that selected-store sink. Successful exchange custody already exists in the
-  comparator recorder.
+  telemetry. The selected implementation and comparator wiring are documented in
+  [provider-attempt custody](PROVIDER_ATTEMPT_CUSTODY.md) and
+  [comparator attempt wiring](COMPARATOR_ATTEMPT_WIRING.md). Each actual execution
+  receives its own bound task sink and unique transfer marker; a constructor sink
+  is supported only with explicit mock HTTP. Their physical backend gate and
+  deployment qualification are separate from these optional adapter fixtures.
 - **Partial bodies:** timeout, cancellation or the frozen response-byte limit
   can leave only a bounded prefix. Its digest covers that prefix, and
   `response_complete=false` explicitly prevents presenting it as the complete
@@ -95,35 +100,39 @@ provider and requires an export whose named output already contains sentence
 vectors. It adds no invented pooling or normalization. Overlong text or batches
 are refused rather than silently truncated.
 
-The ONNX call currently runs in an asyncio thread. Cancelling that await does
-not terminate native computation. A terminable worker, memory bounds and actual
-latency qualification remain necessary before claiming the shared deadline.
-No tokenizer or ONNX model artifact was supplied here, and those runtime
-constructors have not been exercised against real weights.
+The ONNX call runs in a terminable child with frozen memory, CPU, pipe and whole-call
+wall limits. Input-order chunks share one child and one deadline. Passive file
+reads retain their bounded slot until they finish, even after cancellation.
+See [bounded local embeddings](BOUNDED_LOCAL_EMBEDDINGS.md) for the exact launch,
+authority checks and fifteen tests using an actual tiny generated ONNX graph.
+No trained tokenizer or embedding weights were acquired; embedding quality and
+latency with the actual selected artifact remain unqualified.
 
 ## Verification and remaining work
 
-Eleven local optional-provider tests pass using HTTPX mock transport, fictional
+Thirteen local optional-provider tests pass using HTTPX mock transport, fictional
 request/response bytes and test keys. They cover fixed dispatch bytes, fresh
 transfer refusal, signed response/model/usage binding, redirects, incomplete
 responses, refusals, response-byte limits, custody errors, timeout/cancellation
-and exact supplied-file checks. Thirteen comparator contract tests also pass,
+and exact supplied-file checks. Nineteen comparator contract tests also pass,
 including actual configured-window membership/bounds, native control-event
 exclusion and verified usage after rejection. These tests establish neither a
 competent actual baseline nor a FloRA advantage.
 
 Before real execution, independently provide and qualify the deployment/config,
-local artifacts and runtime lock, observation-key enrollment, private attempt
-custody, explicit disclosure grants and bounded worker. Pilot retrieval and
+local artifacts and transitive runtime lock, observation-key enrollment, private attempt
+custody and explicit disclosure grants. Pilot retrieval and
 failure/cost accounting before freezing the held-out protocol. The cohort,
 thresholds, real-host judgments and builder reproduction remain governed by the
 [frozen experiment goal](EXPERIMENT_GOAL.md).
 
 The optional `providers` install extra pins `httpx==0.28.1`, the runtime used by
 the protocol fixtures. This pin is an installation boundary, not qualification
-of a real provider deployment or transitive runtime. Local artifacts require separately chosen exact `tokenizers`,
-`onnx`, `onnxruntime` and `numpy` versions recorded in their manifest and deployment
-lock; no weight package should be automatically downloaded. The repository's
+of a real provider deployment or transitive runtime. The optional `embeddings`
+extra pins `onnx==1.17.0`, `onnxruntime==1.20.1`, `tokenizers==0.20.3` and
+`numpy==2.2.6` for the process fixtures. Actual deployment versions must match
+the supplied manifest and qualified runtime lock; no weights are downloaded.
+The repository's
 base install does not acquire these optional runtimes by importing `flora`.
 
 Primary API references verified on 2026-09-29:

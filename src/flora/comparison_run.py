@@ -11,6 +11,7 @@ import asyncio
 import base64
 from dataclasses import dataclass, field
 import hashlib
+import inspect
 import json
 import math
 import random
@@ -110,6 +111,7 @@ class PairedRunPlan:
     feature_call_budget: int
     question_sha256_by_case: Mapping[str, str]
     evidence_kind: str = "contract_fixture"
+    phase_bindings: Mapping[tuple[str, str, str], ArmBinding] | None = None
 
     def validate(self) -> None:
         self.protocol.validate()
@@ -128,10 +130,28 @@ class PairedRunPlan:
             require_sha256(question_sha256, "question_sha256")
         if self.evidence_kind not in {"contract_fixture", "synthetic", "consenting_real_host"}:
             raise ValueError("unknown evidence kind")
+        if self.phase_bindings is not None:
+            expected = {(c.case_id, phase, arm) for c in self.protocol.cases for phase in PHASES for arm in ARMS}
+            if set(self.phase_bindings) != expected:
+                raise ValueError("phase bindings require the complete exact case/phase/arm matrix")
+            for binding in self.phase_bindings.values():
+                if not isinstance(binding, ArmBinding):
+                    raise ValueError("invalid phase arm binding")
+                binding.validate()
+
+    def binding_for(self, case_id: str, phase: str, arm: str) -> ArmBinding:
+        if (phase not in PHASES or arm not in ARMS
+                or case_id not in {c.case_id for c in self.protocol.cases}):
+            raise ValueError("unknown binding task")
+        return self.arm_bindings[arm] if self.phase_bindings is None else self.phase_bindings[(case_id, phase, arm)]
+
+    def phase_binding_record(self) -> list[dict]:
+        return [{"case_id": case, "phase": phase, "arm": arm, "binding": vars(binding)}
+                for (case, phase, arm), binding in sorted((self.phase_bindings or {}).items())]
 
     def digest(self) -> str:
         self.validate()
-        return _sha(_bytes({"schema": "flora-paired-run-plan-v1",
+        material = {"schema": "flora-paired-run-plan-v1",
                             "protocol": self.protocol.record(),
                             "bindings": {arm: vars(binding) for arm, binding
                                          in self.arm_bindings.items()},
@@ -139,7 +159,11 @@ class PairedRunPlan:
                             "context_byte_budget": self.context_byte_budget,
                             "feature_call_budget": self.feature_call_budget,
                             "question_sha256_by_case": dict(self.question_sha256_by_case),
-                            "evidence_kind": self.evidence_kind}))
+                            "evidence_kind": self.evidence_kind}
+        if self.phase_bindings is not None:
+            material["schema"] = "flora-paired-run-plan-v2"
+            material["phase_bindings"] = self.phase_binding_record()
+        return _sha(_bytes(material))
 
 
 @dataclass(frozen=True)
@@ -310,13 +334,19 @@ def _validate_result(result: ArmResult, request: ExecutionRequest,
         raise ValueError("delivery is not the exact selected context")
     consumed = (delivery.event_id,) + request.context.source_event_ids
     if (tuple(decision.parent_event_ids) != consumed
-            or (arm == "flora_full" and getattr(policy, "requires_native_result", False) is True)):
+            or (arm in {"flora_full", "same_evidence_ablation"}
+                and getattr(policy, "requires_native_result", False) is True)):
         # A native decision also cites the exact qualified execution output.
         # Keep this proof; do not flatten it into shared original evidence.
         verify_native = getattr(policy, "verify_native_result", None)
-        if arm != "flora_full" or not callable(verify_native):
+        if arm not in {"flora_full", "same_evidence_ablation"} or not callable(verify_native):
             raise ValueError("unexpected decision parents lack native execution authority")
-        qualified = verify_native(request, result)
+        if "arm" in inspect.signature(verify_native).parameters:
+            qualified = verify_native(request, result, arm=arm)
+        elif arm == "flora_full":
+            qualified = verify_native(request, result)
+        else:
+            raise ValueError("native ablation requires explicit arm-bound execution authority")
         if (not isinstance(qualified, RecordedEvent)
                 or qualified.event.event_type != "qualified_model_output"
                 or qualified.event.scope != request.scope or qualified.raw.scope != request.scope
@@ -386,7 +416,7 @@ async def run_paired(
                 usage = None
                 status = "unavailable"
                 adapter = adapters.get(arm)
-                binding = plan.arm_bindings[arm]
+                binding = plan.binding_for(case.case_id, phase, arm)
 
                 def authorize_live() -> None:
                     if (plan.digest() != digest
@@ -458,6 +488,17 @@ async def run_paired(
                 except Exception:
                     # Provider/adapter exception text may contain private input.
                     status = "failed"
+                if status != "success" and usage is None and adapter is not None:
+                    # A cancelled adapter may already have authenticated actual
+                    # usage. This failure-only hook reads cached metadata; it
+                    # must not perform inference, reopen data or repair custody.
+                    stop_usage = getattr(adapter, "measured_stop_usage", None)
+                    if callable(stop_usage):
+                        try:
+                            usage = stop_usage(case_id=case.case_id, phase=phase,
+                                plan_sha256=digest, context_sha256=context_sha256)
+                        except Exception:
+                            usage = None
                 if usage is not None:
                     try:
                         if not isinstance(usage, MeasuredUsage):
@@ -511,7 +552,7 @@ def validate_run(run: PairedRun) -> None:
                 or attempt.authorized_history_sha256 != history
                 or attempt.common_input_sha256 != _sha(_bytes({
                     "history_sha256": history, "question_sha256": _sha(question)}))
-                or attempt.lineage_sha256 != run.plan.arm_bindings[attempt.arm].lineage_sha256):
+                or attempt.lineage_sha256 != run.plan.binding_for(attempt.case_id, attempt.phase, attempt.arm).lineage_sha256):
             raise ValueError("run input or lineage was changed")
         if attempt.status not in {"success", "unavailable", "refused", "failed", "timeout",
                                   "invalid_result", "budget_exceeded"}:

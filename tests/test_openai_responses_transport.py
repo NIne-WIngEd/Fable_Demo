@@ -118,6 +118,42 @@ class OpenAITransportContractsTest(unittest.IsolatedAsyncioTestCase):
         finally:
             await client.aclose()
 
+    async def test_concurrent_calls_capture_only_their_supplied_task_sink(self):
+        async def handler(req):
+            await asyncio.sleep(0)
+            return httpx.Response(200, content=response_body(), headers={"x-request-id": "fixture-concurrent"})
+        client = self.client(handler)
+        left, right = Sink(), Sink()
+        try:
+            responses = await asyncio.gather(
+                client.generate(request(configuration()), authorize_transfer=lambda: "a" * 64, attempt_sink=left),
+                client.generate(request(configuration()), authorize_transfer=lambda: "b" * 64, attempt_sink=right))
+            self.assertFalse(self.sink.attempts)  # No global task capture.
+            self.assertEqual(len(left.attempts), 1)
+            self.assertEqual(len(right.attempts), 1)
+            self.assertEqual(left.attempts[0].metadata["authorization_marker"], responses[0].authorization_marker)
+            self.assertEqual(right.attempts[0].metadata["authorization_marker"], responses[1].authorization_marker)
+            self.assertNotEqual(responses[0].authorization_marker, responses[1].authorization_marker)
+        finally:
+            await client.aclose()
+
+    async def test_production_transport_cannot_use_constructor_global_sink(self):
+        credential_checks, transfer_checks = [], []
+        client = OpenAIResponsesAsyncClient(configuration=configuration(),
+            credential_provider=lambda: credential_checks.append(True) or "fictional-placeholder",
+            signing_key=self.key, approved_observer_public_key_sha256=sha(self.public),
+            attempt_sink=self.sink, timeout_seconds=.5, maximum_response_bytes=10000,
+            httpx_version=version("httpx"))
+        try:
+            with self.assertRaises(TransportCustodyError):
+                await client.generate(request(configuration()),
+                    authorize_transfer=lambda: transfer_checks.append(True) or "a" * 64)
+            self.assertFalse(credential_checks)
+            self.assertFalse(transfer_checks)
+            self.assertFalse(self.sink.attempts)
+        finally:
+            await client.aclose()
+
     async def test_denied_transfer_sends_nothing(self):
         calls = []
         client = self.client(lambda req: calls.append(req) or httpx.Response(200, content=response_body()))

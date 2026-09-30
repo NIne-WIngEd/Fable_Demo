@@ -7,6 +7,7 @@ semantic acceptance, model qualification, key enrollment or permission to use.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from copy import copy
 import hashlib
 import json
 from typing import Any, Callable
@@ -47,19 +48,38 @@ class RecoveredPersonalArtifact:
     content: tuple[tuple[str, bytes], ...] = field(repr=False)
 
 
-class _SourceAuthorizedObjectReads:
-    """Delegate ciphertext metadata; gate every triggered plaintext read."""
-    def __init__(self, objects: EncryptedObjectPlane, source_authorizer: Callable[[], bool]):
-        self.objects, self.source_authorizer = objects, source_authorizer
+class _SourceAuthorizedBackend:
+    def __init__(self, backend, check):
+        self.backend, self.check = backend, check
     def __getattr__(self, name):
-        return getattr(self.objects, name)
+        return getattr(object.__getattribute__(self, "backend"), name)
+    def get_object(self, namespace, object_id):
+        self.check()
+        sealed = self.backend.get_object(namespace, object_id)
+        self.check()
+        return sealed
+
+
+class _SourceAuthorizedObjectReads:
+    """Gate ciphertext fetch before decryption and every triggered private read."""
+    def __init__(self, objects: EncryptedObjectPlane, source_authorizer: Callable[[], bool]):
+        self.objects, self.source_authorizer = copy(objects), source_authorizer
+        self.objects.backend = _SourceAuthorizedBackend(objects.backend, self._check)
+    def _check(self):
+        if self.source_authorizer() is not True:
+            raise PermissionError("private artifact source permission changed or is not permitted before raw read")
+    def __getattr__(self, name):
+        return getattr(object.__getattribute__(self, "objects"), name)
     def get(self, reference):
-        if self.source_authorizer() is not True:
-            raise PermissionError("private artifact source use is not permitted before raw read")
-        plaintext = self.objects.get(reference)
-        if self.source_authorizer() is not True:
-            raise PermissionError("private artifact source permission changed during raw read")
+        self._check()
+        plaintext = EncryptedObjectPlane.get(self.objects, reference)
+        self._check()
         return plaintext
+    def recover_reference(self, **kwargs):
+        self._check()
+        reference = EncryptedObjectPlane.recover_reference(self.objects, **kwargs)
+        self._check()
+        return reference
 
 
 class XTDBPersonalArtifactCustody:

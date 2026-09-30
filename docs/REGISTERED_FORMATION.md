@@ -21,6 +21,39 @@ FloRA now follows the current A.L.I.C.E. MFM source/context interface at `resear
 
 The receipt means **bytes delivered to an input interface**. It does not mean model attention, correct formation, accepted memory or native judgment. `PreparedSelectedFormation.revalidate()` must succeed before consuming or recording the input. Inference will require a separately qualified MFM artifact.
 
+## Private qualification preflight
+
+`prepare_selected_formation(..., before_private_assembly=qualify_role)` now
+supports the same two privacy boundaries as native judgment: an already denied
+source or parent stops before private qualification proof reads, and an
+unqualified model stops before original source plaintext.
+
+FloRA runs the actual upstream assembler once. It records the sources resolved
+through the real `RegisteredFormationStore`; its first read occurs only after
+independent routing, registered eligibility, selector validation and complete
+selected parent closure. That real boundary captures exact source/raw-reference
+metadata, checks current purpose permission and invokes
+`qualify_role(metadata_guard)`. The hook must return `None`, use the guard around
+private qualification proof I/O and supply actual role qualification. It adds
+no qualification itself. Fresh authority checks run again after the hook and
+before custody reads.
+
+The source object plane also checks that metadata guard before and after every
+inner ciphertext fetch, before AES decryption, and after plaintext reads. Current
+grants follow slower metadata and permission-closure work. An empty preparation
+with no actual source read is refused; upstream formation already requires
+nonempty mandatory experience.
+
+`PreparedSelectedFormation.metadata_current()` exposes the metadata-only inner
+proof/read barrier. It opens no original bytes and caches no allow decision.
+`revalidate()` additionally checks the exact opened-content receipt. Eight local
+tests use actual upstream assembly, the selected registry/purpose policy, real
+encrypted custody and enrolled Ed25519 grants with controlled SQL/log ports.
+They cover single-selector ordering, denied parent/unqualified role, qualification
+withdrawal, source metadata change and withdrawal during a real ciphertext fetch
+before source AES. They establish custody behavior, not model quality or physical
+engine latency.
+
 ## Verification boundary
 
 Deterministic contract tests cover registration integrity, metadata/provenance escalation, host isolation, permission races and stale retrieval hits. [Run 36623668349](https://github.com/NIne-WIngEd/FloRA/actions/runs/36623668349) passed the source/context commit `9b1f024`: physical Kurrent time, XTDB registration reconstruction, encrypted source reopening, original parent closure, historical cutoff and a current-policy delivery check. Its restart probe recreated the registered input after restarting KurrentDB and XTDB.

@@ -126,7 +126,7 @@ def _usage(data: dict, engine: str) -> MeasuredUsage | None:
 class OpenAIResponsesAsyncClient:
     def __init__(self, *, configuration: ProviderConfiguration, credential_provider: Callable[[], str],
                  signing_key: Ed25519PrivateKey, approved_observer_public_key_sha256: str,
-                 attempt_sink: PrivateTransportAttemptSink, timeout_seconds: float,
+                 attempt_sink: PrivateTransportAttemptSink | None = None, timeout_seconds: float,
                  maximum_response_bytes: int, httpx_version: str,
                  fixture_transport: httpx.AsyncBaseTransport | None = None):
         generation_settings(configuration)
@@ -143,7 +143,10 @@ class OpenAIResponsesAsyncClient:
         if sha(public) != approved_observer_public_key_sha256:
             raise PermissionError("transport observer key has not been independently enrolled")
         self.configuration, self._credentials, self._key = configuration, credential_provider, signing_key
-        self._sink, self._timeout, self._maximum = attempt_sink, timeout_seconds, maximum_response_bytes
+        # A constructor sink is supported only for explicit mock HTTP fixtures.
+        # Real concurrent executions supply their own task-bound sink per call.
+        self._fixture_sink = attempt_sink if fixture_transport is not None else None
+        self._timeout, self._maximum = timeout_seconds, maximum_response_bytes
         self._httpx_version = httpx_version
         self._client = httpx.AsyncClient(timeout=httpx.Timeout(timeout_seconds), follow_redirects=False,
             trust_env=False, verify=True, transport=fixture_transport)
@@ -171,7 +174,7 @@ class OpenAIResponsesAsyncClient:
             raise ValueError("OpenAI request violates the stateless allowlisted wire schema")
         return body
 
-    def _record_attempt(self, *, request, marker, raw, status, request_id, result,
+    def _record_attempt(self, *, sink, request, marker, raw, status, request_id, result,
                         response_complete=False, usage=None, model=None):
         metadata = {"schema": "flora-openai-transport-attempt-v1", "configuration_sha256": self.configuration.digest(),
             "request_sha256": sha(request.payload), "authorization_marker": marker,
@@ -181,11 +184,15 @@ class OpenAIResponsesAsyncClient:
             "usage": None if usage is None else vars(usage), "cost_microunits": None,
             "observer_public_key_sha256": sha(self._key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw))}
         try:
-            self._sink.record(TransportAttempt(metadata, request.payload, raw, self._key.sign(encoded(metadata))))
+            sink.record(TransportAttempt(metadata, request.payload, raw, self._key.sign(encoded(metadata))))
         except Exception:
             raise TransportCustodyError("private transport attempt custody is unavailable") from None
 
-    async def generate(self, request: ProviderRequest, *, authorize_transfer: Callable[[], str]) -> ProviderResponse:
+    async def generate(self, request: ProviderRequest, *, authorize_transfer: Callable[[], str],
+                       attempt_sink: PrivateTransportAttemptSink | None = None) -> ProviderResponse:
+        sink = attempt_sink if attempt_sink is not None else self._fixture_sink
+        if sink is None:
+            raise TransportCustodyError("exact per-task transport attempt custody is unavailable")
         self._validate_dispatch(request)
         credential = self._credentials()
         if not isinstance(credential, str) or not credential or "\n" in credential or "\r" in credential:
@@ -216,7 +223,7 @@ class OpenAIResponsesAsyncClient:
                     data = None
                 if isinstance(data, dict):
                     usage, model = _usage(data, self.configuration.feature_engine_id), data.get("model")
-                self._record_attempt(request=request, marker=marker, raw=raw, status=status,
+                self._record_attempt(sink=sink, request=request, marker=marker, raw=raw, status=status,
                     request_id=request_id, result="http_error", response_complete=response_complete,
                     usage=usage, model=model)
                 raise ArmStopped("unavailable", usage)
@@ -228,7 +235,7 @@ class OpenAIResponsesAsyncClient:
                     or not isinstance(data.get("output"), list)):
                 raise ValueError("OpenAI response lacks completed model/usage/request binding")
             if data.get("status") != "completed":
-                self._record_attempt(request=request, marker=marker, raw=raw, status=status,
+                self._record_attempt(sink=sink, request=request, marker=marker, raw=raw, status=status,
                     request_id=request_id, result="incomplete", response_complete=response_complete,
                     usage=usage, model=model)
                 raise ArmStopped("unavailable", usage)
@@ -245,7 +252,7 @@ class OpenAIResponsesAsyncClient:
                     if not isinstance(content, dict):
                         raise ValueError("malformed OpenAI message content")
                     if content.get("type") == "refusal":
-                        self._record_attempt(request=request, marker=marker, raw=raw, status=status,
+                        self._record_attempt(sink=sink, request=request, marker=marker, raw=raw, status=status,
                             request_id=request_id, result="refused", response_complete=response_complete,
                             usage=usage, model=model)
                         raise ArmStopped("refused", usage)
@@ -258,7 +265,7 @@ class OpenAIResponsesAsyncClient:
             result = ProviderResponse(self.configuration.digest(), sha(request.payload), request_id, model,
                 raw, output, usage.input_tokens, usage.output_tokens, marker, b"unsigned")
             result = replace(result, proof=self._key.sign(encoded(result.observation())))
-            self._record_attempt(request=request, marker=marker, raw=raw, status=status,
+            self._record_attempt(sink=sink, request=request, marker=marker, raw=raw, status=status,
                 request_id=request_id, result="success", response_complete=response_complete,
                 usage=usage, model=model)
             return result
@@ -268,7 +275,7 @@ class OpenAIResponsesAsyncClient:
             raise
         except asyncio.CancelledError as cancelled:
             try:
-                self._record_attempt(request=request, marker=marker, raw=raw, status=status,
+                self._record_attempt(sink=sink, request=request, marker=marker, raw=raw, status=status,
                     request_id=request_id, result="cancelled", response_complete=response_complete,
                     usage=usage, model=model)
             except TransportCustodyError:
@@ -277,12 +284,12 @@ class OpenAIResponsesAsyncClient:
                 pass
             raise cancelled
         except (TimeoutError, httpx.TimeoutException):
-            self._record_attempt(request=request, marker=marker, raw=raw, status=status,
+            self._record_attempt(sink=sink, request=request, marker=marker, raw=raw, status=status,
                 request_id=request_id, result="timeout", response_complete=response_complete,
                 usage=usage, model=model)
             raise TimeoutError("OpenAI request timed out") from None
         except Exception:
-            self._record_attempt(request=request, marker=marker, raw=raw, status=status,
+            self._record_attempt(sink=sink, request=request, marker=marker, raw=raw, status=status,
                 request_id=request_id, result="invalid_or_failed", response_complete=response_complete,
                 usage=usage, model=model)
             raise ValueError("OpenAI exchange failed validation or transport") from None

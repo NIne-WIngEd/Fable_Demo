@@ -7,7 +7,7 @@ on:
 jobs:
   integration:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 60
     env:
       PYTHONPATH: alice-reference/src:src
       KURRENTDB_URI: kurrentdb://127.0.0.1:2113?tls=false
@@ -33,7 +33,7 @@ jobs:
           docker compose version
 
       - name: Install selected-backend test dependencies
-        run: python -m pip install -e '.[backends,providers]'
+        run: python -m pip install -e '.[backends,providers,embeddings]'
 
       - name: Run component contract tests
         run: |

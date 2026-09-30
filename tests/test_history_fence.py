@@ -1,0 +1,199 @@
+"""Real selected custody/policy contracts with controlled SQL/log ports.
+
+This does not qualify physical engines, model phase exclusion or performance.
+"""
+import base64
+from copy import deepcopy
+from dataclasses import replace
+from datetime import datetime, timezone
+import hashlib
+import unittest
+from unittest.mock import patch
+
+from cognitive_kernel.contracts import ProductHostScope
+from flora.comparison_run import ArmBinding, HistorySnapshot, PairedRunPlan, SourceMaterial
+from flora.evaluation_protocol import ARMS, EvaluationCase, EvaluationProtocol
+from flora.selected.comparison_custody import ComparisonArtifact, SelectedRunEvidencePolicy, XTDBComparisonCustody, evaluation_purpose
+from flora.selected.experience import CommittedExperience
+from flora.selected.formation_context import register_experience_source
+from flora.selected.formation_policy import FormationPermissionAction, XTDBFormationPermissionPolicy, formation_permission_payload
+from flora.selected.formation_registry import XTDBFormationSourceRegistry
+from flora.selected.history_fence import authorize_history_metadata, verify_current_history_metadata
+from flora.selected.owner_authorization import OwnerActionProof, owner_action_message
+import test_governed_development as helpers
+
+
+class HistoryFenceTest(unittest.TestCase):
+    def setUp(self):
+        self.f = helpers.GovernedDevelopmentContractTest()
+        self.f.setUp()
+        self.addCleanup(self.f.doCleanups)
+        f = self.f
+        f.log.replay_committed = lambda: tuple(CommittedExperience(event, i,
+            datetime(2026, 9, 29, 14, tzinfo=timezone.utc)) for i, event in enumerate(f.log.events))
+        def append(event, *, expected_revision):
+            if expected_revision != len(f.log.events) - 1:
+                raise ValueError("controlled stale canonical append")
+            f.log.events.append(event)
+        f.log.append = append
+        self.registry = XTDBFormationSourceRegistry(scope=f.scope,
+            authority_namespace_id=f.namespace, connection=f.connection)
+        future = f.event(b"fictional later correction", parents=(f.source_one.event_id,))
+        self.materials = tuple(SourceMaterial(event, f.objects.get(f.references[event.payload_reference]))
+            for event in (f.source_one, f.source_two, future))
+        for material in self.materials:
+            register_experience_source(event_id=material.event.event_id, raw=f.references[material.event.payload_reference],
+                registry=self.registry, log=f.log, objects=f.objects, role="historical_experience", modality="text")
+        self.before = HistorySnapshot(f.scope, self.materials[:2])
+        self.after = HistorySnapshot(f.scope, self.materials)
+        self.custody = XTDBComparisonCustody(scope=f.scope, authority_namespace_id=f.namespace,
+            connection=f.connection, registry=self.registry, objects=f.objects, log=f.log)
+        case = EvaluationCase("case", f.scope.host_instance_id, "relevant_correction", "heldout",
+            self.before.digest(), self.after.digest(), "a"*64, future.event_id)
+        protocol = EvaluationProtocol("history-fence-fixture", "b"*64, "2026-09-29T00:00:00Z",
+            "fixture-only-feature", 16, 1000, (case,), "c"*64, "d"*64, "e"*64, "f"*64, ("unused-transfer-host",))
+        question = b"fictional frozen question"
+        self.plan = PairedRunPlan(protocol, {arm: ArmBinding("fixture-unused", "1"*64, "2"*64,
+            "fixture-unused") for arm in ARMS}, 32, 4096, 1, {"case": hashlib.sha256(question).hexdigest()})
+        self.custody.register_inputs(run_id="run", plan=self.plan,
+            histories={("case", "before"): self.before, ("case", "after"): self.after},
+            questions={"case": question}, occurred_at="2026-09-29T15:00:00Z")
+        self.permissions = XTDBFormationPermissionPolicy(scope=f.scope, authority_namespace_id=f.namespace,
+            connection=f.connection, registry=self.registry)
+        self.grant_count = 0
+        for phase, history in (("before", self.before), ("after", self.after)):
+            for event_id in history.event_ids:
+                self.grant(event_id, phase)
+        self.policy = SelectedRunEvidencePolicy(custody=self.custody, run_id="run", permissions=self.permissions)
+        # The full existing initial path really authenticates ciphertext/plaintext.
+        self.assertTrue(self.policy.authorize_history(case_id="case", phase="before", history=self.before))
+
+    def grant(self, event_id, phase, decision="allow"):
+        f = self.f
+        purpose = evaluation_purpose("run", "case", phase)
+        source = self.registry.lookup(event_id)
+        previous = self.permissions.current_action(event_id, purpose)
+        self.grant_count += 1
+        action = FormationPermissionAction.create(scope=f.scope, authority_namespace_id=f.namespace,
+            action_id=f"history-grant-{self.grant_count}", source_ref_id=event_id,
+            source_registration_sha256=source.registration_sha256, purpose=purpose, decision=decision,
+            generation=1 if previous is None else previous.generation + 1,
+            previous_action_sha256=None if previous is None else previous.action_sha256,
+            authorization_ref="fictional-enrolled-owner", authorized_at="2026-09-29T16:00:00Z")
+        parents = (event_id,)
+        if previous is not None:
+            parents += (self.permissions._stored_action(previous.action_id)["request_event_id"],)
+        event = f.event(formation_permission_payload(action), event_type="formation_permission_action",
+            timestamp=action.authorized_at, parents=parents)
+        f.proofs[event.event_id] = OwnerActionProof("formation_permission", event.event_id,
+            event.event_sha256, base64.b64encode(f.key.sign(owner_action_message(event, "formation_permission"))).decode())
+        self.permissions.apply(action, request_event_id=event.event_id, log=f.log, objects=f.objects,
+            references=f.references, verifier=f.verifier)
+
+    def verify(self, phase="before", history=None):
+        return verify_current_history_metadata(policy=self.policy, case_id="case", phase=phase,
+            history=self.before if history is None else history)
+
+    def test_current_fence_reconstructs_manifest_and_opens_no_ciphertext_or_plaintext(self):
+        with patch.object(self.custody.raw_custody, "read", side_effect=AssertionError("raw custody forbidden")), \
+             patch.object(self.f.objects, "get", side_effect=AssertionError("plaintext forbidden")), \
+             patch.object(self.f.objects.backend, "get_object", side_effect=AssertionError("ciphertext forbidden")):
+            proof = self.verify()
+            self.assertEqual(proof.history_sha256, self.before.digest())
+            self.assertEqual(len(proof.sources), 2)
+            self.verify("after", self.after)
+
+    def test_reordered_history_is_not_the_registered_phase(self):
+        history = replace(self.before, sources=tuple(reversed(self.before.sources)))
+        with self.assertRaises(PermissionError):
+            self.verify(history=history)
+
+    def test_future_after_original_cannot_enter_before_history(self):
+        with self.assertRaises(PermissionError):
+            self.verify(history=self.after)
+
+    def test_held_plaintext_mutation_refuses_even_with_unmodified_outer_record(self):
+        history = replace(self.before, sources=(replace(self.before.sources[0], plaintext=b"unverified change"),
+                                              self.before.sources[1]))
+        with self.assertRaises(ValueError):
+            self.verify(history=history)
+
+    def test_mutable_outer_history_metadata_does_not_replace_manifest_content_proof(self):
+        actual = self.custody.metadata("run", "history:case:before")
+        forged = deepcopy(actual.record)
+        # Controlled metadata port lies while retaining plausible outer fields.
+        # The actual canonical manifest and reconstructed body still disagree.
+        forged["content_sha256"] = "9"*64
+        with patch.object(self.custody, "metadata", return_value=ComparisonArtifact(forged)):
+            with self.assertRaisesRegex(PermissionError, "actual manifest content digest"):
+                self.verify()
+
+    def test_cross_scope_history_and_policy_fail_closed(self):
+        other = ProductHostScope.create(product_id="friday", host_instance_id="other-fictional-host",
+            schema_version="1.0.0", encryption_domain="other-fictional-key")
+        history = replace(self.before, scope=other)
+        with self.assertRaises(ValueError):
+            self.verify(history=history)
+        self.permissions.scope = other
+        self.assertFalse(authorize_history_metadata(policy=self.policy, case_id="case", phase="before", history=self.before))
+
+    def test_current_source_and_parent_revocation_is_not_cached_between_calls(self):
+        self.verify("after", self.after)
+        self.grant(self.materials[0].event.event_id, "after", "revoke")
+        with self.assertRaises(PermissionError):
+            self.verify("after", self.after)
+
+    def test_revocation_during_last_original_grant_is_caught_by_fresh_fence(self):
+        original = self.permissions.current_action
+        changed = False
+        def action(event_id, purpose):
+            nonlocal changed
+            result = original(event_id, purpose)
+            if not changed and event_id == self.before.event_ids[-1]:
+                changed = True
+                self.grant(self.before.event_ids[0], "before", "revoke")
+            return result
+        with patch.object(self.permissions, "current_action", side_effect=action):
+            with self.assertRaises(PermissionError):
+                self.verify()
+        self.assertTrue(changed)
+
+    def test_raw_reference_changes_during_grants_cannot_accept_old_held_bytes(self):
+        original = self.permissions.current_action
+        changed = False
+        key = self.registry._key("raw", self.before.sources[0].event.payload_reference)
+        def action(event_id, purpose):
+            nonlocal changed
+            result = original(event_id, purpose)
+            if not changed and event_id == self.before.event_ids[-1]:
+                changed = True
+                self.f.connection.rows[("flora_formation_raw_references", key)]["record_sha256"] = "8"*64
+            return result
+        with patch.object(self.permissions, "current_action", side_effect=action):
+            with self.assertRaises((ValueError, PermissionError)):
+                self.verify()
+        self.assertTrue(changed)
+
+    def test_wrong_policy_type_is_not_a_self_certified_metadata_receipt(self):
+        with self.assertRaises(TypeError):
+            verify_current_history_metadata(policy=object(), case_id="case", phase="before", history=self.before)
+
+    def test_final_raw_reference_read_withdrawal_is_followed_by_current_grant_fence(self):
+        original = XTDBFormationSourceRegistry.raw_reference
+        changed = False
+        def reference(service, object_id):
+            nonlocal changed
+            result = original(service, object_id)
+            if (service is self.registry and not changed
+                    and object_id == self.before.sources[-1].event.payload_reference):
+                changed = True
+                self.grant(self.before.event_ids[0], "before", "revoke")
+            return result
+        with patch.object(XTDBFormationSourceRegistry, "raw_reference", new=reference):
+            with self.assertRaises(PermissionError):
+                self.verify()
+        self.assertTrue(changed)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -13,6 +13,7 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -244,7 +245,7 @@ class SelectedExperimentRuntimeTest(unittest.TestCase):
     def test_revocation_during_inference_stops_output_and_artifact_mutation_is_rechecked(self):
         adapter = self._admit_artifact("memory_formation")
         adapter.callback = lambda: self.permitted.__setitem__(0, False)
-        with self.assertRaisesRegex(ValueError, "permitted|revoked|source changed"):
+        with self.assertRaisesRegex((ValueError, PermissionError), "permitted|revoked|withdrawn|source changed"):
             self._form()
         self.assertFalse(any(event.event_type == "qualified_model_output" for event in self.log.replay()))
         self.permitted[0] = True
@@ -269,6 +270,78 @@ class SelectedExperimentRuntimeTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "durable input/output"):
             self._accept(changed)
 
+    def test_denied_judgment_opens_no_private_qualification_or_source_bytes(self):
+        self._admit_artifact("memory_formation")
+        self._admit_artifact("personality_judgment")
+        accepted = self._accept(self._form())
+        plan = ContextPlan(request_id="denied-private-preflight", purpose="personal_judgment",
+                           exact_claim_ids=(accepted.claim_id,))
+        self.permitted[0] = False
+        count = len(self.log.replay())
+        with patch.object(self.objects.backend, "get_object", side_effect=AssertionError("denied preflight opened ciphertext")):
+            with self.assertRaises(PermissionError):
+                self.runtime.judge(plan=plan, task=b"fictional denied task", invocation_id="denied-private-judgment")
+        self.assertEqual(len(self.log.replay()), count)
+
+    def test_denied_formation_opens_no_private_qualification_or_source_bytes(self):
+        self._admit_artifact("memory_formation")
+        self.permitted[0] = False
+        count = len(self.log.replay())
+        with patch.object(self.objects.backend, "get_object", side_effect=AssertionError("denied formation opened ciphertext")):
+            with self.assertRaises((ValueError, PermissionError)):
+                self._form("denied-private-formation")
+        self.assertEqual(len(self.log.replay()), count)
+
+    def test_invalid_mfm_checkpoint_stops_before_personal_source_read(self):
+        self._admit_artifact("memory_formation")
+        event_id = self.prepared.request.experience_refs[0]
+        source_object = self.registry.lookup(event_id).object_ref
+        original = self.objects.backend.get_object
+        def forbid_source(namespace, object_id):
+            if object_id == source_object:
+                self.fail("invalid MFM opened personal source ciphertext")
+            return original(namespace, object_id)
+        self.paths["memory_formation"].write_bytes(b"changed fictional MFM checkpoint")
+        with patch.object(self.objects.backend, "get_object", side_effect=forbid_source):
+            with self.assertRaisesRegex(ValueError, "bytes differ"):
+                self._form("invalid-model-formation")
+
+    def test_invalid_personality_checkpoint_stops_before_personal_source_read(self):
+        self._admit_artifact("memory_formation")
+        self._admit_artifact("personality_judgment")
+        accepted = self._accept(self._form())
+        plan = ContextPlan(request_id="invalid-model-preflight", purpose="personal_judgment",
+                           exact_claim_ids=(accepted.claim_id,))
+        event_id = self.prepared.request.experience_refs[0]
+        source_object = self.registry.lookup(event_id).object_ref
+        original = self.objects.backend.get_object
+        def forbid_source(namespace, object_id):
+            if object_id == source_object:
+                self.fail("invalid model opened personal source ciphertext")
+            return original(namespace, object_id)
+        self.paths["personality_judgment"].write_bytes(b"changed fictional personality checkpoint")
+        with patch.object(self.objects.backend, "get_object", side_effect=forbid_source):
+            with self.assertRaisesRegex(ValueError, "bytes differ"):
+                self.runtime.judge(plan=plan, task=b"fictional invalid model task", invocation_id="invalid-model-judgment")
+
+    def test_withdrawal_during_revision_read_blocks_canonical_runtime_append(self):
+        before, rows = len(self.log.replay()), dict(self.connection.rows)
+        original = self.runtime._revision
+        def revision_and_withdraw():
+            value = original()
+            self.permitted[0] = False
+            return value
+        self.runtime._revision = revision_and_withdraw
+        def guard():
+            if not self.permitted[0]:
+                raise PermissionError("fixture source permission withdrawn")
+        with self.assertRaises(PermissionError):
+            self.runtime._append(payload=b"fictional private runtime payload", event_type="qualified_model_input",
+                parents=self.prepared.request.experience_refs, invocation_id="late-revision-refusal",
+                model_digest="a" * 64, revalidate=guard)
+        self.assertEqual(len(self.log.replay()), before)
+        self.assertEqual(self.connection.rows, rows)
+
     def test_recreation_recovers_exact_execution_and_current_permissions_still_apply(self):
         self._admit_artifact("memory_formation")
         self._admit_artifact("personality_judgment")
@@ -277,12 +350,26 @@ class SelectedExperimentRuntimeTest(unittest.TestCase):
         plan = ContextPlan(request_id="frozen-recovery-plan", purpose="personal_judgment",
                            exact_claim_ids=(accepted.claim_id,), minimum_claims=1)
         judgment = self.runtime.judge(plan=plan, task=b"fixed fictional task", invocation_id="recoverable-judgment")
+        registered_rows = dict(self.connection.rows)
+        register = self.runtime.private.register
+        self.runtime.private.register = lambda *_: self.fail("read-only recovery attempted custody registration")
+        try:
+            strict = self.runtime.recover_judgment(plan=plan, task=b"fixed fictional task",
+                invocation_id="recoverable-judgment", reconcile=False)
+        finally:
+            self.runtime.private.register = register
+        self.assertEqual(strict, judgment)
+        self.assertEqual(self.connection.rows, registered_rows)
         # Controlled missing-index injection models append/index recovery,
         # rather than treating caller-held RawObjectReference objects as durable.
         for key in list(self.connection.rows):
             if key[0] in {"flora_qualified_runtime_steps", "flora_qualified_runtime_raw_references"}:
                 del self.connection.rows[key]
         recreated = self._runtime()
+        with self.assertRaisesRegex(ValueError, "read-only runtime recovery"):
+            recreated.recover_judgment(plan=plan, task=b"fixed fictional task",
+                invocation_id="recoverable-judgment", reconcile=False)
+        self.assertFalse(any(key[0] == "flora_qualified_runtime_steps" for key in self.connection.rows))
         recovered_formation = recreated.recover_formation(request=FormationPlanningRequest(scope=self.scope,
             authority_namespace_id=self.namespace, experience_refs=self.prepared.request.experience_refs),
             bundle_id=formation.bundle.bundle_id, invocation_id="fixture-formation-runtime")
@@ -294,7 +381,7 @@ class SelectedExperimentRuntimeTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "current artifact/context"):
             recreated.recover_judgment(plan=plan, task=b"changed task", invocation_id="recoverable-judgment")
         self.permitted[0] = False
-        with self.assertRaisesRegex(PermissionError, "not permitted"):
+        with self.assertRaises(PermissionError):
             recreated.recover_judgment(plan=plan, task=b"fixed fictional task", invocation_id="recoverable-judgment")
 
     def test_cycle_executes_external_stages_without_manufacturing_governance_or_judgment(self):

@@ -1,4 +1,5 @@
 """Synthetic source-selection/provider-contract regressions, not benchmark evidence."""
+import asyncio
 from dataclasses import replace
 import json
 from types import SimpleNamespace
@@ -10,9 +11,11 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from flora.comparator import (
     Ed25519TransportObservationVerifier, GeneralMemoryArmAdapter, ProviderRequest,
-    provider_payload, sha,
+    encoded, provider_payload, sha,
 )
-from flora.comparison_run import ArmExecutionFailure, ArmStopped, ExecutionRequest, PreparationRequest
+from flora.comparison_run import (
+    ArmExecutionFailure, ArmStopped, ExecutionRequest, MeasuredUsage, PreparationRequest, _context_bytes,
+)
 from flora.selected.comparator_memory import (
     QdrantOriginalMemory, ancestors, lexical_ranking, source_windows, verify_window_context,
 )
@@ -121,8 +124,11 @@ class ComparatorContractsTest(unittest.IsolatedAsyncioTestCase):
             self.verifier.verify(request=request, response=replace(response, returned_model_id="different-model"))
 
     def adapter(self, *, call_transfer=True, revoke_after=False, counter=None,
-                recorder_error=False, invalid_proof=False):
-        state = {"allowed": True, "calls": 0}
+                recorder_error=False, invalid_proof=False, missing_custody=False,
+                missing_capture=False, wrong_task_marker=False, client_stop=False,
+                capture_allowed=True, client_error=False, changed_returned_usage=False):
+        state = {"allowed": True, "calls": 0, "tasks": [], "capture_allowed": capture_allowed,
+                 "client_calls": 0, "verified_usage_calls": 0}
         key, config = self.key, self.config
         class Disclosure:
             def authorize(self, **kwargs):
@@ -132,14 +138,64 @@ class ComparatorContractsTest(unittest.IsolatedAsyncioTestCase):
                 return "d" * 64
         class Client:
             configuration = config.provider
-            async def generate(self, request, *, authorize_transfer):
+            async def generate(self, request, *, authorize_transfer, attempt_sink):
+                state["client_calls"] += 1
                 marker = authorize_transfer() if call_transfer else "d" * 64
+                if wrong_task_marker:
+                    marker = "d" * 64
                 response = signed_response(request, marker, key)
                 if invalid_proof:
                     response = replace(response, proof=b"invalid-proof")
+                if not missing_capture:
+                    attempt_sink.record(response)
+                if changed_returned_usage:
+                    response = replace(response, input_tokens=999, proof=b"unsigned")
+                    response = replace(response, proof=key.sign(encoded(response.observation())))
                 if revoke_after:
                     state["allowed"] = False
+                if client_stop:
+                    # Deliberately incorrect exception metering must be ignored.
+                    raise ArmStopped("unavailable", MeasuredUsage(config.provider.feature_engine_id, 999, 999, 999, 1))
+                if client_error:
+                    raise client_error("fixture private provider details")
                 return response
+        class BoundSink:
+            def __init__(self, task_id, dispatch):
+                self.dispatch, self.response, self.marker = dispatch, None, None
+                self.task_id = task_id
+            def wrap_authorize_transfer(self, callback):
+                def authorize():
+                    if self.marker is not None:
+                        raise PermissionError("fixture task already dispatched")
+                    base = callback()
+                    self.marker = sha(encoded({"task_id": self.task_id, "source_marker": base,
+                                               "payload_sha256": sha(self.dispatch.payload)}))
+                    return self.marker
+                return authorize
+            def record(self, response):
+                self.response = response
+            def verify_response(self, response):
+                if not state["capture_allowed"]:
+                    raise PermissionError("fixture capture permission withdrawn")
+                if self.response != response or response.authorization_marker != self.marker:
+                    raise ValueError("fixture durable task lacks this exact captured response")
+                self_outer.verifier.verify(request=self.dispatch, response=response)
+            def verified_usage(self):
+                state["verified_usage_calls"] += 1
+                if self.response is None:
+                    return None
+                self.verify_response(self.response)
+                return MeasuredUsage(config.provider.feature_engine_id, self.response.input_tokens,
+                    self.response.input_tokens, self.response.output_tokens, 1,
+                    self.response.cost_microunits, self.response.currency)
+        self_outer = self
+        class Custody:
+            def prepare_task(self, *, task_id, arm, request, provider_request):
+                if arm != "general_model_memory":
+                    raise AssertionError("fixture custody crossed arm")
+                sink = BoundSink(task_id, provider_request)
+                state["tasks"].append((task_id, arm, request, provider_request, sink))
+                return sink
         class Recorder:
             called = False
             def record(self, **kwargs):
@@ -151,7 +207,9 @@ class ComparatorContractsTest(unittest.IsolatedAsyncioTestCase):
         memory = SimpleNamespace(configuration=config)
         adapter = GeneralMemoryArmAdapter(configuration=config, memory=memory,
             tokenizer=counter or FixtureByteCounter(), wire_compiler=FixtureCompiler(), client=Client(),
-            exchange_verifier=self.verifier, disclosure=Disclosure(), recorder=recorder)
+            exchange_verifier=self.verifier, disclosure=Disclosure(), recorder=recorder,
+            attempt_custody=None if missing_custody else Custody(),
+            task_id_for=lambda request: "fixture-task:" + request.case_id + ":" + request.phase)
         return adapter, state, recorder
 
     async def test_adapter_requires_transfer_boundary_callback_and_preserves_unknown_cost(self):
@@ -163,6 +221,109 @@ class ComparatorContractsTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(ValueError, "transfer-boundary"):
             await adapter.execute(self.execution)
         self.assertFalse(recorder.called)
+
+    async def test_dispatch_requires_exact_task_custody_and_captured_observation(self):
+        adapter, state, recorder = self.adapter(missing_custody=True)
+        with self.assertRaises(ArmStopped) as stopped:
+            await adapter.execute(self.execution)
+        self.assertEqual(stopped.exception.status, "unavailable")
+        self.assertEqual(state["client_calls"], 0)
+        self.assertFalse(state["tasks"])
+        self.assertFalse(recorder.called)
+        adapter, state, recorder = self.adapter(missing_capture=True)
+        with self.assertRaises(ValueError) as stopped:
+            await adapter.execute(self.execution)
+        self.assertFalse(hasattr(stopped.exception, "usage"))
+        self.assertFalse(recorder.called)
+        task_id, arm, request, dispatch, sink = state["tasks"][0]
+        self.assertIs(request, self.execution)
+        self.assertEqual(arm, "general_model_memory")
+        self.assertNotEqual(sink.marker, "d" * 64)
+        self.assertEqual(task_id, "fixture-task:case:after")
+
+    async def test_source_only_or_other_task_marker_cannot_replay_current_task(self):
+        adapter, state, recorder = self.adapter(wrong_task_marker=True)
+        with self.assertRaisesRegex(ValueError, "transfer-boundary"):
+            await adapter.execute(self.execution)
+        self.assertEqual(state["client_calls"], 1)
+        self.assertFalse(recorder.called)
+
+    async def test_signed_returned_counters_cannot_replace_actual_captured_usage(self):
+        adapter, state, recorder = self.adapter(changed_returned_usage=True)
+        with self.assertRaises(ArmExecutionFailure) as stopped:
+            await adapter.execute(self.execution)
+        self.assertEqual(stopped.exception.status, "invalid_result")
+        self.assertNotEqual(stopped.exception.usage.input_tokens, 999)
+        self.assertEqual(stopped.exception.usage.output_tokens, 9)
+        self.assertFalse(recorder.called)
+        adapter, state, recorder = self.adapter(changed_returned_usage=True, missing_capture=True)
+        with self.assertRaises(ValueError) as stopped:
+            await adapter.execute(self.execution)
+        self.assertFalse(hasattr(stopped.exception, "usage"))
+        self.assertIsNone(adapter.measured_stop_usage(case_id=self.execution.case_id, phase=self.execution.phase,
+            plan_sha256=self.execution.plan.digest(), context_sha256=sha(_context_bytes(self.execution.context))))
+
+    async def test_failure_usage_comes_from_captured_observation_not_client_exception(self):
+        adapter, state, recorder = self.adapter(client_stop=True)
+        with self.assertRaises(ArmStopped) as stopped:
+            await adapter.execute(self.execution)
+        self.assertEqual(stopped.exception.status, "unavailable")
+        self.assertEqual(stopped.exception.usage.output_tokens, 9)
+        self.assertNotEqual(stopped.exception.usage.input_tokens, 999)
+        self.assertEqual(state["verified_usage_calls"], 1)
+        self.assertFalse(recorder.called)
+        for kwargs in ({"missing_capture": True}, {"capture_allowed": False}, {"invalid_proof": True}):
+            with self.subTest(kwargs=kwargs):
+                adapter, state, recorder = self.adapter(client_stop=True, **kwargs)
+                with self.assertRaises(ArmStopped) as stopped:
+                    await adapter.execute(self.execution)
+                self.assertIsNone(stopped.exception.usage)
+                self.assertFalse(recorder.called)
+
+    async def test_observed_usage_survives_non_successful_transport_return(self):
+        for error, status in ((ValueError, "invalid_result"), (RuntimeError, "failed")):
+            with self.subTest(error=error):
+                adapter, state, recorder = self.adapter(client_error=error)
+                with self.assertRaises(ArmExecutionFailure) as stopped:
+                    await adapter.execute(self.execution)
+                self.assertEqual(str(stopped.exception), status)
+                self.assertEqual(stopped.exception.usage.output_tokens, 9)
+                self.assertFalse(recorder.called)
+        adapter, state, recorder = self.adapter(client_error=RuntimeError, missing_capture=True)
+        with self.assertRaises(RuntimeError) as stopped:
+            await adapter.execute(self.execution)
+        self.assertFalse(hasattr(stopped.exception, "usage"))
+        self.assertFalse(recorder.called)
+
+    async def test_timeout_and_cancellation_keep_only_exact_cached_verified_stop_usage(self):
+        request = self.execution
+        keywords = dict(case_id=request.case_id, phase=request.phase, plan_sha256=request.plan.digest(),
+                        context_sha256=sha(_context_bytes(request.context)))
+        for failure in (TimeoutError, asyncio.CancelledError):
+            with self.subTest(failure=failure):
+                adapter, state, recorder = self.adapter(client_error=failure)
+                with self.assertRaises(failure):
+                    await adapter.execute(request)
+                before = state["verified_usage_calls"]
+                usage = adapter.measured_stop_usage(**keywords)
+                self.assertEqual(usage.output_tokens, 9)
+                self.assertEqual(state["verified_usage_calls"], before)  # Pure metadata getter.
+                for change in ({"phase": "before"}, {"plan_sha256": "f" * 64},
+                               {"context_sha256": "a" * 64}, {"case_id": "other"},
+                               {"context_sha256": None}):
+                    self.assertIsNone(adapter.measured_stop_usage(**(keywords | change)))
+                # A later stopped execution cannot borrow the previous row.
+                adapter.attempt_custody = None
+                with self.assertRaises(ArmStopped):
+                    await adapter.execute(request)
+                self.assertIsNone(adapter.measured_stop_usage(**keywords))
+                self.assertFalse(recorder.called)
+        for kwargs in ({"invalid_proof": True}, {"wrong_task_marker": True}, {"missing_capture": True}):
+            with self.subTest(kwargs=kwargs):
+                adapter, state, recorder = self.adapter(client_error=asyncio.CancelledError, **kwargs)
+                with self.assertRaises(asyncio.CancelledError):
+                    await adapter.execute(request)
+                self.assertIsNone(adapter.measured_stop_usage(**keywords))
 
     async def test_revocation_during_inference_blocks_recorded_acceptance(self):
         adapter, _, recorder = self.adapter(revoke_after=True)

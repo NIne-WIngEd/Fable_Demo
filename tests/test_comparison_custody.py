@@ -28,6 +28,11 @@ class ComparisonCustodyContractTest(unittest.TestCase):
         self.assertEqual(_plan_from_record(stored).digest(), plan.digest())
         stored["question_sha256_by_case"]["case"] = "6" * 64
         self.assertNotEqual(_plan_from_record(stored).digest(), plan.digest())
+        phased = replace(plan, phase_bindings={
+            ("case", phase, arm): replace(plan.arm_bindings[arm],
+                model_artifact_sha256=("7" if phase == "before" else "8") * 64)
+            for phase in ("before", "after") for arm in ARMS})
+        self.assertEqual(_plan_from_record(json.loads(json.dumps(_plan_record(phased)))).digest(), phased.digest())
 
     def test_phase_specific_permission_never_reuses_after_scope_for_before(self):
         self.assertNotEqual(evaluation_purpose("run", "case", "before"),
@@ -63,6 +68,15 @@ class ComparisonCustodyContractTest(unittest.TestCase):
         for purpose in ("comparison_review", "comparison_external:provider", "comparison_unblind"):
             with self.subTest(purpose=purpose), self.assertRaisesRegex(PermissionError, "sealed assessment"):
                 store.read(run_id="run", artifact_id="blind_key", permissions=None, purpose=purpose)
+
+    def test_provider_attempt_cannot_open_through_generic_recorded_route(self):
+        store = object.__new__(XTDBComparisonCustody)
+        store.registry = SimpleNamespace(lookup=lambda event: SimpleNamespace(object_ref="private-object"))
+        store.raw_custody = SimpleNamespace(read=lambda *_: self.fail("generic comparison opened provider audit bytes"))
+        for kind in ("comparison_artifact", "provider_attempt_artifact", "phase_snapshot_artifact", "experiment_manifest_artifact"):
+            store.log = SimpleNamespace(replay=lambda: [SimpleNamespace(event_id="attempt", event_type=kind)])
+            with self.subTest(kind=kind), self.assertRaisesRegex(PermissionError, "separately authorized audit"):
+                store.load_recorded("attempt")
 
     def test_orchestrator_manifest_never_becomes_phase_inference_input(self):
         store = object.__new__(XTDBComparisonCustody)

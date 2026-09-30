@@ -112,8 +112,9 @@ class GovernedClaimQuarantineTest(unittest.TestCase):
     def test_bad_owner_proof_and_wrong_exact_request_fail_before_request_plaintext_read(self):
         event = self._request()
         self.proofs[event.event_id] = replace(self.proofs[event.event_id], action="state_activation")
-        reads, original = [], self.f.objects.get
-        self.f.objects.get = lambda raw: (reads.append(raw.object_id), original(raw))[1]
+        reads, original = [], self.f.objects.backend.get_object
+        self.f.objects.backend.get_object = lambda namespace, object_id: (
+            reads.append(object_id), original(namespace, object_id))[1]
         with self.assertRaises(PermissionError):
             self._apply(event)
         self.assertFalse(reads)

@@ -197,6 +197,41 @@ class PairedComparisonContractTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(full.context_sha256, ablation.context_sha256)
         self.assertEqual(run_summary(run)["behavioral_assessment"], "not_collected")
 
+    async def test_exact_phase_model_bindings_are_frozen_and_used_for_each_attempt(self):
+        bindings = {(case.case_id, phase, arm): replace(self.plan.arm_bindings[arm],
+                    model_artifact_sha256=("7" if phase == "before" else "8") * 64,
+                    lineage_sha256=("9" if phase == "before" else "a") * 64)
+                    for case in self.plan.protocol.cases for phase in ("before", "after") for arm in ARMS}
+        plan = replace(self.plan, phase_bindings=bindings)
+        self.assertNotEqual(plan.digest(), self.plan.digest())
+        run = await self.run_fixture(plan=plan)
+        self.assertTrue(all(a.status == "success" for a in run.attempts))
+        self.assertTrue(all(a.lineage_sha256 == bindings[(a.case_id,a.phase,a.arm)].lineage_sha256 for a in run.attempts))
+        for arm, adapter in self.adapters.items():
+            self.assertEqual([r.binding.model_artifact_sha256 for r in adapter.requests], ["7" * 64, "8" * 64])
+        omitted = dict(bindings)
+        omitted.pop(next(iter(omitted)))
+        with self.assertRaisesRegex(ValueError, "complete exact"):
+            replace(plan, phase_bindings=omitted).validate()
+
+    async def test_timeout_preserves_only_exact_cached_measured_stop_usage(self):
+        adapter = self.adapters["flora_full"]
+        adapter.delay = .1
+        plan = replace(self.plan, protocol=replace(self.plan.protocol, wall_time_budget_ms=20))
+        observed = MeasuredUsage(plan.protocol.feature_engine_id, 1, 2, 3, 1, None, None)
+        seen = []
+        def cached(**key):
+            seen.append(key)
+            self.assertEqual(key["plan_sha256"], plan.digest())
+            self.assertIsNotNone(key["context_sha256"])
+            return observed
+        adapter.measured_stop_usage = cached
+        run = await self.run_fixture(plan=plan)
+        full = [a for a in run.attempts if a.arm == "flora_full"]
+        self.assertEqual([a.status for a in full], ["timeout", "timeout"])
+        self.assertEqual([a.usage for a in full], [observed, observed])
+        self.assertEqual(len(seen), 2)
+
     async def test_tampered_or_unauthorized_original_never_reaches_adapter(self):
         self.policy.deny_history = True
         with self.assertRaisesRegex(PermissionError, "unauthorized"):
@@ -383,9 +418,23 @@ class PairedComparisonContractTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(ValueError, "exact context-bound"):
             _validate_result(result, request, self.policy, arm="flora_full")
         _validate_result(native, request, self.policy, arm="flora_full")
-        for arm in ("general_model_memory", "same_evidence_ablation"):
-            with self.assertRaisesRegex(ValueError, "native execution authority"):
-                _validate_result(native, request, self.policy, arm=arm)
+        with self.assertRaisesRegex(ValueError, "native execution authority"):
+            _validate_result(native, request, self.policy, arm="general_model_memory")
+        with self.assertRaisesRegex(ValueError, "explicit arm-bound"):
+            _validate_result(native, request, self.policy, arm="same_evidence_ablation")
+        # A native ablation needs its own explicitly arm-bound verifier. This
+        # fixture checks dispatch only; selected phase tests qualify real ports.
+        verified_arms = []
+        def qualified_arm(request, result, *, arm):
+            verified_arms.append(arm)
+            if arm != "same_evidence_ablation":
+                raise PermissionError("fictional exclusion proof belongs to ablation only")
+            return qualified
+        self.policy.verify_native_result = qualified_arm
+        _validate_result(native, request, self.policy, arm="same_evidence_ablation")
+        self.assertEqual(verified_arms, ["same_evidence_ablation"])
+        with self.assertRaisesRegex(PermissionError, "ablation only"):
+            _validate_result(native, request, self.policy, arm="flora_full")
         self.policy.verify_native_result = lambda request, result: result.delivery
         with self.assertRaisesRegex(ValueError, "verified custody"):
             _validate_result(native, request, self.policy, arm="flora_full")

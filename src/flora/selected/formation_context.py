@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 import json
 from typing import Callable, Mapping
 
-from cognitive_kernel.canonical import normalize_timestamp, require_identifier
+from cognitive_kernel.canonical import canonical_json_bytes, normalize_timestamp, require_identifier
 from cognitive_kernel.contracts import ProvenanceReference
 from cognitive_kernel.experience import ExperienceEvent
 from cognitive_kernel.formation_context_planner import (
@@ -34,6 +34,75 @@ from .formation_registry import (
     XTDBFormationSourceRegistry,
 )
 from .object_store import EncryptedObjectPlane, RawObjectReference
+
+
+class _CurrentFormationMetadata:
+    """Actual upstream-resolved registrations and current use, no raw reread."""
+    def __init__(self, *, store, objects, resolved):
+        if not resolved:
+            raise ValueError("formation has no actual resolved source closure")
+        self.store, self.objects, self.registry, self.permits = store, objects, store.registry, store.permits
+        self.scope_record = canonical_json_bytes(store.scope.metadata_record())
+        self.namespace, self.purpose = store.authority_namespace_id, store.purpose
+        self.policy = getattr(self.permits, "__self__", None)
+        self.action_reader = getattr(self.policy, "current_action", None)
+        self.sources = dict(resolved)
+        self.raw_records, self.raw_references, self.grants = {}, {}, {}
+        for ref_id, source in self.sources.items():
+            if store._lookup(ref_id) != source:
+                raise PermissionError("formation source changed after upstream resolution")
+            raw, reference = self.registry.raw_metadata(source.object_ref), self.registry.raw_reference(source.object_ref)
+            if (raw is None or reference is None or reference.scope != store.scope
+                    or reference.object_id != source.object_ref
+                    or reference.plaintext_sha256 != source.evidence.content_digest
+                    or raw["object_namespace"] != objects.namespace):
+                raise PermissionError("formation source has no exact durable raw-reference metadata")
+            self.raw_records[ref_id] = canonical_json_bytes(raw)
+            self.raw_references[ref_id] = reference
+        # Grants follow potentially slow source/raw-reference metadata reads.
+        if callable(self.action_reader):
+            for ref_id in self.sources:
+                action = self.action_reader(ref_id, self.purpose)
+                if action is None or action.decision != "allow":
+                    raise PermissionError("formation source has no current exact grant")
+                self.grants[ref_id] = canonical_json_bytes(action.metadata_record())
+        self.metadata_current()
+
+    def _bindings(self):
+        if (self.store.registry is not self.registry or self.store.permits is not self.permits
+                or self.store.purpose != self.purpose or self.store.authority_namespace_id != self.namespace
+                or self.registry.authority_namespace_id != self.namespace
+                or canonical_json_bytes(self.store.scope.metadata_record()) != self.scope_record
+                or not self.store.scope == self.registry.scope == self.objects.scope):
+            raise PermissionError("formation current registered authority binding changed")
+        if self.policy is not None and hasattr(self.policy, "registry") and self.policy.registry is not self.registry:
+            raise PermissionError("formation current permission registry changed")
+
+    def metadata_current(self) -> None:
+        self._bindings()
+        for ref_id, source in self.sources.items():
+            if (self.store._lookup(ref_id) != source
+                    or canonical_json_bytes(self.registry.raw_metadata(source.object_ref)) != self.raw_records[ref_id]
+                    or self.registry.raw_reference(source.object_ref) != self.raw_references[ref_id]):
+                raise PermissionError("formation current source/raw-reference metadata changed")
+        self._bindings()
+        for ref_id, source in self.sources.items():
+            # This is the actual RegisteredFormationStore predicate and policy,
+            # including its current parent closure, not a captured allow bit.
+            if self.permits(source, self.purpose) is not True:
+                raise PermissionError("formation current source/parent permission was withdrawn")
+        # Keep selected current grants after slower metadata/predicate work.
+        if callable(self.action_reader):
+            for ref_id in self.sources:
+                action = self.action_reader(ref_id, self.purpose)
+                if (action is None or action.decision != "allow"
+                        or canonical_json_bytes(action.metadata_record()) != self.grants[ref_id]):
+                    raise PermissionError("formation current source grant changed")
+        self._bindings()
+
+    def permits_private_read(self) -> bool:
+        self.metadata_current()
+        return True
 
 
 def register_experience_source(
@@ -74,6 +143,13 @@ class PreparedSelectedFormation:
     assembled: AssembledFormationContext = field(repr=False)
     receipt: FormationReadReceipt
     store: RegisteredFormationStore = field(repr=False, compare=False)
+    _metadata_guard: Callable[[], None] | None = field(default=None, repr=False, compare=False)
+
+    def metadata_current(self) -> None:
+        """Current selected metadata/purpose barrier without original bytes."""
+        if self._metadata_guard is None:
+            raise PermissionError("formation preparation has no actual metadata barrier")
+        self._metadata_guard()
 
     def receipt_record(self) -> dict[str, object]:
         return {
@@ -88,8 +164,12 @@ class PreparedSelectedFormation:
         }
 
     def revalidate(self) -> None:
+        if self._metadata_guard is not None:
+            self.metadata_current()
         if record_formation_read(self.assembled, self.store) != self.receipt:
             raise ValueError("formation delivery differs from its current source receipt")
+        if self._metadata_guard is not None:
+            self.metadata_current()
 
 
 def prepare_selected_formation(
@@ -100,6 +180,7 @@ def prepare_selected_formation(
     providers: Mapping[str, FormationCandidatePlane] | None = None,
     selector: FormationSelector = select_all_registered,
     purpose: str = "memory_formation",
+    before_private_assembly: Callable[[Callable[[], None]], None] | None = None,
 ) -> PreparedSelectedFormation:
     """Route candidates, open authorized originals, and seal a read receipt."""
     if (request.scope != registry.scope or registry.scope != objects.scope
@@ -119,9 +200,51 @@ def prepare_selected_formation(
         custody=RegisteredEncryptedFormationCustody(registry=registry, objects=objects),
         permits=permits, purpose=purpose,
     )
+    if before_private_assembly is not None and not callable(before_private_assembly):
+        raise TypeError("formation before-private assembly gate must be callable")
+    resolved = {}
+    original_resolve, original_read = store.resolve, store.read
+    current = None
+    def resolve(ref_id):
+        ref = original_resolve(ref_id)
+        if ref is not None:
+            source = store._lookup(ref_id)
+            if source is None or source.evidence != ref:
+                raise PermissionError("formation upstream source changed during metadata resolution")
+            if ref_id in resolved and resolved[ref_id] != source:
+                raise PermissionError("formation upstream registration changed")
+            resolved[ref_id] = source
+        return ref
+    def read(ref):
+        nonlocal current
+        if current is None:
+            # The actual upstream assembler reaches its first read only after
+            # routing, selector validation and complete selected parent closure.
+            # Use that real boundary rather than run a second selector/planner.
+            current = _CurrentFormationMetadata(store=store, objects=objects, resolved=resolved)
+            from .personal_artifact_custody import _SourceAuthorizedObjectReads
+            store.custody = RegisteredEncryptedFormationCustody(registry=registry,
+                objects=_SourceAuthorizedObjectReads(objects, current.permits_private_read))
+            if before_private_assembly is not None:
+                if before_private_assembly(current.metadata_current) is not None:
+                    raise PermissionError("formation before-private assembly gate refused")
+            current.metadata_current()
+        source = current.sources.get(ref.ref_id)
+        if source is None or source.evidence != ref:
+            raise PermissionError("formation read is outside actual upstream resolved closure")
+        current.metadata_current()
+        material = original_read(ref)
+        current.metadata_current()
+        return material
+    store.resolve, store.read = resolve, read
     assembled = assemble_formation_context(routed, store, selector)
+    if current is None:
+        # The upstream contract requires nonempty mandatory experience, hence
+        # at least one real read. Do not return an unqualified empty preparation.
+        raise PermissionError("formation assembly produced no actual private source read")
     receipt = record_formation_read(assembled, store)
-    return PreparedSelectedFormation(routed, assembled, receipt, store)
+    current.metadata_current()
+    return PreparedSelectedFormation(routed, assembled, receipt, store, current.metadata_current)
 
 
 def record_selected_formation_delivery(
