@@ -86,7 +86,7 @@ class SelectedNativeReadSessionIntegrationTest(unittest.TestCase):
                                       hashlib.sha256(_context_bytes(judgment.context)).hexdigest())
         request = SimpleNamespace(scope=f.scope, case_id="case-one", phase="after", context=judgment.context,
             question=task, authorized_history_sha256=history.digest(), authorized_event_ids=history.event_ids,
-            plan=SimpleNamespace(digest=lambda: "9" * 64,
+            plan=SimpleNamespace(preregistration_sha256=None, digest=lambda: "9" * 64,
                 question_sha256_by_case={"case-one": hashlib.sha256(task).hexdigest()}), binding=SimpleNamespace(
                 producer_component="fictional-supplied-output-adapter",
                 model_artifact_sha256=judgment.execution.invocation.artifact.checkpoint_sha256))

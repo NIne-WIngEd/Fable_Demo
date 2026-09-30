@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import faulthandler
 from pathlib import Path
 import sys
 import time
@@ -27,17 +26,15 @@ MODULE_SHARDS = {
 class LiveIntegrationResult(unittest.TextTestResult):
     """Retain failed-case diagnostics even if a later case hits the job cap.
 
-    Only fixed test identities, timings, and Python stacks are added. The stack
-    dump has no local values and imposes no new product or test time budget.
+    Only fixed test identities and timings are added. Native runtimes must not
+    be interrupted by asynchronous stack dumping while their tests execute.
     """
 
     def startTest(self, test):
         self._started_at = time.monotonic()
         super().startTest(test)
-        faulthandler.dump_traceback_later(120, repeat=True, file=sys.stderr)
 
     def stopTest(self, test):
-        faulthandler.cancel_dump_traceback_later()
         elapsed = time.monotonic() - self._started_at
         self.stream.writeln(f"[completed {test.id()} in {elapsed:.3f}s]")
         self.stream.flush()

@@ -19,10 +19,24 @@ and writer-fault cases were unreached. Neither group has a qualifying receipt.
 The preceding native job reached the one-hour job cap before the final unittest
 summary. Two lineage cases passed, but earlier native and pilot errors had no
 final traceback, and the passive-reader and writer-fault cases were unreached.
-The next runner prints each failure immediately, completed-case durations, and
-stack-only diagnostics for slow cases. Chronology prints fixed-label milestones
+The next runner prints each failure immediately and completed-case durations.
+Chronology prints fixed-label milestones
 only after their actual stages succeed; these diagnostics contain no host
 payloads or model outputs.
+
+The first split run,
+[36753308831](https://github.com/NIne-WIngEd/FloRA/actions/runs/36753308831)
+at `3b1183534eef8894db6f66a4e65d55953a838a60`, exposed crashes coinciding with
+the new harness diagnostic: native, transport, lineage, core and both history
+jobs exited with segmentation faults during timed stack dumps. Those exits
+establish no result for their unfinished cases or response budgets. Chronology
+completed cohort, recipe, anchor and original-input registration, but published
+no BEFORE capture and reached no later seal, update or final binding. Timed
+stack dumping has been removed for the retry; causation remains unproven.
+the selected backends were still healthy after the transport crash. The actual
+PGconn watchdog case passed in 0.866 seconds. The passive-reader case stopped
+on a missing `preregistration_sha256` field in its explicitly unanchored fixture;
+that fixture now supplies `None`. Fresh final-authority checks remain intact.
 
 Controlled call-count profiles expose repeated immutable data reopening and
 metadata traversal inside nested fresh authority checks. Repairs authenticate
