@@ -173,8 +173,11 @@ class OneGuardSelectedMetadata:
                 expected[(tag, item.key)] = item
         # A bounded count also detects ambiguous valid-time versions. The
         # statement's single XTDB basis covers all terms, including heads.
-        sql = "SELECT * FROM (" + " UNION ALL ".join(terms) + ") AS flora_current_metadata_fence LIMIT %s::bigint"
-        parameters.append(self.maximum_rows + 1)
+        # XTDB's LIMIT grammar rejects a cast parameter. Only this validated
+        # finite cardinality is rendered as a literal; every data value stays
+        # bound. One extra row detects an ambiguous sampled immutable record.
+        row_limit = len(expected) + 1
+        sql = "SELECT * FROM (" + " UNION ALL ".join(terms) + f") AS flora_current_metadata_fence LIMIT {row_limit}"
         values = _rows(self.connection.execute(sql, tuple(parameters)))
         if len(values) != len(expected):
             raise PermissionError("terminal current metadata fence has missing/ambiguous rows")

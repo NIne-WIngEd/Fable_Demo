@@ -4,6 +4,22 @@ This note is the takeover point after provisioning the first Docker-capable succ
 
 ## Expanded gate status — 2026-09-30 UTC
 
+The follow-up [run 36738250266](https://github.com/NIne-WIngEd/FloRA/actions/runs/36738250266)
+at `432e7dbdd08cb0b76864c0351476302b0cf8de4c` passed all 523 component tests.
+Its core group passed 26 of 30 physical tests; four failed because XTDB rejects
+a cast parameter in the terminal permission query's `LIMIT` clause. The history
+group passed the coordinator gate; the other three tests stopped at initial
+BEFORE capture on the same query error. They did not establish the later
+capture/update/final-seal timeline. Core restart probes were skipped.
+
+The repair renders only the validated sampled-row count plus one as an integer
+literal. Every source value remains bound, and the terminal statement still
+checks the complete current metadata together. A separate reproduced native
+watchdog exit race is fixed by observing expiry under the watchdog lock before
+disarming it. Focused regressions pass; these repairs require a new physical
+run. Native results and the 60-second response budget remain unqualified until
+their exact-commit gate completes.
+
 The historical receipts below qualify their own earlier checkpoints. They do
 not qualify the expanded two-stage experiment workflow. Run
 [36660341118](https://github.com/NIne-WIngEd/FloRA/actions/runs/36660341118)

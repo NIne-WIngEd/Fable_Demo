@@ -67,6 +67,36 @@ class NativeWriterGuardTest(unittest.TestCase):
         self.assertEqual(driver.closes, [])
         self.assertIsNone(guard._active)
 
+    def test_watchdog_expiring_before_exit_lock_retires_owner_and_raises(self):
+        driver, guard = self.make(allowance=500)
+        owner = threading.get_ident()
+        with self.assertRaisesRegex(TimeoutError, "operation deadline"):
+            with guard.operation(remaining_seconds=1) as lease:
+                condition = lease._condition
+                case = self
+                class YieldBeforeExitLock:
+                    def __enter__(self):
+                        if threading.get_ident() == owner:
+                            # Model owner preemption immediately before the
+                            # exit lock, while the actual socket watchdog runs.
+                            lease._thread.join(1)
+                            case.assertFalse(lease._thread.is_alive())
+                            case.assertTrue(lease._expired)
+                        return condition.__enter__()
+                    def __exit__(self, *args):
+                        return condition.__exit__(*args)
+                    def wait(self, *args):
+                        return condition.wait(*args)
+                    def notify_all(self):
+                        return condition.notify_all()
+                lease._condition = YieldBeforeExitLock()
+        self.assertEqual(driver.closes, [owner])
+        self.assertEqual(driver.socket.fileno(), -1)
+        self.assertIsNone(guard._active)
+        self.assertFalse(lease._thread.is_alive())
+        with self.assertRaises(PermissionError):
+            guard.operation(remaining_seconds=1)
+
     def test_task_remaining_time_caps_larger_frozen_writer_allowance(self):
         driver, guard = self.make(allowance=1000)
         started = time.monotonic()

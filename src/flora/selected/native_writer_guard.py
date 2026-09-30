@@ -222,8 +222,11 @@ class _NativeWriterLease:
             raise TimeoutError("native writer operation deadline expired")
 
     def __exit__(self, kind, value, traceback):
-        expired = self._expired or time.monotonic() >= self.deadline
         with self._condition:
+            # Disarming and observing expiry share the watchdog's lock. A
+            # preempted owner must still retire if the watchdog expired before
+            # it could disarm the retained socket.
+            expired = self._expired or time.monotonic() >= self.deadline
             self._closing = True
             self._condition.notify_all()
         self._thread.join(self.guard.configuration.watchdog_cleanup_time_ms / 1000)

@@ -86,6 +86,14 @@ artifact. Missing or mismatched producer semantics block the ablation. The
 qualified phase lineage rechecks this proof on each context qualification;
 FloRA supplies no implementation that invents an exclusion.
 
+`excluded_update_event_ids` names the intervention's original input sources
+whose influence is withheld, not its later execution-receipt markers. A prepared
+correction can exist before the anchor; its actual application still requires
+the canonical post-seal update gate and separately qualified execution receipt.
+The external exclusion qualifier must verify that same anchored registered
+update against the exact retained BEFORE artifact and named input exclusions.
+Canonical source existence alone does not prove these producer semantics.
+
 For preregistered after-ablation capture, custody derives a concrete selected
 view with the exact same-case before-full personality artifact and its actual
 historical checkpoint/producer port. The after Claim, approved state and MFM
