@@ -6,6 +6,9 @@ on:
     paths:
       - scripts/profile_selected_chronology_boundaries.py
       - .github/workflows/chronology-profile.yml
+      - src/flora/selected/formation_policy.py
+      - src/flora/selected/formation_registry.py
+      - src/flora/selected/comparison_custody.py
 
 jobs:
   diagnostic-chronology:

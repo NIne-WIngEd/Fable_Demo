@@ -72,8 +72,11 @@ The artifact contains only source hashes, fixed metadata/tags, clocks and counts
 ## Optional real-engine workflow
 
 `.github/workflows/chronology-profile.yml` supports manual dispatch and pushes
-affecting the new driver or this new workflow through its path filters, including
-pushes that also change other files.
+affecting the driver, this workflow or the measured permission/source/comparison
+metadata modules through its path filters, including pushes that also change
+other files. The measured-module filters were added after the first actual
+aggregate identified repeated permission metadata work, so subsequent repairs
+receive a new exact-commit diagnostic without changing the original case.
 It uses the existing selected-service Compose file, Python 3.12 and the same
 A.L.I.C.E. pin `4f287a488bc908bd04f99255ee01b794bacba50b`. Its diagnostic step
 has `continue-on-error: true`; a green diagnostic workflow does not replace an

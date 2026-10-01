@@ -203,18 +203,25 @@ def _action_codec_current():
                     and type(current.get("__slotnames__")) is list
                     and not current["__slotnames__"]):
                 return False
-        ignored = {"_key", "_fetch"} if cls is _NATIVE_ACTION_POLICY else ()
-        if any(current.get(name) is not value for name, value in fields if name not in ignored):
-            return False
+        for name, value in fields:
+            if cls is _NATIVE_ACTION_POLICY and name in ("_key", "_fetch"):
+                continue
+            if current.get(name) is not value:
+                return False
     for function, code, defaults, keywords, cells in functions:
         current_keywords = function.__kwdefaults__ or {}
         if (function.__code__ is not code or function.__defaults__ is not defaults
-                or len(current_keywords) != len(keywords)
-                or any(current_keywords.get(name) is not value for name, value in keywords)
-                or len(function.__closure__ or ()) != len(cells)
-                or any(cell.cell_contents is not value for cell, value in
-                       zip(function.__closure__ or (), cells))):
+                or len(current_keywords) != len(keywords)):
             return False
+        for name, value in keywords:
+            if current_keywords.get(name) is not value:
+                return False
+        closure = function.__closure__ or ()
+        if len(closure) != len(cells):
+            return False
+        for cell, value in zip(closure, cells):
+            if cell.cell_contents is not value:
+                return False
     for namespace, name, value, contents in bindings:
         if namespace.get(name) is not value:
             return False
@@ -225,8 +232,11 @@ def _action_codec_current():
             return False
     for instance, fields in instances:
         current = vars(instance)
-        if len(current) != len(fields) or any(current.get(name) is not value for name, value in fields):
+        if len(current) != len(fields):
             return False
+        for name, value in fields:
+            if current.get(name) is not value:
+                return False
     return True
 
 
