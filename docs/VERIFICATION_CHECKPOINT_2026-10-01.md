@@ -336,3 +336,19 @@ Personality and MFM remain independent workstreams. No substitute, training,
 download, semantic score or builder transfer is produced here. Original
 **10,000/60,000 ms** response budgets and **60-minute** ordinary job caps remain
 unchanged. This additive build does not yet qualify a latency improvement.
+
+### Publication and physical gate
+
+- Runtime publication: `479e61d67ec5e610e7ed15401e7b81d517403e4c`, tree
+  `e3594bd0f5998d417089bc3c518294c62bb7b063`. All 11 changed paths and local
+  blob hashes were verified against the complete GitHub trees before publication.
+- [Ordinary selected-engine CI](https://github.com/NIne-WIngEd/FloRA/actions/runs/36815981435)
+  is running at that exact commit: contracts and all 12 integration shards.
+  No completed result is inferred from a running job.
+- The existing [optional chronology diagnostic](https://github.com/NIne-WIngEd/FloRA/actions/runs/36815981471)
+  also started automatically. It is not ordinary qualification and supplies no
+  model or latency result. No extra diagnostic or microbenchmark was dispatched.
+
+Next: inspect the six actual-engine source/closure receipts, then adapt context
+and history boundaries to a deliberately chosen integrity domain. The new
+resolver is not silently inserted into the old full-history consumers.
