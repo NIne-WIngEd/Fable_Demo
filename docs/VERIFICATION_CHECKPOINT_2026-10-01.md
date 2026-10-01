@@ -352,3 +352,86 @@ unchanged. This additive build does not yet qualify a latency improvement.
 Next: inspect the six actual-engine source/closure receipts, then adapt context
 and history boundaries to a deliberately chosen integrity domain. The new
 resolver is not silently inserted into the old full-history consumers.
+
+### Completed source-proof receipts and consumer follow-up
+
+These receipts belong to runtime `479e61d67ec5e610e7ed15401e7b81d517403e4c`
+in [ordinary run 36815981435](https://github.com/NIne-WIngEd/FloRA/actions/runs/36815981435).
+
+- Core passed **34/34 cases**, suite **933.763 s**. All six new exact-source
+  cases passed on actual XTDB/Kurrent: persisted locator and reopen, absent or
+  changed coordinates/digest/time, independently false locator, physical
+  deletion/reappend, current parent withdrawal, and parent withdrawal during
+  the second physical pass. These are infrastructure checks using fictional
+  sources and signed fictional-owner actions; case duration is not response
+  latency.
+- Contracts failed at a stale discovery assertion: it expected **43** cases
+  after six were added, while actual discovery and scheduling included **49**.
+  The preceding focused selection missed this inventory test. The repair checks
+  every discovered identity exactly once, retains all six independently routed
+  cases, and explicitly requires the six new physical cases in core. Its five
+  contract cases pass locally. This does not retroactively qualify the failed
+  contracts job.
+- Transport still failed the **10,000 ms** budget: BEFORE **16,531 ms**, AFTER
+  **20,932 ms**, both `budget_exceeded`. The other provider case passed; the
+  two-case suite took **152.970 s**.
+- Native comparison still failed: both responses timed out under the unchanged
+  **60,000 ms** budget; suite **215.083 s**. No latency repair is established.
+- Remaining completed receipts: readers **2/2**, suite **101.028 s**; lineage
+  **2/2**, suite **2,042.644 s**; before/tail **1/1**, **1,685.316 s**;
+  outcome/audit **1/1**, **2,199.097 s**; typed phase **1/1**, **3,271.409 s**;
+  withdrawal **1/1**, **140.123 s**; retained route **1/1**, **2,285.229 s**;
+  native route **1/1**, **2,235.117 s**. These are whole-case infrastructure
+  timings, not paired-response or learned-behavior qualification.
+- History coordinator passed in **52.064 s**. Preregistration registered its
+  original inputs in **45.790 s**, then completed no first BEFORE capture before
+  the unchanged one-hour job cap cancelled the job. No chronology, update or
+  final seal is qualified.
+- All ordinary results are accounted for: **46/49 physical cases passed**,
+  **two failed their unchanged response budgets**, and **one did not complete
+  before the unchanged job cap**. The separate contracts job failed the stale
+  inventory assertion. Green source/lineage/pilot jobs do not erase those gaps.
+
+Consumer integration now targets explicitly selected history and context
+domains. Whole-stream readers remain the default. Held-history authentication
+also captures domain/cap and exact target-reader bindings, so they cannot be
+changed during later reuse. No response budget, job cap or scientific original
+input is changed to qualify this work.
+
+### Selected consumer build and final local verification
+
+- Added explicit, capped `selected-history-metadata-v1` and
+  `selected-current-context-v1` consumer domains. Defaults retain their
+  whole-stream behavior. [Consumer contract](SELECTED_CONTEXT_AND_HISTORY.md).
+- Selected history preserves the exact ordered original inputs and their
+  parents, physical manifest and live evaluation rights. Joint history and
+  external-disclosure checks finish on the same current metadata fence.
+  Initial authenticated history still performs its actual custody checks.
+- Selected context uses exact current Claims and governed state without
+  episodes, retains the actual native phase gate, and protects private reads
+  before and after access. Episode-bearing state and custom authority
+  overrides reject this explicit domain before private I/O. Vector/graph
+  nomination is not yet integrated into this slice.
+- Independent review reproduced late-callback and held-content mutation
+  windows. The selected terminal path now performs only pure binding and
+  native-value comparisons after its final metadata observation; regression
+  cases reject stale authority and mutated held content. This review did not
+  establish a vulnerability in the previously published standalone closure.
+- Final focused verification passed **246 tests across 16 modules**, with no
+  failures or errors; summed test-suite duration **127.908 s**. Separate module
+  processes avoid integration-discovery import collisions. This duration is
+  not response latency, and controlled SDK/SQL fixtures are not actual-engine
+  qualification.
+- Integration discovery assigns **53 cases** exactly once to the original
+  12 shards; core contains **38**. Four new history cases cover authenticated
+  initial custody followed by metadata-only verification, terminal withdrawal,
+  original-input phase exclusion, and the deliberate difference between
+  selected-record and unrelated-tail integrity. Discovery is not execution.
+- All **93 builder procedure traces** validate. The two new traces record
+  consumer construction and terminal review in FloRA only. They are partial
+  infrastructure procedures, not learned models or proven builder transfer.
+
+Personality and MFM were not built, trained, downloaded or substituted. Alice
+remains unchanged. Response limits, scientific inputs and original workflow
+caps remain unchanged. Publication and ordinary physical receipts for this
+consumer build are still pending; **latency improvement remains unverified**.

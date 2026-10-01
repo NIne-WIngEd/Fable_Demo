@@ -19,6 +19,34 @@ def install_current_metadata_batch(connection):
     if getattr(connection, "_flora_metadata_batch_recorder", False):
         return
     def execute(sql, parameters):
+        if sql.startswith("SELECT * FROM (SELECT '") and ") AS flora_selected_context_fence LIMIT" in sql:
+            connection.calls.append((sql, parameters))
+            clauses = re.findall(r"SELECT '([^']+)' AS fence_kind, _id, scope_digest, "
+                r"(\w+) AS fence_sha256, (.*?) FROM (\w+)( FOR VALID_TIME ALL)? "
+                r"WHERE scope_digest = %s AND _id = %s::text", sql)
+            limit = re.search(r" AS flora_selected_context_fence LIMIT ([1-9][0-9]*)$", sql)
+            if not clauses or limit is None or len(parameters) != 2 * len(clauses):
+                raise AssertionError("unrecognized selected context terminal SQL shape")
+            if int(limit.group(1)) != len(clauses) + 1:
+                raise AssertionError("selected context terminal SQL row cap changed")
+            values = []
+            for index, (tag, digest, projections, table, temporal) in enumerate(clauses):
+                scope, key = parameters[2 * index:2 * index + 2]
+                row = connection.rows.get((table, key))
+                if row is None or row["scope_digest"] != scope:
+                    continue
+                projected = {"fence_kind": tag, "_id": row["_id"], "scope_digest": row["scope_digest"],
+                             "fence_sha256": row[digest]}
+                for expression in projections.split(", "):
+                    null = re.fullmatch(r"CAST\(NULL AS (?:TEXT|BIGINT)\) AS (\w+)", expression)
+                    if null:
+                        projected[null.group(1)] = None
+                    elif re.fullmatch(r"\w+", expression):
+                        projected[expression] = row[expression]
+                    else:
+                        raise AssertionError("unrecognized selected context terminal projection")
+                values.append(projected)
+            return _Cursor(deepcopy(values[:int(limit.group(1))]))
         if not sql.startswith("SELECT * FROM (SELECT '") or not any(
                 f") AS flora_current_metadata_{kind} LIMIT" in sql for kind in ("fence", "sample")):
             return original(sql, parameters)

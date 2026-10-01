@@ -369,9 +369,16 @@ class SelectedNativeReadServices:
         does not pretend a cached receipt is a historical Claim/state authority.
         """
         lineage, runtime = session.lineage, session.runtime
-        if (history.scope != runtime.scope or lineage.history_authority.authorize_history(
+        initial_authority = lineage.history_authority
+        history_domain = getattr(initial_authority, "history_metadata_domain", None)
+        history_cap = getattr(initial_authority, "maximum_history_sources", None)
+        if (history.scope != runtime.scope or initial_authority.authorize_history(
                 case_id=entry.case_id, phase=entry.phase, history=history) is not True):
             raise PermissionError("native read lacks current independent phase authority")
+        if (lineage.history_authority is not initial_authority
+                or getattr(initial_authority, "history_metadata_domain", None) != history_domain
+                or getattr(initial_authority, "maximum_history_sources", None) != history_cap):
+            raise PermissionError("native phase history controller configuration changed during authentication")
         authority = lineage.history_authority
         if isinstance(authority, SelectedRunEvidencePolicy):
             # Its permission reader may be the very runtime policy we fence
@@ -380,34 +387,62 @@ class SelectedNativeReadServices:
             authority = copy(authority)
             authority.permissions = copy(runtime.source_policy)
             lineage.history_authority = authority
+        phase_registry, phase_log = runtime.sources, runtime.log
+        phase_permissions = getattr(authority, "permissions", None)
+        def phase_binding():
+            if (lineage.history_authority is not authority
+                    or type(getattr(authority, "history_metadata_domain", None)) is not type(history_domain)
+                    or getattr(authority, "history_metadata_domain", None) != history_domain
+                    or type(getattr(authority, "maximum_history_sources", None)) is not type(history_cap)
+                    or getattr(authority, "maximum_history_sources", None) != history_cap
+                    or getattr(authority, "permissions", None) is not phase_permissions
+                    or runtime.sources is not phase_registry or runtime.log is not phase_log):
+                raise PermissionError("native phase history controller configuration changed")
         def phase_now():
+            phase_binding()
             method = authority.authorize_history
             if isinstance(authority, SelectedRunEvidencePolicy):
                 method = authority.authorize_history_metadata
-            return method(case_id=entry.case_id, phase=entry.phase, history=history) is True
-        events = {event.event_id: event for event in runtime.log.replay()}
+            result = method(case_id=entry.case_id, phase=entry.phase, history=history) is True
+            phase_binding()
+            return result
         originals = {source.event.event_id: source.event for source in history.sources}
-        if any(events.get(event_id) != event or event.event_type in _INTERNAL_EVENT_TYPES
-               for event_id, event in originals.items()):
-            raise ValueError("native phase history changed or promoted internal control into originals")
-        def phase_member(event_id, seen=None):
-            event = events.get(event_id)
-            if event is None or event.scope != runtime.scope:
-                return False
-            if event.event_type not in _INTERNAL_EVENT_TYPES:
-                return event_id in originals
-            if event.event_type in {"comparison_artifact", "provider_attempt_artifact",
-                                    "phase_snapshot_artifact", "experiment_manifest_artifact"}:
-                return False
-            visited = set() if seen is None else seen
-            if event_id in visited:
-                return False
-            visited.add(event_id)
-            # Approval source closure is typed in allow_state/current_lineage;
-            # a signed approval may itself have no original parent edge.
-            if not event.parent_event_ids:
-                return event.event_type == "state_activation_approval"
-            return all(phase_member(parent, set(visited)) for parent in event.parent_event_ids)
+        selected_history = (isinstance(authority, SelectedRunEvidencePolicy)
+            and history_domain == "selected-history-metadata-v1")
+        if selected_history:
+            from .selected_history_fence import selected_phase_member
+            if any(event.event_type in _INTERNAL_EVENT_TYPES for event in originals.values()):
+                raise ValueError("native phase promoted internal control into originals")
+            def phase_member(event_id, seen=None):
+                phase_binding()
+                result = selected_phase_member(registry=phase_registry, log=phase_log,
+                    permissions=phase_permissions, originals=originals,
+                    maximum_sources=history_cap, event_id=event_id)
+                phase_binding()
+                return result
+        else:
+            events = {event.event_id: event for event in runtime.log.replay()}
+            if any(events.get(event_id) != event or event.event_type in _INTERNAL_EVENT_TYPES
+                   for event_id, event in originals.items()):
+                raise ValueError("native phase history changed or promoted internal control into originals")
+            def phase_member(event_id, seen=None):
+                event = events.get(event_id)
+                if event is None or event.scope != runtime.scope:
+                    return False
+                if event.event_type not in _INTERNAL_EVENT_TYPES:
+                    return event_id in originals
+                if event.event_type in {"comparison_artifact", "provider_attempt_artifact",
+                                        "phase_snapshot_artifact", "experiment_manifest_artifact"}:
+                    return False
+                visited = set() if seen is None else seen
+                if event_id in visited:
+                    return False
+                visited.add(event_id)
+                # Approval source closure is typed in allow_state/current_lineage;
+                # a signed approval may itself have no original parent edge.
+                if not event.parent_event_ids:
+                    return event.event_type == "state_activation_approval"
+                return all(phase_member(parent, set(visited)) for parent in event.parent_event_ids)
         # The initialized runtime may share these current original readers
         # with its actual final-seal controller or archive custody. Fence only
         # this model-context view; never replace those controllers' predicates.
@@ -481,6 +516,8 @@ class SelectedNativeReadServices:
             return (isinstance(actual, SelectedRunEvidencePolicy)
                     and isinstance(expected, SelectedRunEvidencePolicy)
                     and actual.run_id == expected.run_id
+                    and actual.history_metadata_domain == expected.history_metadata_domain
+                    and actual.maximum_history_sources == expected.maximum_history_sources
                     and actual.permissions is expected.permissions
                     and getattr(actual, "final_authority", None) is getattr(expected, "final_authority", None)
                     and actual.custody.connection is expected.custody.connection

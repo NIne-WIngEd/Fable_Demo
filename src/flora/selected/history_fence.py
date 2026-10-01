@@ -357,6 +357,11 @@ def verify_history_and_external_metadata(*, policy, case_id, phase, history,
     """
     if not supports_combined_history_metadata(policy):
         raise PermissionError("combined history guard requires genuine native delegates")
+    if policy.history_metadata_domain == "selected-history-metadata-v1":
+        from .selected_history_fence import verify_selected_history_metadata
+        return verify_selected_history_metadata(policy=policy, case_id=case_id,
+            phase=phase, history=history, source_purposes=((source_ids, purpose),),
+            final_current=final_current)
     def after_sources(sample):
         for event_id in source_ids:
             if sample.local_permissions.permits(sample.local_registry.lookup(event_id), purpose) is not True:

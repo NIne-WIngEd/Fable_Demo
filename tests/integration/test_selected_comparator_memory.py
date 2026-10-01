@@ -131,7 +131,13 @@ class SelectedComparatorIntegrationTest(unittest.TestCase):
                     for source in histories[("case", phase)].sources:
                         grant(source.event.event_id, purpose)
                     grant(custody.metadata("run", "history:case:" + phase).event_id, purpose)
-                evidence = SelectedRunEvidencePolicy(custody=custody, run_id="run", permissions=permissions)
+                # This ordinary 10-second gate deliberately qualifies selected
+                # held-history evidence. Whole-stream consumers remain covered
+                # by the other default-domain integration fixtures.
+                evidence = SelectedRunEvidencePolicy(custody=custody, run_id="run", permissions=permissions,
+                    history_metadata_domain="selected-history-metadata-v1", maximum_history_sources=32)
+                self.assertEqual(evidence.history_metadata_domain, "selected-history-metadata-v1")
+                self.assertEqual(evidence.maximum_history_sources, 32)
                 config, compiler, tokenizer = configuration(), FixtureCompiler(), FixtureByteCounter()
                 memory = QdrantOriginalMemory(custody=custody, run_id="run", configuration=config,
                     client=vectors, embeddings=FixtureEmbeddings(), tokenizer=tokenizer,

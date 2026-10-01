@@ -427,12 +427,16 @@ class SelectedCurrentContextTerminalFenceTest(unittest.TestCase):
             "validity_state": "current", "deletion_state": "active", "conflict_state": "none",
             "adjudication_state": "accepted", "envelope": envelope}
         relation = {"evidence_record_id": self.f.source_one.event_id, "target_record_id": version_id,
-            "target_record_type": "claim_version"}
+            "target_record_type": "claim_version", "relation_sha256": "c"*64}
         for table, identifier, record in ((claim_tables._CURRENT, claim_id, current),
                 (claim_tables._VERSIONS, version_id, version), (claim_tables._EVIDENCE, relation_id, relation)):
             key = claims._row_id(identifier)
             self.f.connection.rows[(table, key)] = {"_id": key, "scope_digest": claims.scope_digest,
                 "projection_sha256": current["projection_sha256"], "record_json": json.dumps(record)}
+            if table == claim_tables._VERSIONS:
+                self.f.connection.rows[(table, key)]["version_sha256"] = record["version_sha256"]
+            elif table == claim_tables._EVIDENCE:
+                self.f.connection.rows[(table, key)]["relation_sha256"] = record["relation_sha256"]
         return claims, claim_id, current
 
     def test_last_source_callback_quarantines_checked_claim_before_private_return(self):

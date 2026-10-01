@@ -154,11 +154,50 @@ class _ClosureMetadataSample(OneGuardSelectedMetadata):
 
     def __init__(self, *, binding_guard, **kwargs):
         self._closure_binding_guard = binding_guard
+        registry, permissions = kwargs["registry"], kwargs["permissions"]
+        self._selected_owner_bindings = tuple((name, owner) for name, owner in (
+            ("registry", registry), ("permissions", permissions),
+            ("claims", kwargs.get("claims")), ("comparison", kwargs.get("comparison")))
+            if owner is not None)
+        self._selected_scope_snapshot = _native_snapshot(registry.scope)
+        self._selected_connection = registry.connection
+        self._selected_namespace = registry.authority_namespace_id
+        self._selected_scope_digests = tuple((owner, owner.scope_digest)
+            for _, owner in self._selected_owner_bindings)
+        ports = {"registry": ("_fetch", "lookup", "raw_metadata", "raw_reference"),
+            "permissions": ("_fetch", "permits", "current_action", "_head", "_stored_action"),
+            "claims": ("_fetch_record", "load_current"),
+            "comparison": ("_key", "metadata")}
+        self._selected_reader_bindings = tuple(_ReaderBinding.capture(owner, port)
+            for name, owner in self._selected_owner_bindings for port in ports[name])
         super().__init__(**kwargs)
 
     def _bindings(self):
+        # The context subclass invokes this after its terminal statement too.
+        # The older generic guard calls scope.metadata_record()/JSON helpers;
+        # those are callbacks and must not run after selected rows were fenced.
         self._closure_binding_guard()
-        super()._bindings()
+        _require_native_contracts()
+        for reader in self._selected_reader_bindings:
+            reader.verify()
+        for name, owner in self._selected_owner_bindings:
+            if object.__getattribute__(self, name) is not owner:
+                raise PermissionError("selected metadata fence actual owner changed")
+            fields = object.__getattribute__(owner, "__dict__")
+            if (fields.get("connection") is not self._selected_connection
+                    or _native_snapshot(fields.get("scope")) != self._selected_scope_snapshot
+                    or type(fields.get("authority_namespace_id")) is not str
+                    or fields["authority_namespace_id"] != self._selected_namespace):
+                raise PermissionError("selected metadata fence actual scope/connection changed")
+            if name in ("permissions", "comparison") and fields.get("registry") is not self.registry:
+                raise PermissionError("selected metadata fence registered owner changed")
+        for owner, digest in self._selected_scope_digests:
+            fields = object.__getattribute__(owner, "__dict__")
+            if type(fields.get("scope_digest")) is not str or fields["scope_digest"] != digest:
+                raise PermissionError("selected metadata fence scope digest changed")
+        if (self.connection is not self._selected_connection
+                or type(self.namespace) is not str or self.namespace != self._selected_namespace):
+            raise PermissionError("selected metadata fence selected basis changed")
 
     def verify_final_current_rows(self):
         """One terminal basis, followed only by guarded primitive comparisons.

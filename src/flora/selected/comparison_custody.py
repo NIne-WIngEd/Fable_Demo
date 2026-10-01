@@ -107,6 +107,19 @@ class ComparisonArtifact:
         return self.record["event_id"]
 
 
+@dataclass(frozen=True)
+class SelectedComparisonArtifactMetadata:
+    """One exact registered artifact observation; never a private-read grant."""
+
+    artifact: ComparisonArtifact
+    commitment: object
+    committed: object
+    row_key: str
+    row_scope_digest: str
+    row_record_sha256: str
+    row_record_json: str
+
+
 class XTDBComparisonCustody:
     """Immutable artifacts and retryable event-before-registry placement.
 
@@ -221,6 +234,100 @@ class XTDBComparisonCustody:
                 or event.parent_event_ids != tuple(record["parent_event_ids"])):
             raise ValueError("comparison artifact differs from exact canonical Experience")
         return ComparisonArtifact(record)
+
+    def metadata_selected(self, run_id: str, artifact_id: str) -> SelectedComparisonArtifactMetadata | None:
+        """Read one artifact at its registered physical coordinates.
+
+        This explicit metadata domain does not inspect unrelated canonical
+        records. Existing ``metadata`` and custody/recovery readers retain
+        their whole-stream behavior. No original or artifact bytes are opened.
+        """
+        from .source_closure import (
+            _ReaderBinding, _native_snapshot, _require_native_contracts, _LOOKUP, _LOOKUP_CODE,
+        )
+        from .formation_registry import CanonicalSourceCommitment
+        if type(self) is not XTDBComparisonCustody or type(self.log) is not KurrentExperienceLog:
+            raise TypeError("selected artifact metadata requires its actual selected owners")
+        registry, log, objects, connection = self.registry, self.log, self.objects, self.connection
+        if (getattr(log.lookup_committed, "__func__", None) is not _LOOKUP
+                or getattr(log.lookup_committed, "__self__", None) is not log
+                or _LOOKUP.__code__ is not _LOOKUP_CODE):
+            raise TypeError("selected artifact metadata requires its native exact physical lookup")
+        scope, namespace, scope_digest = self.scope, self.authority_namespace_id, self.scope_digest
+        _require_native_contracts()
+        scope_signature = _native_snapshot(scope)
+        client, stream = log.client, log.stream
+        readers = tuple(_ReaderBinding.capture(owner, name) for owner, names in (
+            (self, ("_key", "metadata_selected")), (registry, ("lookup_commitment",)),
+            (log, ("lookup_committed", "replay", "replay_committed")),
+            (client, ("get_stream",)), (connection, ("execute",))) for name in names)
+        def binding():
+            _require_native_contracts()
+            for reader in readers:
+                reader.verify()
+            if (self.registry is not registry or self.log is not log or self.objects is not objects
+                    or self.connection is not connection or registry.connection is not connection
+                    or self.scope is not scope or self.authority_namespace_id != namespace
+                    or self.scope_digest != scope_digest or log.client is not client or log.stream != stream
+                    or _native_snapshot(self.scope) != scope_signature
+                    or _native_snapshot(registry.scope) != scope_signature
+                    or _native_snapshot(log.scope) != scope_signature
+                    or _native_snapshot(objects.scope) != scope_signature
+                    or registry.authority_namespace_id != namespace):
+                raise PermissionError("selected artifact metadata actual owner changed")
+        binding()
+        key = self._key(run_id, artifact_id)
+        binding()
+        rows = _rows(connection.execute(
+            f"SELECT * FROM {_ARTIFACTS} FOR VALID_TIME ALL WHERE _id = %s", (key,)))
+        binding()
+        if len(rows) > 1:
+            raise ValueError("selected artifact metadata has ambiguous immutable rows")
+        if not rows:
+            return None
+        row = rows[0]
+        if (type(row) is not dict or any(type(row.get(name)) is not str
+                for name in ("_id", "scope_digest", "record_sha256", "record_json"))):
+            raise ValueError("selected artifact metadata needs exact primitive row columns")
+        record = json.loads(row["record_json"])
+        if (row["_id"] != key or row["scope_digest"] != scope_digest
+                or record.get("schema") != "flora-comparison-artifact-v1"
+                or record["scope"] != scope.metadata_record()
+                or record["authority_namespace_id"] != namespace
+                or record["run_id"] != run_id or record["artifact_id"] != artifact_id
+                or record["record_sha256"] != row["record_sha256"]
+                or canonical_sha256({k: v for k, v in record.items() if k != "record_sha256"})
+                    != record["record_sha256"]):
+            raise ValueError("selected artifact immutable metadata changed")
+        binding()
+        commitment = registry.lookup_commitment(record["event_id"])
+        binding()
+        if type(commitment) is not CanonicalSourceCommitment:
+            raise ValueError("selected artifact lacks its exact registered commitment")
+        commitment.validate()
+        source = commitment.source
+        if (source.object_ref != record["object_id"]
+                or source.registration_sha256 != record["registration_sha256"]
+                or source.evidence.content_digest != record["content_sha256"]
+                or commitment.event_sha256 != record["event_sha256"]):
+            raise ValueError("selected artifact lacks exact registered raw custody")
+        entry = log.lookup_committed(event_id=record["event_id"],
+            event_sha256=commitment.event_sha256, stream_position=commitment.stream_position,
+            expected_recorded_at=commitment.recorded_at)
+        binding()
+        event = entry.event
+        if (event.event_type != "comparison_artifact"
+                or event.provenance.responsible_component != "comparison_custody"
+                or event.provenance.derivation_activity_id != "comparison:" + key
+                or event.payload_reference != record["object_id"]
+                or event.content_digest != record["content_sha256"]
+                or event.parent_event_ids != tuple(record["parent_event_ids"])
+                or event.parent_event_ids != source.evidence.parent_refs
+                or event.occurred_at != source.evidence.observed_at):
+            raise ValueError("selected artifact differs from exact physical Experience")
+        binding()
+        return SelectedComparisonArtifactMetadata(ComparisonArtifact(record), commitment, entry,
+            row["_id"], row["scope_digest"], row["record_sha256"], row["record_json"])
 
     def register_recorded(self, recorded: RecordedEvent) -> None:
         """Trusted custody binding for an already appended delivery/decision.
@@ -757,12 +864,24 @@ class SelectedRunEvidencePolicy:
 
     def __init__(self, *, custody: XTDBComparisonCustody, run_id: str,
                  permissions: XTDBFormationPermissionPolicy,
-                 native_lineage=None, final_authority=None):
+                 native_lineage=None, final_authority=None,
+                 history_metadata_domain: str = "whole-stream-history-metadata-v1",
+                 maximum_history_sources: int | None = None):
         _identity(run_id, "run_id")
         if (custody.scope != permissions.scope
                 or custody.authority_namespace_id != permissions.authority_namespace_id):
             raise ValueError("comparison evidence policy crosses scope or authority")
         self.custody, self.run_id, self.permissions = custody, run_id, permissions
+        if (type(history_metadata_domain) is not str
+                or history_metadata_domain not in {"whole-stream-history-metadata-v1", "selected-history-metadata-v1"}):
+            raise ValueError("unknown explicit history metadata domain")
+        if history_metadata_domain == "selected-history-metadata-v1":
+            if type(maximum_history_sources) is not int or maximum_history_sources < 2:
+                raise ValueError("selected history requires an explicit source cap including its manifest")
+        elif maximum_history_sources is not None:
+            raise ValueError("a selected history source cap requires its explicit domain")
+        self.history_metadata_domain = history_metadata_domain
+        self.maximum_history_sources = maximum_history_sources
         self.final_authority = final_authority
         if native_lineage is not None or final_authority is not None:
             custody.require_final_authority(run_id=run_id, final_authority=final_authority)
@@ -814,6 +933,12 @@ class SelectedRunEvidencePolicy:
         return actual
 
     def authorize_history_metadata(self, *, case_id: str, phase: str, history: HistorySnapshot) -> bool:
+        if self.history_metadata_domain == "selected-history-metadata-v1":
+            from .selected_history_fence import authorize_selected_history_metadata
+            return authorize_selected_history_metadata(policy=self, case_id=case_id,
+                phase=phase, history=history)
+        if self.history_metadata_domain != "whole-stream-history-metadata-v1" or self.maximum_history_sources is not None:
+            raise PermissionError("history metadata configuration changed")
         from .history_fence import authorize_history_metadata
         return authorize_history_metadata(policy=self, case_id=case_id, phase=phase, history=history)
 

@@ -11,15 +11,88 @@ from dataclasses import dataclass, field
 from copy import copy, deepcopy
 import hashlib
 import json
+from types import FunctionType
 from typing import Any, Callable
 
 from cognitive_kernel.canonical import canonical_json_bytes, canonical_sha256
-from .context import ContextPlan, LocalContext, StateRoute, assemble_context
+from .context import ContextPlan, LocalContext, LocalContextItem, StateRoute, assemble_context
 from .governed_development import (_version_from_record, _ROLLBACKS, _ROLLBACK_IDS,
                                   XTDBGovernedPersonalDevelopment)
 from .judgment_context import RegisteredJudgmentContextPolicy
 from .personal_state import _ACTIVE, _VERSIONS, activation_request
 from .source_native import _require_available, read_current_source_manifest
+
+
+_CONTEXT_LAYOUTS = {cls: tuple(cls.__dataclass_fields__) for cls in (
+    ContextPlan, LocalContext, LocalContextItem, StateRoute)}
+_CONTEXT_SHAPES = tuple((cls, tuple(vars(cls).items())) for cls in _CONTEXT_LAYOUTS)
+_CONTEXT_CODES = tuple((value, value.__code__) for _, shape in _CONTEXT_SHAPES
+                       for _, value in shape if type(value) is FunctionType)
+_CONTEXT_ID = id
+
+
+def _require_context_snapshot_contracts():
+    for name, function, code in _CONTEXT_FUNCTIONS:
+        if globals().get(name) is not function or function.__code__ is not code:
+            raise PermissionError("selected held-context snapshot helper changed")
+    if globals().get("_CONTEXT_ID") is not _CONTEXT_IDENTITY:
+        raise PermissionError("selected held-context identity helper changed")
+    for cls, shape in _CONTEXT_SHAPES:
+        current = vars(cls)
+        extra = "__slotnames__" not in dict(shape) and "__slotnames__" in current
+        if (len(current) != len(shape) + int(extra)
+                or any(current.get(name) is not value for name, value in shape)
+                or extra and (type(current["__slotnames__"]) is not list or current["__slotnames__"])):
+            raise PermissionError("selected held-context native contract changed")
+    if any(function.__code__ is not code for function, code in _CONTEXT_CODES):
+        raise PermissionError("selected held-context native contract code changed")
+
+
+def _context_snapshot_value(value, active):
+    cls = type(value)
+    if value is None:
+        return cls, value
+    if type(cls) is not type:
+        raise PermissionError("selected held context contains a custom metadata class")
+    if cls is str or cls is int or cls is bool or cls is float or cls is bytes:
+        return cls, value
+    if cls not in (dict, list, tuple) and cls not in _CONTEXT_LAYOUTS:
+        raise PermissionError("selected held context contains unsupported native metadata")
+    identity = _CONTEXT_ID(value)
+    if identity in active:
+        raise PermissionError("selected held context contains a metadata cycle")
+    active.add(identity)
+    try:
+        if cls is tuple or cls is list:
+            return cls, tuple(_context_snapshot_value(item, active) for item in value)
+        if cls is dict:
+            if any(type(key) is not str for key in value):
+                raise PermissionError("selected held context contains nonnative dictionary keys")
+            return cls, tuple((key, _context_snapshot_value(value[key], active)) for key in sorted(value))
+        fields = _CONTEXT_LAYOUTS[cls]
+        material = object.__getattribute__(value, "__dict__")
+        if (type(material) is not dict or any(type(key) is not str for key in material)
+                or set(material) != set(fields)):
+            raise PermissionError("selected held-context native fields changed")
+        return cls, tuple((name, _context_snapshot_value(material[name], active)) for name in fields)
+    finally:
+        active.remove(identity)
+
+
+def _native_context_snapshot(context):
+    """Immutable content observation, never a stored authorization decision."""
+    _require_context_snapshot_contracts()
+    if type(context) is not LocalContext:
+        raise PermissionError("selected held context lost its native material owner")
+    try:
+        return _context_snapshot_value(context, set())
+    except (RuntimeError, RecursionError) as error:
+        raise PermissionError("selected held-context metadata changed during its snapshot") from error
+
+
+_CONTEXT_IDENTITY = _CONTEXT_ID
+_CONTEXT_FUNCTIONS = tuple((function.__name__, function, function.__code__) for function in (
+    _require_context_snapshot_contracts, _context_snapshot_value, _native_context_snapshot))
 
 
 @dataclass(frozen=True)
@@ -92,6 +165,10 @@ def _invoke_guard(guard):
 
 def _binding_guard(*, claims, state, log, objects, policy, purpose):
     """Keep exact registered services/configuration live, never an allow result."""
+    from .selected_context import SelectedContextLogView
+    if type(log) is SelectedContextLogView:
+        return _selected_binding_guard(claims=claims, state=state, log=log,
+            objects=objects, policy=policy, purpose=purpose)
     registry, permissions, episodes = policy.registry, policy.permissions, state.episodes
     scope, namespace = claims.scope, claims.authority_namespace_id
     scope_record = canonical_json_bytes(scope.metadata_record())
@@ -110,6 +187,69 @@ def _binding_guard(*, claims, state, log, objects, policy, purpose):
         if episodes is not None and (episodes.registry is not registry or episodes.policy is not permissions
                 or episodes.scope != scope or episodes.authority_namespace_id != namespace):
             raise PermissionError("current registered episode authority binding changed")
+    current()
+    return current
+
+
+def _selected_binding_guard(*, claims, state, log, objects, policy, purpose):
+    """Pure selected-domain owner checks after terminal metadata observation.
+
+    Native contract snapshots bypass metadata_record and JSON helpers. Reader
+    bindings reject getter/field replacement before direct dictionary reads.
+    Neither an external phase callback nor an authority predicate runs here.
+    """
+    from .source_closure import _ReaderBinding, _native_snapshot, _require_native_contracts
+    native_guard, snapshot = _require_native_contracts, _native_snapshot
+    guard_code, snapshot_code = native_guard.__code__, snapshot.__code__
+    registry, permissions, episodes = policy.registry, policy.permissions, state.episodes
+    scope, namespace = claims.scope, claims.authority_namespace_id
+    native_guard()
+    scope_record = snapshot(scope)
+    if type(namespace) is not str or type(purpose) is not str:
+        raise TypeError("selected current context needs native authority identifiers")
+    if type(policy.purpose) is not str or policy.purpose != purpose:
+        raise PermissionError("selected current-context purpose binding changed")
+    owner_fields = (
+        (claims, ("scope", "authority_namespace_id", "connection")),
+        (state, ("scope", "authority_namespace_id", "connection", "registry", "policy", "episodes")),
+        (log, ("scope", "resolver", "sources", "purpose", "_original", "_policy_binding_guard")),
+        (objects, ("scope",)),
+        (policy, ("claims", "state", "log", "registry", "permissions", "purpose")),
+        (registry, ("scope", "authority_namespace_id", "connection")),
+        (permissions, ("scope", "authority_namespace_id", "connection", "registry")))
+    if episodes is not None:
+        owner_fields += ((episodes, ("scope", "authority_namespace_id", "registry", "policy")),)
+    readers = tuple(_ReaderBinding.capture(owner, name) for owner, names in owner_fields for name in names)
+
+    def current():
+        if native_guard.__code__ is not guard_code or snapshot.__code__ is not snapshot_code:
+            raise PermissionError("selected current-context native snapshot helper changed")
+        native_guard()
+        for reader in readers:
+            reader.verify()
+        fields = {id(owner): object.__getattribute__(owner, "__dict__") for owner, _ in owner_fields}
+        policy_fields, state_fields = fields[id(policy)], fields[id(state)]
+        registry_fields, permission_fields = fields[id(registry)], fields[id(permissions)]
+        if (policy_fields.get("claims") is not claims or policy_fields.get("state") is not state
+                or policy_fields.get("log") is not log or policy_fields.get("registry") is not registry
+                or policy_fields.get("permissions") is not permissions
+                or state_fields.get("registry") is not registry or state_fields.get("policy") is not permissions
+                or state_fields.get("episodes") is not episodes or permission_fields.get("registry") is not registry):
+            raise PermissionError("selected current-context actual owner changed")
+        for owner in (claims, state, log, objects, registry, permissions):
+            if snapshot(fields[id(owner)]["scope"]) != scope_record:
+                raise PermissionError("selected current-context native scope changed")
+        for owner in (claims, state, registry, permissions):
+            value = fields[id(owner)]["authority_namespace_id"]
+            if type(value) is not str or value != namespace:
+                raise PermissionError("selected current-context native authority changed")
+        if episodes is not None:
+            episode_fields = fields[id(episodes)]
+            if (episode_fields.get("registry") is not registry or episode_fields.get("policy") is not permissions
+                    or snapshot(episode_fields["scope"]) != scope_record
+                    or type(episode_fields.get("authority_namespace_id")) is not str
+                    or episode_fields["authority_namespace_id"] != namespace):
+                raise PermissionError("selected current-context actual episode owner changed")
     current()
     return current
 
@@ -321,6 +461,9 @@ class PreparedCurrentContext:
         self.source_authorities = source_snapshots
         self.episode_authorities = episode_snapshots
         self._context_record = canonical_json_bytes(context.receipt_record())
+        from .selected_context import SelectedContextLogView
+        self._selected_context_snapshot = (_native_context_snapshot(context)
+            if type(log) is SelectedContextLogView else None)
         self._bindings_current = _binding_guard(claims=claims, state=state, log=log,
             objects=objects, policy=policy, purpose=context.plan.purpose)
 
@@ -337,6 +480,8 @@ class PreparedCurrentContext:
         controllers = tuple(getattr(self, name) for name in
             ("claims", "state", "log", "objects", "references", "policy"))
         phase_guard, actual_bindings = self.authority_guard, self._bindings_current
+        selected_context_snapshot = self._selected_context_snapshot
+        context_snapshot_reader, context_snapshot_code = _native_context_snapshot, _native_context_snapshot.__code__
         methods = [(self.policy, name, getattr(self.policy, name))
             for name in ("allow_event", "allow_claim", "allow_state")]
         methods += [(self.log, name, getattr(self.log, name, None))
@@ -345,9 +490,15 @@ class PreparedCurrentContext:
             if (any(getattr(self, name) is not value for name, value in zip(
                     ("claims", "state", "log", "objects", "references", "policy"), controllers))
                     or self.authority_guard != phase_guard or self._bindings_current != actual_bindings
+                    or selected_context_snapshot is not None and self._selected_context_snapshot is not selected_context_snapshot
                     or any(getattr(service, name, None) != method for service, name, method in methods)):
                 raise PermissionError("prepared current-context controller/callback binding changed")
             actual_bindings()
+            if selected_context_snapshot is not None:
+                if (_native_context_snapshot is not context_snapshot_reader
+                        or context_snapshot_reader.__code__ is not context_snapshot_code
+                        or context_snapshot_reader(self.context) != selected_context_snapshot):
+                    raise PermissionError("selected held private context changed during authority verification")
         bindings()
         self._phase()
         bindings()
@@ -359,9 +510,19 @@ class PreparedCurrentContext:
                 and (self.source_authorities or self.claim_authorities)):
             if self.claim_authorities and not isinstance(self.claims, XTDBClaimAuthority):
                 raise TypeError("selected current-context Claim fence needs actual selected Claim authority")
-            source_sample = OneGuardSelectedMetadata(registry=self.policy.registry,
-                permissions=self.policy.permissions,
-                claims=self.claims if isinstance(self.claims, XTDBClaimAuthority) else None)
+            from .selected_context import SelectedContextLogView
+            if type(self.log) is SelectedContextLogView:
+                from .selected_context_fence import SelectedContextMetadataSample
+                source_sample = SelectedContextMetadataSample(state=self.state,
+                    binding_guard=bindings, registry=self.policy.registry,
+                    permissions=self.policy.permissions,
+                    claims=self.claims if isinstance(self.claims, XTDBClaimAuthority) else None)
+                source_sample.observe_state_authorities(self.state, self.state_authorities)
+                source_sample.observe_claim_authorities(self.claim_authorities)
+            else:
+                source_sample = OneGuardSelectedMetadata(registry=self.policy.registry,
+                    permissions=self.policy.permissions,
+                    claims=self.claims if isinstance(self.claims, XTDBClaimAuthority) else None)
             if self.source_authorities:
                 source_sample.prime_sources(tuple(captured.event_id for captured in self.source_authorities),
                     self.context.plan.purpose)
@@ -553,8 +714,24 @@ def prepare_current_context(*, plan: ContextPlan, claims, state, log, objects, r
         claims=claims, state=state, log=log, policy=policy)
     baseline_material = _nomination_record(plan=plan, claims=sampled_claims, state=sampled_state,
         log=sampled_log, policy=sampled_policy)
+    assembled_context, assembled_snapshot = None, None
     def initial_barrier():
         phase()
+        source_sample = None
+        from .selected_context import SelectedContextLogView
+        if type(log) is SelectedContextLogView:
+            from .selected_context_fence import SelectedContextMetadataSample
+            source_sample = SelectedContextMetadataSample(state=state,
+                binding_guard=bindings_current, registry=policy.registry,
+                permissions=policy.permissions, claims=claims)
+            source_sample.prime_sources(tuple(key for key, _ in baseline_material["sources"]), plan.purpose)
+            for claim_id, expected in baseline_material["claims"]:
+                current = source_sample.local_claims.load_current(claim_id)
+                _require_available(current, claim_id)
+                if canonical_json_bytes(current) != canonical_json_bytes(expected["current"]):
+                    raise ValueError("selected initial Claim changed before terminal observation")
+            source_sample.observe_state_nominations(state, baseline_material["states"])
+            source_sample.observe_claim_nominations(baseline_material["claims"])
         # The one actual nomination pass already validated the complete graph.
         # Exact original readers keep every captured dependency current without
         # re-running that whole traversal on each nested private proof fetch.
@@ -563,6 +740,12 @@ def prepare_current_context(*, plan: ContextPlan, claims, state, log, objects, r
         phase()
         _nomination_source_fence(material=baseline_material, plan=plan, log=log, policy=policy)
         bindings_current()
+        if source_sample is not None:
+            source_sample.verify_final_current_rows()
+            bindings_current()
+            if (assembled_context is not None
+                    and _native_context_snapshot(assembled_context) != assembled_snapshot):
+                raise PermissionError("selected assembled private context changed after its terminal fence")
     initial_barrier()
     if before_private_assembly is not None:
         if not callable(before_private_assembly):
@@ -576,6 +759,9 @@ def prepare_current_context(*, plan: ContextPlan, claims, state, log, objects, r
     verifier = approval_verifier_factory(initial_barrier)
     context = assemble_context(plan=plan, claims=claims, state=state, log=log, objects=guarded,
         references=references, policy=policy, approval_verifier=verifier)
+    from .selected_context import SelectedContextLogView
+    if type(log) is SelectedContextLogView:
+        assembled_context, assembled_snapshot = context, _native_context_snapshot(context)
     initial_barrier()
     claims_by_id, states, episodes_by_id = {}, [], {}
     source_ids = set(context.source_event_ids)

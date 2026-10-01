@@ -170,13 +170,15 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
                 grant(f.registry.lookup(event_id), evaluation_purpose("native-run", case_id, phase))
             grant(f.registry.lookup(custody.metadata("native-run", f"history:{case_id}:{phase}").event_id),
                 evaluation_purpose("native-run", case_id, phase))
-        history_authority = SelectedRunEvidencePolicy(custody=custody, run_id="native-run", permissions=f.policy)
+        history_authority = SelectedRunEvidencePolicy(custody=custody, run_id="native-run", permissions=f.policy,
+            history_metadata_domain="selected-history-metadata-v1", maximum_history_sources=32)
         verifier = NativeJudgmentLineageVerifier(runtime=f.runtime, history_authority=history_authority,
             run_plan_sha256=plan.digest(), history_for=lambda case, phase: histories[(case, phase)],
             invocation_id_for=lambda request, result: "paired-native-" + request.phase,
             phase_receipt_for=lambda snapshot: _phase.fictional_phase_receipt(snapshot, f.qualification_key))
         policy = SelectedRunEvidencePolicy(custody=custody, run_id="native-run", permissions=f.policy,
-                                           native_lineage=verifier)
+            native_lineage=verifier, history_metadata_domain="selected-history-metadata-v1",
+            maximum_history_sources=32)
         judgments = {phase: f.runtime.judge(plan=context_plan, task=question, invocation_id="paired-native-" + phase)
             for phase in ("before", "after")}
         # Existing receipts are recovered; the passive callbacks cannot infer.
@@ -184,6 +186,13 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
             binding.adapter.invoke = lambda *_: self.fail("passive fixture invoked inference")
         bridge.lineage = verifier
         def bind_actual_history(runtime, lineage):
+            runtime.context_integrity_domain = "selected-current-context-v1"
+            runtime.maximum_context_sources = 128
+            # Runtime dispatch also checks the actual prepared log/policy
+            # domain. Setting this explicit finite route cannot fall back to
+            # the legacy context producer inside the 60-second passive gate.
+            self.assertEqual(runtime.context_integrity_domain, "selected-current-context-v1")
+            self.assertEqual(runtime.maximum_context_sources, 128)
             owner = copy(runtime.state_approval_verifier)
             owner.proofs = copy(owner.proofs)
             owner.proofs.custody = runtime.original_references.custody
@@ -193,7 +202,10 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
             owned.connection, owned.registry, owned.objects = runtime.sources.connection, runtime.sources, runtime.objects
             owned.raw_custody = type(custody.raw_custody)(registry=runtime.sources, objects=runtime.objects)
             lineage.history_authority = SelectedRunEvidencePolicy(custody=owned, run_id="native-run",
-                permissions=runtime.source_policy)
+                permissions=runtime.source_policy,
+                history_metadata_domain="selected-history-metadata-v1", maximum_history_sources=32)
+            self.assertEqual(lineage.history_authority.history_metadata_domain, "selected-history-metadata-v1")
+            self.assertEqual(lineage.history_authority.maximum_history_sources, 32)
         bridge.read_hook = bind_actual_history
         class PhaseMeter(_native.FixtureMeter):
             def payload(self, request):

@@ -82,8 +82,11 @@ reader rebinding and bounded closure. Real-engine cases live in
 backend execution. The verification checkpoint records completed receipts.
 
 This is infrastructure for a selective path, not a response-latency result.
-Consumer adoption still needs an explicit integrity contract, current Claim and
-state checks, private-read fences and original before/after exclusion tests.
+[Selected context and history consumers](SELECTED_CONTEXT_AND_HISTORY.md) add
+explicit opt-in domains, current Claim/state checks, private-read fences and
+original before/after exclusion. Their implementation and actual-engine
+qualification have separate receipts; the source proof alone does not qualify
+consumer behavior or response latency.
 Response budgets remain **10,000 ms** standalone and **60,000 ms** native;
 ordinary CI jobs retain their **60-minute** caps.
 

@@ -120,6 +120,22 @@ class AuthenticatedHistoryTest(unittest.TestCase):
         finally:
             self.h.policy.custody = original_custody
 
+    def test_integrity_domain_cap_and_target_reader_changes_invalidate_issued_history(self):
+        proof = self.issue()
+        for changes in (
+            {"history_metadata_domain": "selected-history-metadata-v1", "maximum_history_sources": 32},
+            {"maximum_history_sources": 32},
+        ):
+            with self.subTest(changes=changes), patch.multiple(self.h.policy, **changes):
+                with self.assertRaises(PermissionError):
+                    self.current(proof)
+        with patch.object(self.h.custody, "metadata_selected", return_value=None):
+            with self.assertRaises(PermissionError):
+                self.current(proof)
+        with patch.object(self.h.registry, "lookup_commitment", return_value=None):
+            with self.assertRaises(PermissionError):
+                self.current(proof)
+
     def test_revoked_authority_cannot_rebind_registered_services_to_stale_connection(self):
         from copy import deepcopy
         from test_governed_development import _SQLCalls

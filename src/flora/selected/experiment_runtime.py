@@ -50,6 +50,18 @@ def _hash(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _context_integrity_configuration(domain, maximum_sources):
+    if type(domain) is not str or domain not in {
+            "whole-stream-current-context-v1", "selected-current-context-v1"}:
+        raise ValueError("runtime context integrity domain must be explicit")
+    if domain == "selected-current-context-v1":
+        if type(maximum_sources) is not int or maximum_sources < 1:
+            raise ValueError("selected runtime context requires a positive source cap")
+    elif maximum_sources is not None:
+        raise ValueError("whole-stream runtime context does not use a selected source cap")
+    return domain, maximum_sources
+
+
 class _AuthorizedRuntimeBackend:
     def __init__(self, backend, revalidate):
         self.backend, self.revalidate = backend, revalidate
@@ -393,7 +405,10 @@ class FloRAExperimentRuntime:
                  state: XTDBGovernedPersonalDevelopment, log: KurrentExperienceLog,
                  objects: EncryptedObjectPlane, references: Any,
                  context_policy: ContextUsePolicy, state_approval_verifier: StateApprovalVerifier,
-                 clock: Callable[[], str], vector: Any = None, graph: Any = None):
+                 clock: Callable[[], str], vector: Any = None, graph: Any = None,
+                 context_integrity_domain: str = "whole-stream-current-context-v1",
+                 maximum_context_sources: int | None = None):
+        _context_integrity_configuration(context_integrity_domain, maximum_context_sources)
         if not isinstance(state, XTDBGovernedPersonalDevelopment):
             raise TypeError("live runtime requires XTDBGovernedPersonalDevelopment")
         from .judgment_context import RegisteredJudgmentContextPolicy
@@ -424,6 +439,8 @@ class FloRAExperimentRuntime:
         self.references = _RuntimeReferences(references, self.private)
         self.context_policy, self.state_approval_verifier = context_policy, state_approval_verifier
         self.clock, self.vector, self.graph = clock, vector, graph
+        self.context_integrity_domain = context_integrity_domain
+        self.maximum_context_sources = maximum_context_sources
 
     def _resolve(self, role: str, *, authority_guard: Callable[[], None] | None = None
                  ) -> tuple[RuntimeRoleBinding, RuntimeWiringManifest]:
@@ -790,6 +807,12 @@ class FloRAExperimentRuntime:
         return verifier
 
     def _context(self, plan: ContextPlan, *, authority_guard: Callable[[], None] | None = None) -> LocalContext:
+        domain, _ = _context_integrity_configuration(
+            self.context_integrity_domain, self.maximum_context_sources)
+        if domain == "selected-current-context-v1":
+            # This builds the same private context through the explicit finite
+            # evidence domain. It performs no model invocation or role change.
+            return self._prepare_current_context(plan, authority_guard=authority_guard).context
         objects = self.objects if authority_guard is None else _AuthorizedRuntimeReads(self.objects, authority_guard)
         if authority_guard is not None:
             authority_guard()
@@ -800,9 +823,37 @@ class FloRAExperimentRuntime:
     def _prepare_current_context(self, plan: ContextPlan, *,
                                  authority_guard: Callable[[], None] | None = None,
                                  before_private_assembly: Callable | None = None):
+        domain, maximum_sources = _context_integrity_configuration(
+            self.context_integrity_domain, self.maximum_context_sources)
         from .context_guard import prepare_current_context
         def approval_verifier_factory(metadata_guard):
             return self._guarded_state_verifier(_AuthorizedRuntimeReads(self.objects, metadata_guard))
+        if domain == "selected-current-context-v1":
+            from .selected_context import (SelectedContextLogView, SelectedJudgmentContextPolicy,
+                                           prepare_selected_current_context)
+            def selected_configuration_current():
+                if _context_integrity_configuration(self.context_integrity_domain,
+                        self.maximum_context_sources) != (domain, maximum_sources):
+                    raise PermissionError("runtime selected context domain changed during private read")
+            def selected_domain_guard():
+                selected_configuration_current()
+                if authority_guard is not None and authority_guard() is not None:
+                    raise PermissionError("independent context authority guard refused")
+                selected_configuration_current()
+            prepared = prepare_selected_current_context(plan=plan, claims=self.claims, state=self.state,
+                log=self.log, objects=self.objects, references=self.references, policy=self.context_policy,
+                maximum_sources=maximum_sources, approval_verifier_factory=approval_verifier_factory,
+                authority_guard=selected_domain_guard, before_private_assembly=before_private_assembly)
+            # The selected consumer already ran its joint terminal fence.
+            # Only pure configuration checks may follow it; another external
+            # callback could withdraw an earlier source or state after proof.
+            selected_configuration_current()
+            if (type(prepared.log) is not SelectedContextLogView
+                    or type(prepared.policy) is not SelectedJudgmentContextPolicy
+                    or prepared.log.domain != domain or prepared.policy.domain != domain):
+                raise PermissionError("runtime selected context did not use its declared evidence domain")
+            selected_configuration_current()
+            return prepared
         return prepare_current_context(plan=plan, claims=self.claims, state=self.state, log=self.log,
             objects=self.objects, references=self.references, policy=self.context_policy,
             approval_verifier_factory=approval_verifier_factory, authority_guard=authority_guard,

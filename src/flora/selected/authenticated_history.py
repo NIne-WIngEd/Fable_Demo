@@ -38,7 +38,8 @@ def _controllers(policy):
         authority.store, authority.store.comparison, authority.plan,
         authority.authorize_plan, authority.require_evaluation, authority.authorize_evaluation,
         authority.authorize_capture_custody, authority.authorize_attempt_capture)
-    return (policy.run_id, custody, permissions, registry, log, objects,
+    return (policy.run_id, policy.history_metadata_domain, policy.maximum_history_sources,
+        custody, permissions, registry, log, objects,
         custody.raw_custody, custody.connection, custody.scope,
         registry.connection, permissions.connection, permissions.registry,
         registry._fetch, permissions._fetch, custody.connection.execute,
@@ -48,8 +49,10 @@ def _controllers(policy):
         custody.authority_namespace_id, policy.final_authority, lineage,
         policy.require_final_authority, policy.authorize_history,
         policy.authorize_history_metadata, policy.authorize_context,
-        custody.metadata, custody.require_final_authority,
+        custody.metadata, custody.metadata_selected, custody.require_final_authority,
         custody.raw_custody.read, log.replay, log.replay_committed,
+        getattr(log, "lookup_committed", None),
+        getattr(registry, "lookup_commitment", None),
         registry.lookup, registry.raw_reference, registry.raw_metadata,
         permissions.current_action, permissions.permits,
         None if lineage is None else lineage.authorize_context, final_controllers)
