@@ -1,0 +1,356 @@
+{
+  "schema": "flora-latency-recalibration-source-inventory-v1",
+  "date_utc": "2026-10-01",
+  "scope": "read-only architecture and source audit; not exhaustive reading of every file",
+  "alice_branch_count": 80,
+  "alice_unique_head_count": 78,
+  "branch_page_2_empty": true,
+  "recursive_tree_inventory": {
+    "inspected_by": "alice_latency_architecture_audit",
+    "count": 80,
+    "all_untruncated": true
+  },
+  "source_pins": {
+    "alice_main": "8ea804aa25c3d1c5f46e9be5810d072ed0fadb4b",
+    "flora_main": "6711dfdd7c3c2b927c8401a576e78f6269398a30",
+    "fable_sleight_main": "1805a01c73575378246cac8cbbb72cd891e8528e",
+    "graphify": "eaaec1abd99d3a7fb30301ccb49f4cc72ae34011",
+    "graphiti": "3c427640abf909f12f71f963fce15eb514a3c493"
+  },
+  "research": {
+    "recent_window_start": "2025-10-01",
+    "recent_window_end": "2026-10-01",
+    "primary_sources_only": true,
+    "performance_claims_transferred": false
+  },
+  "qualification": {
+    "runtime_modified": false,
+    "tests_run": false,
+    "ci_dispatched": false,
+    "models_built": false,
+    "latency_qualified": false,
+    "behavior_qualified": false
+  },
+  "alice_branches": [
+    {
+      "name": "alice-context",
+      "head_sha": "945245bbee4168fff46f863455a83bb219063017"
+    },
+    {
+      "name": "alice-eipm-v1-build",
+      "head_sha": "021c5021a98104b35f9c8e94b19e48d21f25f132"
+    },
+    {
+      "name": "alice-eipm-v1-causal-arbitration-binding",
+      "head_sha": "ae1be5f811ceea772d138b35191278b8a304d023"
+    },
+    {
+      "name": "alice-eipm-v1-downstream-arbitration",
+      "head_sha": "7fd22358cd6b6384ac914d100c87f93e2236da18"
+    },
+    {
+      "name": "alice-eipm-v1-dual-view-late-interaction-binding",
+      "head_sha": "57b085fd815cc784ae4090b8db7b619adec57040"
+    },
+    {
+      "name": "alice-eipm-v1-dual-view-specialist-failure-localization",
+      "head_sha": "d5d2a4f265d5d10a0e9cb6c12c60c864d257c495"
+    },
+    {
+      "name": "alice-eipm-v1-missing-evidence-localization",
+      "head_sha": "da6fbe80a00f6463d28d3ce29300e1c2943003ef"
+    },
+    {
+      "name": "alice-eipm-v1-n0-clean-sheet-relational-execution-review",
+      "head_sha": "6855997bb46986194b4bdbbcbaa1fff3bee1134e"
+    },
+    {
+      "name": "alice-eipm-v1-n0-closure-pass",
+      "head_sha": "fefc2e4ec54ddde113165b1a3103a1add9be34e8"
+    },
+    {
+      "name": "alice-eipm-v1-n0-closure-semantic-v2",
+      "head_sha": "1c94065cd30abb9764260e239b2227b27d098040"
+    },
+    {
+      "name": "alice-eipm-v1-n0-frozen-semantic-authority-v3",
+      "head_sha": "0a8ac74aa6fa73259c03dc4d8754a42a6fde2307"
+    },
+    {
+      "name": "alice-eipm-v1-n0-full-envelope-foundation-build-v1",
+      "head_sha": "a19f8e8893422702c138182f239064385addf91c"
+    },
+    {
+      "name": "alice-eipm-v1-n0-full-envelope-joint-ddp-v2",
+      "head_sha": "5e29f7f69ba4a5d031c7036639b67bebbcdc0bd2"
+    },
+    {
+      "name": "alice-eipm-v1-n0-p2a-semantic-localization-v1",
+      "head_sha": "8180ed500fcf2181d3a70f5a01481d00ebbbb24a"
+    },
+    {
+      "name": "alice-eipm-v1-n0-semantic-operator-foundation-v1",
+      "head_sha": "cef6e5ed48bb69e064596b30a87a73c3e79a0763"
+    },
+    {
+      "name": "alice-eipm-v1-post-arbitration-gate",
+      "head_sha": "00a95d2690641605964f91a79aa1358e05f3edbf"
+    },
+    {
+      "name": "alice-eipm-v1-qsre-production-core-v1",
+      "head_sha": "2204f61f3a2d49eccc10d834dda83921a9af5be1"
+    },
+    {
+      "name": "alice-eipm-v1-qsre-production-p2-failure-localization",
+      "head_sha": "c9b1d35823cb89245625bbc6afb05b0ef5fb69fb"
+    },
+    {
+      "name": "alice-eipm-v1-qsre-production-p2-ordered-evidence-v3",
+      "head_sha": "342bdbbe8c5dfbe74ff3ab8210a30b1a456aa482"
+    },
+    {
+      "name": "alice-eipm-v1-qsre-t1-executor-training",
+      "head_sha": "f4a9edb1915e39d893224f4503746bfd61fc6424"
+    },
+    {
+      "name": "alice-eipm-v1-qsre-t2-operator-learning",
+      "head_sha": "821c6b0e3e5b407be35e7b78d32522ae7f73ab79"
+    },
+    {
+      "name": "alice-eipm-v1-query-edge-binding-identifiability-audit",
+      "head_sha": "0610c10ebb74b1518f160ffba90f9acd57e27672"
+    },
+    {
+      "name": "alice-eipm-v1-query-edge-competitive-router",
+      "head_sha": "a6b263be31d822f8781cefadf450b63dcae00acd"
+    },
+    {
+      "name": "alice-eipm-v1-query-edge-cross-attention-bridge",
+      "head_sha": "b68594654ffead1b12adefe5ed33bed9b6fc2868"
+    },
+    {
+      "name": "alice-eipm-v1-query-edge-setwise-router",
+      "head_sha": "482ead53e14bffefd4032c9401c7a09da0258cb3"
+    },
+    {
+      "name": "alice-eipm-v1-query-relation-role-router",
+      "head_sha": "a4ba0e7b8629718947d7126f8aa86021aa1cb87c"
+    },
+    {
+      "name": "alice-eipm-v1-query-semantics-architecture-audit",
+      "head_sha": "cc1e7068856f6c053642a4463891d7ce0348fd06"
+    },
+    {
+      "name": "alice-eipm-v1-relation-conditioned-multilayer-interface",
+      "head_sha": "54a5fbacaa373ef7fcf365bedd57081998547972"
+    },
+    {
+      "name": "alice-eipm-v1-relation-semantic-grounding",
+      "head_sha": "09fdd7c1c8cadda4ac61b65f1ff9c32e35ced53d"
+    },
+    {
+      "name": "alice-eipm-v1-relation-semantic-role-residual",
+      "head_sha": "23a84b808a0f16c63678d0875b9a7b2d388f07e7"
+    },
+    {
+      "name": "alice-mc10b-live",
+      "head_sha": "86ae99ca11d5c9a5c72f4d8dd22c7ec90eb882ea"
+    },
+    {
+      "name": "alice-mc10c-live",
+      "head_sha": "53d2fb4060c681fea2097d5d15e9ce4f354e61f5"
+    },
+    {
+      "name": "alice-personal-development-architecture-v1",
+      "head_sha": "716ef6044b75c4dfee6e32b918f57f8ee9689449"
+    },
+    {
+      "name": "alice-telemetry",
+      "head_sha": "fbb308577864481ea51ed9295aca7a5fc4e3aa7f"
+    },
+    {
+      "name": "architecture/full-fable-v1-memory-fabric-20260927",
+      "head_sha": "e9152fc7958c70992055f60c939007a4d30c77b0"
+    },
+    {
+      "name": "architecture/personal-development-canonical-main-20260922",
+      "head_sha": "2351c646474e9c662ddd38810c95684a1cbdfb28"
+    },
+    {
+      "name": "architecture/phase2-fable-v1-execution-plan-20260927",
+      "head_sha": "cd4bafdba3ceded438911741f4184eb10d743423"
+    },
+    {
+      "name": "docs/fable-first-release-conversation-20260925",
+      "head_sha": "aa8eff42288d69348fb142639e435579ecbfc88f"
+    },
+    {
+      "name": "docs/memory-identity-host-learning-ratification-v2",
+      "head_sha": "c7e4e29079890674b420b16d5207157a798feb81"
+    },
+    {
+      "name": "docs/public-alice-readme",
+      "head_sha": "d5a46ed524704c212128b050a1eefe7e925fb957"
+    },
+    {
+      "name": "docs/selected-stack-readme-sync-20260927",
+      "head_sha": "2244398a241b3a0ac2adbefd82e8c867dd4fe155"
+    },
+    {
+      "name": "docs/stage-g-candidate-qualification-matrix-v2",
+      "head_sha": "6dd023c7baf380bb3d63fb75053b4aa99da4dc98"
+    },
+    {
+      "name": "docs/sync-selected-memory-stack-20260927",
+      "head_sha": "cf9146864a559c510b094bc94c6c4cec880ef80b"
+    },
+    {
+      "name": "fable-builder-model",
+      "head_sha": "6861d76535c3418efbd2ee948c1056d57030cfe4"
+    },
+    {
+      "name": "feat/memory-m2-1-claim-authority-prototype",
+      "head_sha": "4e7bf81508d37ece5b54eb9ab2ff8c2facf46f3d"
+    },
+    {
+      "name": "feat/memory-m2-2-shadow-adjudication",
+      "head_sha": "eeae325e7365d1cff1a1947fd9f390b33056b533"
+    },
+    {
+      "name": "feat/memory-m2-3-projection-prototype",
+      "head_sha": "acccd8dedf7f2089db61d5c2da7e8ba83969c054"
+    },
+    {
+      "name": "feat/memory-m2-4-bounded-serving",
+      "head_sha": "d6c2412d5bf2496d79723acf3a27c41a6bb20fd3"
+    },
+    {
+      "name": "feat/memory-m2-5-durable-curation-workflows",
+      "head_sha": "38528dfb22ff58abd5a73c86c54eed4250e13c43"
+    },
+    {
+      "name": "feat/memory-m2-6-deletion-propagation",
+      "head_sha": "fbb92dfb4267fdc38140dbf26fd941ed68d4bcfa"
+    },
+    {
+      "name": "feat/memory-m2-closeout-shadow-admission",
+      "head_sha": "b69d3b688680a0fb36a1a21030f077a6bfd1c8b9"
+    },
+    {
+      "name": "feat/memory-m2-kernel-contracts",
+      "head_sha": "4b23f4417fca1c22cf431b652094ff212538be5e"
+    },
+    {
+      "name": "feat/memory-shadow-migration-stage-a-b",
+      "head_sha": "771357f2c89b5653b64f2f37faccadebc7eefcef"
+    },
+    {
+      "name": "feat/memory-shadow-migration-stage-c-e",
+      "head_sha": "4eadb952c2d8f32d95a80e738ddaf82078b1b6d1"
+    },
+    {
+      "name": "feat/memory-shadow-migration-stage-d",
+      "head_sha": "35d404f4d8140efac0ef2c3ff68dca8ba74c5193"
+    },
+    {
+      "name": "feat/memory-shadow-migration-stage-f-g",
+      "head_sha": "69b6ae84155fe7a68d8151000e9f2f465b22a4be"
+    },
+    {
+      "name": "feat/memory-shadow-migration-stage-f-g-persistent",
+      "head_sha": "b7a9199735bdddcc0f48bbef8090d4e8aafa7f9c"
+    },
+    {
+      "name": "feat/phase5-storage-capacity-safety",
+      "head_sha": "2c24a3117276853dae382bfef66a4d00608d66d4"
+    },
+    {
+      "name": "fix/governance-capability-audit-baseline",
+      "head_sha": "8e1b8a3c0f355b816304e6d64770a705fdf052a9"
+    },
+    {
+      "name": "fix/governance-memory-m2-capability-ceiling",
+      "head_sha": "6047e283839787e4026c2f9d47fd5aed456272a8"
+    },
+    {
+      "name": "governance/fable-v1-single-full-release-gate-20260927",
+      "head_sha": "33d9f5da9623fb52b55c6b78d351a673481f42af"
+    },
+    {
+      "name": "main",
+      "head_sha": "8ea804aa25c3d1c5f46e9be5810d072ed0fadb4b"
+    },
+    {
+      "name": "planning/memory-v4-m1-ratification",
+      "head_sha": "534c6b87caed58816983b1c03abb9f6019b0ac17"
+    },
+    {
+      "name": "research/fbm-v1-licensed-base-20260930",
+      "head_sha": "99fa882a0e47c63c73cc790dd7de10943b70f5e9"
+    },
+    {
+      "name": "research/frontier-agentic-source-retrieval-airllm-20260927",
+      "head_sha": "a0e035859956c7f37ed15aac4d1fbfa75ac650cc"
+    },
+    {
+      "name": "research/frontier-current-impact-20260923",
+      "head_sha": "f813268fc42598bf5fda776e7a17fbf42b13cf40"
+    },
+    {
+      "name": "research/frontier-execution-provenance-20260925",
+      "head_sha": "5f9b9ccb2628eb2a5512d8624b9a78bcc9c7fe38"
+    },
+    {
+      "name": "research/frontier-independent-audit-history-aware-egress-20260927",
+      "head_sha": "75db33c5245af91ff9ab5d234333ceac29334764"
+    },
+    {
+      "name": "research/frontier-memory-control-harness-growth-20260926",
+      "head_sha": "75db33c5245af91ff9ab5d234333ceac29334764"
+    },
+    {
+      "name": "research/frontier-memory-use-calibration-20260923",
+      "head_sha": "576e9536555f350da83a7a0f8ae52b75a0ba47ac"
+    },
+    {
+      "name": "research/frontier-watch",
+      "head_sha": "6aa353d60698216dd251e27e84f39f042edb0a7f"
+    },
+    {
+      "name": "research/gemma4-v1-source-derivation-20260930",
+      "head_sha": "3e1328410dac52ba18be243cb9f7144e7a3964d1"
+    },
+    {
+      "name": "research/graphify-context-substrate",
+      "head_sha": "a06f61eafd91d04fb7ec7c1de3ab8a9ed7071b15"
+    },
+    {
+      "name": "research/graphify-v1-model-routes-20260930",
+      "head_sha": "39666dba43aa39d6321933b4952e62f60ed70621"
+    },
+    {
+      "name": "research/mfm-foundation-20260923",
+      "head_sha": "345dba7b47efd5b4707302c07508493777fcb465"
+    },
+    {
+      "name": "research/mfm-v1-licensed-base-20260930",
+      "head_sha": "e44b72a65ca178a8a8c02706aed8bafea67f7cf3"
+    },
+    {
+      "name": "review/n0-qualification-integrity-20260923",
+      "head_sha": "aadd60dd097b15bd4abab8e89605c46835d5cd96"
+    },
+    {
+      "name": "tmp-do-not-use",
+      "head_sha": "fbee8a5b88a2be21cb1967a19c81abde0716af6d"
+    },
+    {
+      "name": "tmp-do-not-use-2",
+      "head_sha": "fbee8a5b88a2be21cb1967a19c81abde0716af6d"
+    },
+    {
+      "name": "tmp-endpoint-check",
+      "head_sha": "c0f5ea76f5d4a63791db0eb5e993cfd3769dddb2"
+    }
+  ]
+}
