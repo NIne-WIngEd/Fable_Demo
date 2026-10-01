@@ -1,0 +1,83 @@
+name: FloRA optional chronology aggregate diagnostic
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/profile_selected_chronology_boundaries.py
+      - .github/workflows/chronology-profile.yml
+
+jobs:
+  diagnostic-chronology:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PYTHONPATH: alice-reference/src:src
+      KURRENTDB_URI: kurrentdb://127.0.0.1:2113?tls=false
+      XTDB_DSN: postgresql://xtdb@127.0.0.1:5432/xtdb
+      TEMPORAL_ADDRESS: 127.0.0.1:7233
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout product-neutral A.L.I.C.E. contracts
+        uses: actions/checkout@v4
+        with:
+          repository: NIne-WIngEd/A.L.I.C.E
+          ref: 4f287a488bc908bd04f99255ee01b794bacba50b
+          path: alice-reference
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify Docker runtime
+        run: |
+          docker version
+          docker compose version
+      - name: Install selected-backend test dependencies
+        run: python -m pip install -e '.[backends,providers,embeddings]'
+      - name: Start selected services and persistent Temporal
+        run: docker compose -f compose.integration.yml up -d
+      - name: Wait for selected services
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:2113/health/live >/dev/null; then
+              break
+            fi
+            [ "$attempt" -lt 90 ] || exit 1
+            sleep 2
+          done
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8080/healthz/ready >/dev/null; then
+              break
+            fi
+            [ "$attempt" -lt 90 ] || exit 1
+            sleep 2
+          done
+          for attempt in $(seq 1 90); do
+            if python -c 'import socket; s=socket.create_connection(("127.0.0.1", 4222), timeout=1); s.close()' 2>/dev/null; then
+              break
+            fi
+            [ "$attempt" -lt 90 ] || exit 1
+            sleep 2
+          done
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:6333/healthz >/dev/null; then
+              break
+            fi
+            [ "$attempt" -lt 90 ] || exit 1
+            sleep 2
+          done
+      - name: Wait for persistent Temporal and namespace
+        run: python scripts/temporal_restart_probe.py health --retry-seconds 120
+      - name: Diagnose original chronology without qualifying latency
+        continue-on-error: true
+        run: python scripts/profile_selected_chronology_boundaries.py --cap-seconds 180 --output selected-chronology-profile.json
+      - name: Upload aggregate diagnostic only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selected-chronology-aggregate-diagnostic
+          path: selected-chronology-profile.json
+          if-no-files-found: warn
+      - name: Tear down selected services
+        if: always()
+        run: docker compose -f compose.integration.yml down -v

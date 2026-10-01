@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [core, transport, native-comparison, native-pilot, lineage, readers, history, history-routes]
+        shard: [core, transport, native-comparison, native-pilot-before-tail, native-pilot-outcome-audit, native-pilot-typed-phase, native-pilot-withdrawal, lineage, readers, history, history-routes-retained, history-routes-native]
     env:
       PYTHONPATH: alice-reference/src:src
       KURRENTDB_URI: kurrentdb://127.0.0.1:2113?tls=false

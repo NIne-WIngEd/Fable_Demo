@@ -13,8 +13,10 @@ unlearning. Those cross-layer influence operations remain separate work.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from types import FunctionType, MethodType
 import hashlib
 import json
+import sys
 from typing import Any, Mapping, Protocol
 
 from cognitive_kernel.canonical import (
@@ -144,6 +146,158 @@ def _action_from_record(record: dict[str, object]) -> FormationPermissionAction:
     return action
 
 
+# These are decoded immutable recorded fields, including recorded decisions.
+# No current head, allow verdict, proof verification or permission result is memoized.
+_MAX_ACTION_CODEC_ENTRIES = 256
+_MAX_ACTION_CODEC_BYTES = 2 * 1024 * 1024
+_ACTION_SCOPE_FIELDS = tuple(ProductHostScope.__dataclass_fields__)
+_ACTION_NATIVE_INT_LIMIT_GETTER = sys.get_int_max_str_digits
+_ACTION_NATIVE_INT_LIMIT = _ACTION_NATIVE_INT_LIMIT_GETTER()
+
+
+def _snapshot_action_record(value):
+    if type(value) is dict and all(type(key) is str for key in value):
+        children = tuple((key, _snapshot_action_record(item)) for key, item in value.items())
+        return None if any(item is None for _, item in children) else ("dict", children)
+    if type(value) is list:
+        children = tuple(_snapshot_action_record(item) for item in value)
+        return None if any(item is None for item in children) else ("list", children)
+    if value is None or type(value) in (str, int, float, bool):
+        return "value", value
+    return None
+
+
+def _restore_action_record(snapshot):
+    kind, value = snapshot
+    if kind == "dict":
+        return {key: _restore_action_record(item) for key, item in value}
+    if kind == "list":
+        return [_restore_action_record(item) for item in value]
+    return value
+
+
+def _same_action_codec_owner(left, right):
+    return (left is not None and left[0] is right[0] and left[1] is right[1]
+            and left[2:] == right[2:])
+
+
+def _action_codec_current():
+    classes, functions, bindings, library, instances = _ACTION_CODEC_CONTRACTS
+    for namespace, name, function, code in _ACTION_CODEC_PRIVATE:
+        if namespace.get(name) is not function or function.__code__ is not code:
+            return False
+    for namespace, name, value in _ACTION_CODEC_CONSTANTS:
+        if namespace.get(name) is not value:
+            return False
+    # Native JSON integer parsing follows this live interpreter setting. Prior
+    # successful decoding must not override a limit changed by key/fetch effects.
+    if (vars(sys).get("get_int_max_str_digits") is not _ACTION_NATIVE_INT_LIMIT_GETTER
+            or _ACTION_NATIVE_INT_LIMIT_GETTER() != _ACTION_NATIVE_INT_LIMIT):
+        return False
+    for cls, fields in classes:
+        current = vars(cls)
+        if len(current) != len(fields):
+            # copyreg lazily adds this empty native-copy metadata. It changes no
+            # constructor/validation behavior and is not a permission binding.
+            if not (len(current) == len(fields) + 1 and "__slotnames__" not in dict(fields)
+                    and type(current.get("__slotnames__")) is list
+                    and not current["__slotnames__"]):
+                return False
+        ignored = {"_key", "_fetch"} if cls is _NATIVE_ACTION_POLICY else ()
+        if any(current.get(name) is not value for name, value in fields if name not in ignored):
+            return False
+    for function, code, defaults, keywords, cells in functions:
+        current_keywords = function.__kwdefaults__ or {}
+        if (function.__code__ is not code or function.__defaults__ is not defaults
+                or len(current_keywords) != len(keywords)
+                or any(current_keywords.get(name) is not value for name, value in keywords)
+                or len(function.__closure__ or ()) != len(cells)
+                or any(cell.cell_contents is not value for cell, value in
+                       zip(function.__closure__ or (), cells))):
+            return False
+    for namespace, name, value, contents in bindings:
+        if namespace.get(name) is not value:
+            return False
+        if contents is not None and value != contents:
+            return False
+    for module, name, value in library:
+        if getattr(module, name, None) is not value:
+            return False
+    for instance, fields in instances:
+        current = vars(instance)
+        if len(current) != len(fields) or any(current.get(name) is not value for name, value in fields):
+            return False
+    return True
+
+
+def _action_codec_probe(policy, row, key, action_id):
+    """Classify only after actual key/fetch callbacks; never replace their reads."""
+    if (_action_codec_current is not _NATIVE_ACTION_CHECK
+            or _NATIVE_ACTION_CHECK.__code__ is not _NATIVE_ACTION_CHECK_CODE
+            or not _NATIVE_ACTION_CHECK()):
+        return None
+    if (type(policy) is not _NATIVE_ACTION_POLICY
+            or _NATIVE_ACTION_POLICY.__getattribute__ is not object.__getattribute__
+            or "__getattr__" in vars(_NATIVE_ACTION_POLICY)
+            or vars(_NATIVE_ACTION_POLICY).get("_decode") is not _NATIVE_ACTION_DECODE):
+        return None
+    fields = object.__getattribute__(policy, "__dict__")
+    scope = fields.get("scope")
+    if (type(scope) is not _NATIVE_ACTION_SCOPE
+            or _NATIVE_ACTION_SCOPE.__getattribute__ is not object.__getattribute__
+            or set(vars(scope)) != set(_ACTION_SCOPE_FIELDS)):
+        return None
+    scope_values = tuple(vars(scope)[name] for name in _ACTION_SCOPE_FIELDS)
+    namespace, digest = fields.get("authority_namespace_id"), fields.get("scope_digest")
+    decoder = fields.get("_decode")
+    if (not all(type(value) is str for value in (*scope_values, namespace, digest, key, action_id))
+            or ("_decode" in fields and (type(decoder) is not MethodType
+                or decoder.__self__ is not policy or decoder.__func__ is not _NATIVE_ACTION_DECODE))):
+        return None
+    owner = fields.get("connection"), fields.get("registry"), scope_values, namespace, digest
+    prior = fields.get("_action_codec_memo")
+    if (type(prior) is not tuple or len(prior) != 3 or type(prior[1]) is not dict
+            or type(prior[2]) is not int or not _same_action_codec_owner(prior[0], owner)):
+        fields["_action_codec_memo"] = (owner, {}, 0)
+    if (type(row) is not dict or any(type(name) is not str for name in row)
+            or any(type(row.get(name)) is not str for name in
+                   ("_id", "scope_digest", "record_sha256", "record_json"))):
+        return None
+    try:
+        data = row["record_json"].encode("utf-8")
+    except UnicodeError:
+        return None
+    if len(data) > _MAX_ACTION_CODEC_BYTES:
+        return None
+    cache_key = row["_id"], row["scope_digest"], row["record_sha256"], key, action_id, data
+    snapshot = fields["_action_codec_memo"][1].get(cache_key)
+    return owner, cache_key, snapshot
+
+
+def _remember_action_record(policy, owner, key, record):
+    fields = object.__getattribute__(policy, "__dict__")
+    memo_owner, previous, total = fields["_action_codec_memo"]
+    if not _same_action_codec_owner(memo_owner, owner) or key in previous:
+        return
+    try:
+        snapshot = _snapshot_action_record(record)
+    except RecursionError:
+        # Native JSON validation may accept a deeper value than Python's
+        # recursive bookkeeping can snapshot. Preserve that original result.
+        return
+    if snapshot is None:
+        return
+    # One COW state: native shallow copies never share a mutable map accounting.
+    records = dict(previous)
+    while records and (len(records) >= _MAX_ACTION_CODEC_ENTRIES
+                       or total + len(key[-1]) > _MAX_ACTION_CODEC_BYTES):
+        oldest = next(iter(records))
+        del records[oldest]
+        total -= len(oldest[-1])
+    records[key] = snapshot
+    fields["_action_codec_memo"] = owner, records, total + len(key[-1])
+
+
 class XTDBFormationPermissionPolicy:
     """Scoped immutable permission actions and an immediately current use head.
 
@@ -203,8 +357,18 @@ class XTDBFormationPermissionPolicy:
     def _stored_action(self, action_id: str) -> dict[str, object] | None:
         key = self._key("action", action_id)
         row = self._fetch(_ACTIONS, key, immutable=True)
+        probe = (_NATIVE_ACTION_CODEC_PROBE(self, row, key, action_id)
+            if _action_codec_probe is _NATIVE_ACTION_CODEC_PROBE
+            and _NATIVE_ACTION_CODEC_PROBE.__code__ is _NATIVE_ACTION_CODEC_PROBE_CODE else None)
         if row is None:
             return None
+        if probe is not None and probe[2] is not None:
+            try:
+                return _restore_action_record(probe[2])
+            except RecursionError:
+                # A shallower current caller stack can make native decoding
+                # succeed where reconstruction cannot. Run the original body.
+                probe = None
         record = self._decode(row, key=key)
         if record.get("schema") != "flora-recorded-formation-permission-v1":
             raise ValueError("recorded permission action schema changed")
@@ -222,6 +386,10 @@ class XTDBFormationPermissionPolicy:
         if record["request_payload_sha256"] != hashlib.sha256(
                 formation_permission_payload(action)).hexdigest():
             raise ValueError("recorded permission no longer binds its exact request")
+        if (probe is not None and _action_codec_current is _NATIVE_ACTION_CHECK
+                and _NATIVE_ACTION_CHECK.__code__ is _NATIVE_ACTION_CHECK_CODE
+                and _NATIVE_ACTION_CHECK()):
+            _remember_action_record(self, probe[0], probe[1], record)
         return record
 
     def _head(self, source_ref_id: str, purpose: str) -> dict[str, object] | None:
@@ -410,3 +578,76 @@ class XTDBFormationPermissionPolicy:
                     or current.decision != "allow" or current.action_sha256 != action_digest):
                 return False
         return True
+
+
+_NATIVE_ACTION_POLICY = XTDBFormationPermissionPolicy
+_NATIVE_ACTION_SCOPE = ProductHostScope
+_NATIVE_ACTION_DECODE = XTDBFormationPermissionPolicy._decode
+_NATIVE_ACTION_CODEC_PROBE = _action_codec_probe
+_NATIVE_ACTION_CODEC_PROBE_CODE = _action_codec_probe.__code__
+_NATIVE_ACTION_CHECK = _action_codec_current
+_NATIVE_ACTION_CHECK_CODE = _action_codec_current.__code__
+
+
+def _capture_action_codec_contracts():
+    classes = (_NATIVE_ACTION_POLICY, ProductHostScope, FormationPermissionAction, json.JSONDecoder, json.JSONEncoder)
+    class_shapes = tuple((cls, tuple(vars(cls).items())) for cls in classes)
+    roots = [_NATIVE_ACTION_DECODE, _action_from_record, formation_permission_payload,
+             json.loads, json.dumps]
+    for cls, names in ((ProductHostScope, ("create", "__init__", "__eq__", "validate", "metadata_record")),
+                       (FormationPermissionAction, ("__init__", "__eq__", "_validate_material",
+                            "validate", "material_record", "metadata_record")),
+                       (json.JSONDecoder, tuple(vars(json.JSONDecoder))),
+                       (json.JSONEncoder, tuple(vars(json.JSONEncoder)))):
+        for name in names:
+            value = vars(cls).get(name)
+            if isinstance(value, (classmethod, staticmethod)):
+                value = value.__func__
+            if isinstance(value, FunctionType):
+                roots.append(value)
+    instances = tuple((instance, tuple(vars(instance).items()))
+        for instance in (json._default_decoder, json._default_encoder))
+    for instance, fields in instances:
+        roots += [value for _, value in fields if isinstance(value, FunctionType)]
+    functions, bindings, seen, bound = [], [], set(), set()
+    while roots:
+        function = roots.pop()
+        if id(function) in seen:
+            continue
+        seen.add(id(function))
+        functions.append((function, function.__code__, function.__defaults__,
+            tuple((function.__kwdefaults__ or {}).items()),
+            tuple(cell.cell_contents for cell in (function.__closure__ or ()))))
+        for name in function.__code__.co_names:
+            value = function.__globals__.get(name)
+            identity = id(function.__globals__), name
+            if identity not in bound:
+                bindings.append((function.__globals__, name, value,
+                    frozenset(value) if type(value) is set else None))
+                bound.add(identity)
+            if isinstance(value, FunctionType):
+                roots.append(value)
+    library = ((json, "loads", json.loads), (json, "dumps", json.dumps),
+        (json, "JSONDecoder", json.JSONDecoder), (json, "JSONEncoder", json.JSONEncoder),
+        (json, "_default_decoder", json._default_decoder), (json, "_default_encoder", json._default_encoder),
+        (hashlib, "sha256", hashlib.sha256))
+    return class_shapes, tuple(functions), tuple(bindings), library, instances
+
+
+_ACTION_CODEC_CONTRACTS = _capture_action_codec_contracts()
+_ACTION_CODEC_PRIVATE = tuple((globals(), function.__name__, function, function.__code__)
+    for function in (_snapshot_action_record, _restore_action_record, _same_action_codec_owner,
+        _action_codec_current, _action_codec_probe, _remember_action_record))
+_action_codec_binding_names = {
+    "_MAX_ACTION_CODEC_ENTRIES", "_MAX_ACTION_CODEC_BYTES", "_ACTION_SCOPE_FIELDS",
+    "_NATIVE_ACTION_POLICY", "_NATIVE_ACTION_SCOPE", "_NATIVE_ACTION_DECODE",
+    "_NATIVE_ACTION_CODEC_PROBE", "_NATIVE_ACTION_CODEC_PROBE_CODE", "_NATIVE_ACTION_CHECK",
+    "_NATIVE_ACTION_CHECK_CODE", "_ACTIONS", "FunctionType", "MethodType", "ProductHostScope",
+    "FormationPermissionAction", "XTDBFormationPermissionPolicy", "_action_from_record",
+    "formation_permission_payload"}
+for _, _, _function, _ in _ACTION_CODEC_PRIVATE:
+    _action_codec_binding_names.update(_function.__code__.co_names)
+# Its own future assignment cannot be part of its captured input bindings.
+_action_codec_binding_names.discard("_ACTION_CODEC_CONSTANTS")
+_ACTION_CODEC_CONSTANTS = tuple((globals(), name, globals().get(name))
+    for name in sorted(_action_codec_binding_names))

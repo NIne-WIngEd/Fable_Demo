@@ -188,12 +188,13 @@ from 87,350 to 35. Custom records, generators, delegates and callback machinery
 retain the original uncached path. These receipts identify a useful controlled
 repair; a new exact-commit engine run must establish physical response timing.
 
-## Immutable envelope repair — partial physical receipts
+## Immutable envelope repair — completed physical receipts
 
 Implementation: `f3cddfd2b849b00580a95842e349e9f985505db8`.
 Tree: `7425ee3cf6b991ea9af07b11cb1e958e047fe0e3`.
 [Run 36784876518](https://github.com/NIne-WIngEd/FloRA/actions/runs/36784876518).
-Other jobs remain running; the implementation is not fully qualified.
+All jobs have completed. Timing failures and unfinished cases prevent a full
+qualification of this implementation.
 
 | Completed gate | Observed result |
 | --- | --- |
@@ -204,11 +205,98 @@ Other jobs remain running; the implementation is not fully qualified.
 | Provider fault fixture | Success: 109.136 seconds. |
 | Standalone comparator | Failure: BEFORE 17,585 milliseconds and AFTER 22,604 milliseconds, both `budget_exceeded` against the unchanged 10,000-millisecond budget. They improve by 5,456 and 9,372 milliseconds over the prior run but do not pass. |
 | Native comparison | Failure: BEFORE 60,102 milliseconds and AFTER 60,184 milliseconds, both `timeout` against the unchanged 60,000-millisecond budget. Both now reach context authorization; neither response qualifies. |
+| Native pilot | Cancelled at the unchanged one-hour cap. One of four cases passed in 1,947.869 seconds; the other three have no completed receipt. |
+| Chronological history | Cancelled at the unchanged one-hour cap. Coordinator passed in 74.940 seconds; preregistration reached original-input registration in 70.981 seconds, then published no first BEFORE capture in the remaining 56 minutes 33 seconds. |
+| History routes | Cancelled at the unchanged one-hour cap. The retained-route and live-withdrawal case passed in 3,518.312 seconds. The strict-router case had only 31.366 seconds left and did not complete. |
 
 The remaining same-workload query profile still has 6,120 SQL calls and 3,419
 fresh stream reads. Actual transport/CPU attribution is the next diagnostic;
 query counts alone do not prove which remaining transport dominates latency.
 The recorded failures remain part of the evidence. No budget is raised.
+
+## Aggregate transport diagnostic — partial physical receipts
+
+Implementation: `6a1afd975093e7684f9ca8c0d960e04ce892547a`.
+Tree: `397415236c1c5eae1e1d42251aeb8976e028dbaf`.
+[Run 36789254686](https://github.com/NIne-WIngEd/FloRA/actions/runs/36789254686).
+The publication adds a failure-only observer and verification records; the
+production runtime is unchanged. Other jobs remain pending.
+
+| Completed gate | Observed result |
+| --- | --- |
+| Component contracts | Success: 655 tests in 63 isolated suites; no failures, errors or skips. |
+| Core selected engines | Success: all 28 cases, 959.783 seconds for the suite. Restart/persistence/Temporal resume and actual last-unblind withdrawal denial passed. |
+| Guarded readers | Success: both cases, 70.960 seconds for the suite. Recovery/current withdrawal took 70.093 seconds; blocked physical PGconn retirement took 0.867 seconds. |
+| Native lineage | Success: both cases, 2,012.108 seconds for the suite. Episode/native state recreation took 1,841.844 seconds; approved-state/history/output recreation and current revocation took 170.263 seconds. Whole-fixture times do not qualify response latency. |
+| Provider fault fixture | Success: 109.085 seconds. |
+| Standalone comparator | Failure: BEFORE 16,540 milliseconds and AFTER 21,989 milliseconds, both `budget_exceeded` against the unchanged 10,000-millisecond budget. |
+| Native comparison | Failure: BEFORE 60,071 milliseconds and AFTER 60,145 milliseconds, both `timeout` against the unchanged 60,000-millisecond budget. Both remain in owned context authorization. |
+
+The subsequent aggregate diagnostic completed and uploaded its JSON with
+artifact `11131985172`. It leaves the ordinary gate failed. Its profiled timing
+cannot qualify response latency; see the
+[observer method and overhead](EXPERIENCE_ENVELOPE_DECODE_WORK.md#aggregate-physical-boundary-diagnostic).
+
+The verified aggregate completed in 90.319 seconds (76.352 thread CPU), with
+no cap or overshoot. Its one failure is the ordinary comparator assertion;
+`qualification` remains false. All six loaded runtime source hashes and the
+observer hash match the published source.
+
+| Original physical boundary | Calls | Profiled wall / thread CPU | Wall minus thread CPU |
+| --- | ---: | ---: | ---: |
+| Kurrent `get_stream` | 3,419 | 21.069 / 13.901 seconds | 7.168 seconds |
+| psycopg `execute` | 6,120 | 7.813 / 1.511 seconds | 6.302 seconds |
+| psycopg `fetchall` | 5,894 | 0.072 / 0.070 seconds | 0.001 seconds |
+
+Wall minus CPU includes waiting, scheduling and other-thread work. It is not
+exact network time. The largest exclusive profiled CPU costs were immutable
+stored-action validation (25,590 calls; 19.624 seconds) and history metadata
+(301 calls; 12.760 seconds). Profiling overhead is substantial, so these values
+are diagnostic attribution rather than unprofiled costs or satisfied deadlines.
+The next narrow candidate reuses validated immutable action-row decoding while
+preserving actual key/fetch/head reads, all callbacks and terminal fences.
+Current permission and qualification results must never be cached.
+
+The next exhaustive runner assigns all 43 physical cases exactly once across
+12 shards, plus contracts: the four pilot cases and two history-route cases
+each receive an independent job. Discovery/partition checks and the chronology
+driver/seed checks passed 14 tests in 1.206 seconds. This verifies configuration,
+not physical execution. All 13 ordinary jobs still require completed receipts
+at the same implementation; see the
+[case partition](SELECTED_INTEGRATION_PARTITION.md).
+
+The separate optional [chronology diagnostic](CHRONOLOGY_PROFILE_WORK.md) runs
+the unchanged preregistration fixture with a 180-second outer-RPC soft cap.
+It observes original synchronous parent-thread code objects and excludes later
+owned child work. Its 60,000-millisecond protocol budget remains independent.
+Its aggregate reports incomplete outcomes and cannot infer capture publication
+from return counts. A green diagnostic job never replaces an ordinary gate.
+
+## Stored-action decode repair — frozen candidate
+
+The candidate keeps every actual key/fetch/head read, permission callback and
+terminal current-row fence. It reuses only decoded fields of freshly read,
+previously validated exact immutable action records, including their recorded
+authorization metadata. Returned nested objects are fresh. A current allow
+verdict, proof verification or permission result is never cached.
+
+Final source SHA-256:
+`c3050590d7ccc0926989fd1118636d93750f5f99a0fb4cadeaa02d2108ae19d7`.
+Final test SHA-256:
+`4e313c23594ec899dc65545928f0984ad553e7e843ad2c37e2cce2a0751e1121`.
+After the native decoder-setting compatibility correction, 54 focused checks
+passed in 45.647 seconds; independent review passed 29 codec cases in 1.002
+seconds with stable hashes. Accepted deep records, custom receiver callbacks,
+explicit null overrides, live revocation and changed native integer decoding
+settings retain the original validation behavior.
+
+The final immutable controlled candidate took 9.514 seconds, with BEFORE/AFTER
+3,440/4,609 milliseconds. It retains all 6,120 SQL calls, 3,419 fresh stream
+reads, 87,350 records and 98,302,270 encoded bytes, plus identical named boundary
+and SQL leaf/shape counters. This is not an actual-engine latency receipt.
+The earlier quiet pair and profiler measurements are explicitly tied to their
+pre-correction source in the [method record](STORED_ACTION_CODEC_WORK.md).
+All 85 FloRA procedure traces validate; no builder training is inferred.
 
 ## Stopping boundary
 
