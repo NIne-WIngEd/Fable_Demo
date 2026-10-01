@@ -103,3 +103,38 @@ actual selected engines. Receipts include fixed fixture ID, unchanged budget,
 source hashes before/after, cap state, outcome counts and incomplete-coverage
 counters. They cannot establish learned memory/personality advantage or explain
 unobserved native work and scheduling as if those were measured CPU costs.
+
+## First measured owned-reader result
+
+The narrower diagnostic reached the original owned work on published
+`0a690d0a557f5e719426e992c364bb2507c1e203` (tree
+`a44a2d787f048acfb343525bef59bc20d965ec54`), run
+[36802794585](https://github.com/NIne-WIngEd/FloRA/actions/runs/36802794585),
+job `110180623352`, artifact `11136143617`.
+
+- JSON SHA256: `82a85fb463fa2c1641ee99817d2fecab1761d84e406bc4102992f55317fee4e3`.
+- Verified ZIP SHA256: `b50e9656b0f59fae90552399664ebb969cef393f838ec10b02a90d987df67788`.
+- All 109 after-source hashes match the published tree and A.L.I.C.E. pin;
+  all 107 before-source hashes are unchanged.
+- First exact owned entry: **147.52990148 s**. Eight owned jobs/returns were
+  recorded on one worker ledger.
+- Worker window: **147.9675 s wall / 111.4954 s thread CPU**. Owned-work tagged
+  total: **147.8873 s wall / 111.4945 s CPU**. Windows can contain gaps.
+- Context preparation: two calls, **87.7455 s wall / 67.0296 s CPU**.
+  Context authorization: one call, **60.0267 s wall / 44.3912 s CPU**.
+- History metadata verification: 898 calls, **125.5983 s inclusive wall /
+  97.6771 s CPU**, with **44.2029 s exclusive CPU**. Context, lineage and history
+  inclusive spans overlap and cannot be added as separate costs.
+- Fresh transport: 4,128 Kurrent reads (**43.2537 s wall / 21.6666 s CPU**) and
+  17,367 SQL executes (**17.0119 s wall / 4.0166 s CPU**).
+
+The fixture failed: one failure, zero passes/errors/caps, `qualification=false`.
+The original **180-second** clock was not reset or increased. It deferred 135
+parent entries during active work/RPCs and completed after safe overshoot:
+**295.5109 s elapsed / 115.5109 s overshoot**. No observer error, stack/ledger
+overflow, open span, active work/RPC or hook change remained at close.
+
+This localizes a CPU cost for further investigation. It does not justify removing
+fresh authorization or terminal revocation checks. The previous zero-worker
+aggregate cannot establish a worker performance comparison. No learned-model
+advantage or successful builder transfer has been demonstrated.

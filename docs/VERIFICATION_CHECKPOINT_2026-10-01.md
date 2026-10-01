@@ -249,4 +249,45 @@ JSON SHA256:
 - The narrower observer passed **41 local observer/seed-contract checks**,
   including four new setup-scope, nested-RPC and original-clock checks. All
   **89** FloRA procedure traces validate. The first published observer trace
-  remains intact. Actual worker coverage for the follow-up is pending.
+  remains intact.
+
+
+### First measured owned-reader work
+
+- [Follow-up worker diagnostic](https://github.com/NIne-WIngEd/FloRA/actions/runs/36802794585):
+  commit `0a690d0a557f5e719426e992c364bb2507c1e203`, tree
+  `a44a2d787f048acfb343525bef59bc20d965ec54`, artifact `11136143617`.
+  JSON SHA256 `82a85fb463fa2c1641ee99817d2fecab1761d84e406bc4102992f55317fee4e3`;
+  ZIP SHA256 `b50e9656b0f59fae90552399664ebb969cef393f838ec10b02a90d987df67788`
+  matches GitHub. All 109 after-source digests match the published tree and
+  pinned A.L.I.C.E. reference; all 107 before-source hashes remain unchanged.
+- First owned entry **147.530 s** after observer entry. Eight jobs ran on one
+  worker ledger. Worker window **147.968 s wall / 111.495 s thread CPU**.
+- Owned context authorization: **60.027 s wall / 44.391 s CPU**. The measured
+  path includes **898 history metadata checks**, with **44.203 s exclusive CPU**
+  (about 39.6% of worker CPU), plus **4,128 fresh streams** and **17,367 SQL
+  executes**. Inclusive context/lineage/history spans overlap; they cannot be
+  summed as independent costs.
+- Original 180-second cap deferred 135 times during active work/RPCs. Observation
+  ended at **295.511 s**, after **115.511 s** safe overshoot. No observer errors,
+  ledger/stack overflow, open spans, active work or hook changes remained at close.
+- The fixture **failed**, with no pass or ordinary error; `qualification=false`.
+  The earlier zero-worker aggregate provides no worker performance comparison.
+
+### Completed contract receipt and next repair
+
+- The first observer publication's ordinary contracts passed: **711 tests across
+  67 modules** on `58d6966c494d7bff10badc68e24e83c084846bfc`, run
+  `36801543459`, job `110176760559`. Per-module durations total **1,141.307 s**.
+  This is contract execution time and establishes no response latency.
+- The current candidate concerns discarded immutable metadata reconstruction in
+  `history_fence._committed`. Existing event validation, canonical replays,
+  current grants and terminal withdrawal fences must remain.
+- Per-entry native graph qualification costs more than the metadata work it
+  would omit in a mechanical check. A finite call-local native batch might
+  amortize that cost, but its cost, semantic pin and fallback checks remain
+  unverified. **No candidate runtime change is published.**
+- Workspace execution became unavailable before the batch measurement could run.
+  The verified receipts and append-only FloRA measurement trace are preserved
+  through GitHub. The existing 89-trace registry passed before this evidence-only
+  update; full Python registry revalidation remains pending workspace recovery.
