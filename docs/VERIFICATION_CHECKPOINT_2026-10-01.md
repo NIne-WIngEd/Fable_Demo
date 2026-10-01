@@ -549,6 +549,30 @@ complete demo, learned model win or builder transfer is qualified.**
 Every existing phase, ancestry, live grant, qualification and private-read
 predicate still runs. This foundation introduces **no proof-sharing frame,
 permission cache or check bypass** and makes no performance claim. Its exact
-physical CI receipt is pending publication. Next implementation work is the
+physical CI receipt is pending ordinary CI. Next implementation work is the
 shared history/source collector and fresh protected-boundary frame described in
 the protocol. That work does not require personality or MFM.
+
+### Phase-binding foundation: publication and ordinary CI
+
+- Runtime publication:
+  [`74f42417be37a2fbdc6c603a1ea657b040e0052e`](https://github.com/NIne-WIngEd/FloRA/commit/74f42417be37a2fbdc6c603a1ea657b040e0052e),
+  tree `f658ae357a5b559b719fe365c098832f2be1a469`. Complete, untruncated
+  parent and new trees verified all **13 changed paths**, their blob hashes,
+  modes and types, and preserved every other leaf entry. The published tree
+  equals the frozen local tree tested above. The main ref was verified after
+  its non-forced update.
+- [Ordinary selected-engine run 36828262948](https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948)
+  started at that exact runtime commit on **2026-10-01 at 07:04:41 UTC**.
+  It is in progress; queued or running jobs are not counted as passes.
+  The contracts job, original 12 integration shards, response budgets and
+  one-hour job caps are unchanged. No additional diagnostic or observer was
+  dispatched for this publication.
+- This final publication receipt changes documentation only and skips CI.
+  The ordinary run above remains the runtime qualification target. Its
+  pending status does not erase the failed budgets and capped cases recorded
+  for `029a7655` above.
+
+Next: inspect this run's exact physical receipts, then build the shared
+collectors and protected-boundary frame. Native phase identity alone does not
+reduce repeated authority reads. Latency improvement remains unverified.
