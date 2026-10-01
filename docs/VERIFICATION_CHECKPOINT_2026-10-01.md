@@ -433,5 +433,24 @@ input is changed to qualify this work.
 
 Personality and MFM were not built, trained, downloaded or substituted. Alice
 remains unchanged. Response limits, scientific inputs and original workflow
-caps remain unchanged. Publication and ordinary physical receipts for this
-consumer build are still pending; **latency improvement remains unverified**.
+caps remain unchanged. Ordinary physical receipts for this consumer build are
+still pending; **latency improvement remains unverified**.
+
+### Consumer publication and physical gate
+
+- Runtime publication:
+  [`029a7655ca4aac16ba5c7644b7ca579a8ac45aac`](https://github.com/NIne-WIngEd/FloRA/commit/029a7655ca4aac16ba5c7644b7ca579a8ac45aac),
+  tree `dd9211f8691bf84c28a296a0e07b167890015436`. All **28 changed paths**
+  and their local blob hashes were verified against complete GitHub trees;
+  other paths were preserved. The published tree equals the tested local tree.
+- [Ordinary selected-engine run 36822267124](https://github.com/NIne-WIngEd/FloRA/actions/runs/36822267124)
+  has started at that exact runtime commit. Contracts and all original 12
+  integration shards retain their original limits. No running or queued job is
+  counted as a pass.
+- The existing [optional chronology diagnostic](https://github.com/NIne-WIngEd/FloRA/actions/runs/36822267094)
+  started automatically. It is not ordinary qualification. No additional
+  observer, diagnostic or microbenchmark was dispatched.
+
+Next: read ordinary physical receipts for the selected consumers and their
+unchanged response budgets. Selected-record correctness and response latency
+remain separate gates; the earlier failed budgets remain part of the record.
