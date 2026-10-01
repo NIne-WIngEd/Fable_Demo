@@ -291,3 +291,48 @@ JSON SHA256:
   The verified receipts and append-only FloRA measurement trace are preserved
   through GitHub. The existing 89-trace registry passed before this evidence-only
   update; full Python registry revalidation remains pending workspace recovery.
+
+## Selective source proof build
+
+The [architecture recalibration](LATENCY_ARCHITECTURE_RECALIBRATION_2026-10-01.md)
+replaced the proposed micro-cost experiment with an explicit selective read
+direction. The earlier measured failures remain evidence; no new observer or
+codec microbenchmark is used to claim a repair.
+
+- Added fresh registered locators and exact one-record Kurrent proofs. Scope,
+  full digest, UUID, physical position and original commit time are checked.
+- Added the explicitly named `selected-source-closure-v1` resolver. It follows
+  nominated sources and their registered parents within a strict cap, invokes
+  actual current purpose predicates, re-reads selected physical commitments,
+  and finishes with one XTDB source/raw/action/head row observation.
+- The new terminal fence performs guarded primitive comparisons after SQL,
+  rather than invoking mutable contract helpers. Formatting-only metadata
+  rewrites also fail closed in this new domain. Old generic fences are unchanged.
+- Existing consumers, replay readers, context/history fences and scientific
+  phase rules retain their behavior. This is not a whole-stream integrity
+  certificate, a cross-engine atomic snapshot, a private-read lease, or a
+  completed consumer switch. [Build details](SELECTED_SOURCE_CLOSURE.md).
+- Verified all **95 restored dependency blobs** against the frozen Alice
+  contract pin `4f287a488bc908bd04f99255ee01b794bacba50b`. No Alice repository
+  changes were made. Local SDK checks use `kurrentdbclient 1.3.3`.
+- Final local verification passed **173 tests across 10 focused modules** in
+  **35.228 s**, with no failures or errors. This includes 38 new exact-target,
+  15 new locator and 31 new closure cases plus existing event, codec, registry,
+  phase-fence, context and lineage regressions. Test duration is not response
+  latency; transport/SQL recorders do not establish physical-engine results.
+- All **90 prior procedure traces** now pass the Python registry validator;
+  the workspace-recovery validation noted above is complete. Shape validation
+  still does not certify linked builder cases or transfer readiness.
+- The new [selected-source procedure seed](fbm-seeds/2026-10-01_flora_selected_source_closure.jsonl)
+  brings the validated registry to **91 traces**. It records this build and its
+  limits in FloRA only; no seed is written to Alice.
+- Integration discovery assigns **49 real-engine cases** exactly once across
+  the original 12 shards; core contains **34**. The six new cases exercise
+  persisted locators, wrong/missing coordinates, false locators, physical
+  reappend, parent withdrawal and withdrawal during the second physical pass.
+  Discovery is not physical execution; completed CI receipts are required.
+
+Personality and MFM remain independent workstreams. No substitute, training,
+download, semantic score or builder transfer is produced here. Original
+**10,000/60,000 ms** response budgets and **60-minute** ordinary job caps remain
+unchanged. This additive build does not yet qualify a latency improvement.

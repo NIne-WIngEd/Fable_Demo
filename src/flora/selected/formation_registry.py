@@ -7,6 +7,7 @@ Read permission remains the independent policy of RegisteredFormationStore.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 import hashlib
 import json
@@ -34,6 +35,36 @@ _ROLE_ORIGINS = {
     "evolved_identity": {"assistant_self_event", "derived_inference", "historical_experience"},
     "conflict_or_uncertain": {"historical_experience", "derived_inference"},
 }
+
+
+@dataclass(frozen=True)
+class CanonicalSourceCommitment:
+    """Fresh registered locator, not proof of current Kurrent or permission.
+
+    Position, envelope digest and commit time were bound during trusted source
+    registration. A consumer must still obtain an exact physical event proof
+    and independently check present-use authority before opening any bytes.
+    This record carries no stream head, checkpoint or cached allow result.
+    """
+
+    source: RegisteredFormationSource
+    event_sha256: str
+    stream_position: int
+    recorded_at: str
+
+    def validate(self) -> None:
+        self.source.validate()
+        if require_sha256(self.event_sha256, "event_sha256") != self.event_sha256:
+            raise ValueError("registered event digest must be canonical")
+        if self.source.evidence.ref_id != f"experience-{self.event_sha256[:32]}":
+            raise ValueError("registered event digest does not bind its source ID")
+        if (isinstance(self.stream_position, bool)
+                or not isinstance(self.stream_position, int)
+                or self.stream_position < 0):
+            raise ValueError("registered event position must be a nonnegative integer")
+        if (normalize_timestamp(self.recorded_at, "recorded_at") != self.recorded_at
+                or self.recorded_at != self.source.evidence.recorded_at):
+            raise ValueError("registered commit time must bind canonical source metadata")
 
 
 class OwnerFormationSourceVerifier(Protocol):
@@ -227,6 +258,54 @@ class XTDBFormationSourceRegistry:
                 or raw_record["plaintext_sha256"] != evidence.content_digest):
             raise ValueError("formation source has no exact durable raw reference")
         return source
+
+    def lookup_commitment(self, ref_id: str) -> CanonicalSourceCommitment | None:
+        """Read the existing canonical source/raw rows and expose their locator.
+
+        This is a separate metadata API. The established ``lookup`` reader and
+        its callback order remain unchanged. No Kurrent read or plaintext I/O
+        occurs here, and a self-consistent registry row is not by itself proof
+        that the corresponding physical event still exists.
+        """
+        scope, namespace, connection = self.scope, self.authority_namespace_id, self.connection
+        scope_digest, scope_record = self.scope_digest, scope.metadata_record()
+        readers = tuple((name, getattr(self, name)) for name in (
+            "_key", "_fetch", "_decode", "raw_metadata", "lookup_commitment"))
+        def require_binding() -> None:
+            if (self.scope is not scope or self.authority_namespace_id != namespace
+                    or self.connection is not connection or self.scope_digest != scope_digest
+                    or scope.metadata_record() != scope_record
+                    or any(getattr(self, name) != reader for name, reader in readers)):
+                raise ValueError("formation source commitment reader binding changed")
+        require_binding()
+        key = self._key("source", ref_id)
+        require_binding()
+        row = self._fetch(_SOURCES, key)
+        require_binding()
+        if row is None:
+            return None
+        record = self._decode(row, expected_key=key)
+        require_binding()
+        if record["schema"] != "flora-registered-formation-source-v1":
+            raise ValueError("formation source registration schema changed")
+        evidence = _evidence_from_record(record["evidence"])
+        source = RegisteredFormationSource.create(evidence=evidence, object_ref=record["object_ref"])
+        if (evidence.ref_id != ref_id or evidence.scope != self.scope
+                or evidence.authority_namespace_id != self.authority_namespace_id
+                or source.registration_sha256 != record["registration_sha256"]):
+            raise ValueError("formation source registration does not bind its lookup")
+        raw_record = self.raw_metadata(source.object_ref)
+        require_binding()
+        if (raw_record is None or raw_record["record_sha256"] != record["raw_reference_sha256"]
+                or raw_record["plaintext_sha256"] != evidence.content_digest):
+            raise ValueError("formation source has no exact durable raw reference")
+        commitment = CanonicalSourceCommitment(
+            source=source, event_sha256=record["event_sha256"],
+            stream_position=record["event_stream_position"],
+            recorded_at=evidence.recorded_at)
+        commitment.validate()
+        require_binding()
+        return commitment
 
     def raw_metadata(self, object_ref: str) -> dict[str, object] | None:
         key = self._key("raw", object_ref)

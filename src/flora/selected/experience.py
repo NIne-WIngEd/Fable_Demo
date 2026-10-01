@@ -262,6 +262,136 @@ class KurrentExperienceLog:
                              id=event_uuid(event))],
         )
 
+    def lookup_committed(self, *, event_id: str, event_sha256: str,
+                         stream_position: int, expected_recorded_at: str) -> CommittedExperience:
+        """Freshly resolve one registered canonical commitment.
+
+        The caller supplies an independently verified registration's full
+        event digest, physical position, and commit time. A successful lookup
+        proves this target remains present. It proves neither the integrity of
+        the rest of the stream nor a current permission to use the event.
+
+        Ordinary readers request exactly one physical row. Custom replay
+        receivers must use their existing replay protocol; this new interface
+        rejects them rather than deriving physical proof from returned events.
+        The physical row must use the installed, unchanged SDK RecordedEvent
+        contract. No transport error is converted into a replay retry.
+        """
+        if _canonical.require_identifier(event_id, "event_id") != event_id:
+            raise ValueError("exact Experience event identifier is not canonical")
+        if _canonical.require_sha256(event_sha256, "event_sha256") != event_sha256:
+            raise ValueError("exact Experience event digest is not canonical")
+        if type(stream_position) is not int or stream_position < 0:
+            raise ValueError("exact Experience position must be a nonnegative integer")
+        if (_canonical.normalize_timestamp(expected_recorded_at, "expected_recorded_at")
+                != expected_recorded_at):
+            raise ValueError("exact Experience commit time is not canonical")
+        scope, client = self.scope, self.client
+        scope.validate()
+        scope_values = tuple(getattr(scope, field) for field in _SCOPE_FIELDS)
+        stream = stream_name(scope)
+
+        def verify_receiver():
+            replay = self.replay
+            committed = self.replay_committed
+            if (type(self) is not _NATIVE_LOG_CLASS
+                    or getattr(replay, "__self__", None) is not self
+                    or getattr(replay, "__func__", None) is not _NATIVE_REPLAY
+                    or _NATIVE_REPLAY.__code__ is not _NATIVE_REPLAY_CODE
+                    or getattr(committed, "__self__", None) is not self
+                    or getattr(committed, "__func__", None) is not _NATIVE_REPLAY_COMMITTED
+                    or _NATIVE_REPLAY_COMMITTED.__code__ is not _NATIVE_REPLAY_COMMITTED_CODE):
+                raise TypeError("exact Experience lookup does not support a custom replay receiver")
+
+        def verify_owner():
+            current_scope = self.scope
+            current_stream = stream_name(current_scope)
+            current_values = tuple(getattr(current_scope, field) for field in _SCOPE_FIELDS)
+            if (self.client is not client or self.stream != stream
+                    or current_scope != scope or current_values != scope_values
+                    or current_stream != stream):
+                raise ValueError("exact Experience reader owner changed during lookup")
+            verify_receiver()
+
+        def verify_target(entry):
+            entry.event.validate()
+            if (entry.stream_position != stream_position
+                    or type(entry.stream_position) is not int
+                    or entry.event.scope != scope
+                    or entry.event.event_id != event_id
+                    or entry.event.event_sha256 != event_sha256):
+                raise ValueError("exact Experience commitment differs from its lookup")
+            recorded_at = entry.recorded_at
+            if (not isinstance(recorded_at, datetime) or recorded_at.tzinfo is None
+                    or recorded_at.utcoffset() is None):
+                raise ValueError("exact Experience requires an aware physical commit time")
+            if (_canonical.normalize_timestamp(recorded_at.isoformat(), "recorded_at")
+                    != expected_recorded_at):
+                raise ValueError("exact Experience physical commit time changed")
+            verify_owner()
+            return entry
+
+        verify_owner()
+        from kurrentdbclient.exceptions import NotFoundError
+
+        try:
+            records = client.get_stream(stream_name=stream, stream_position=stream_position,
+                                        limit=1, resolve_links=False)
+        except NotFoundError as error:
+            verify_owner()
+            raise ValueError("exact Experience commitment is absent") from error
+        verify_owner()
+        iterator = iter(records)
+        row = next(iterator, None)
+        if row is None or next(iterator, None) is not None:
+            verify_owner()
+            raise ValueError("exact Experience lookup must return one physical record")
+        from kurrentdbclient import RecordedEvent
+
+        record_shape = vars(RecordedEvent)
+        if (RecordedEvent is not _NATIVE_RECORD or type(row) is not _NATIVE_RECORD
+                or len(record_shape) != len(_NATIVE_RECORD_SHAPE)
+                or any(record_shape.get(name) is not value
+                       for name, value in _NATIVE_RECORD_SHAPE)):
+            raise TypeError("exact Experience lookup requires the unchanged SDK RecordedEvent contract")
+        position, kind, physical_stream = row.stream_position, row.type, row.stream_name
+        if (position != stream_position or type(position) is not int
+                or type(kind) is not str or kind != "FableExperienceV1"
+                or type(physical_stream) is not str or physical_stream != stream):
+            raise ValueError("exact Experience physical record differs from its lookup")
+        if (type(row.id) is not _NATIVE_UUID or type(row.id.int) is not int
+                or type(row.data) is not bytes):
+            raise ValueError("exact Experience physical record has invalid UUID or encoded bytes")
+        native = (_NATIVE_GATEWAY(self, records, client, stream)
+                  if _NATIVE_GATEWAY.__code__ is _NATIVE_GATEWAY_CODE else None)
+        if native is not None:
+            owner, rows = native
+            position, kind, data, identifier, recorded_at = rows[0]
+            memo_owner, envelopes, _ = self._envelope_memo
+            snapshot = envelopes.get(data) if _same_owner(memo_owner, owner) else None
+            if snapshot is None:
+                event = decode_event(data, self.scope)
+                expected_id = event_uuid(event).int
+            else:
+                event = _restore_envelope(snapshot)
+                expected_id = _NATIVE_UUID(hex=event.event_sha256[:32]).int
+            if identifier != expected_id or identifier != int(event.event_sha256[:32], 16):
+                raise ValueError("Kurrent event ID differs from the Experience envelope")
+            entry = verify_target(CommittedExperience(event, position, recorded_at))
+            if snapshot is None:
+                snapshot = _envelope_snapshot(event)
+                if snapshot is not None:
+                    self._remember_envelope(owner, data, snapshot)
+            verify_owner()
+            return entry
+        # Changed codec helpers and nonmemoizable field values use the current
+        # decoder. They do not receive an immutable-byte memo shortcut.
+        event = decode_event(row.data, self.scope)
+        if row.id != event_uuid(event) or row.id.int != int(event.event_sha256[:32], 16):
+            raise ValueError("Kurrent event ID differs from the Experience envelope")
+        return verify_target(CommittedExperience(event, position,
+                                                 getattr(row, "recorded_at", None)))
+
     def replay_committed(self) -> tuple[CommittedExperience, ...]:
         from kurrentdbclient.exceptions import NotFoundError
 
@@ -327,6 +457,10 @@ class KurrentExperienceLog:
 
 _NATIVE_LOG_CLASS = KurrentExperienceLog
 _NATIVE_LOG_SHAPE = tuple(vars(KurrentExperienceLog).items())
+_NATIVE_REPLAY = KurrentExperienceLog.replay
+_NATIVE_REPLAY_CODE = _NATIVE_REPLAY.__code__
+_NATIVE_REPLAY_COMMITTED = KurrentExperienceLog.replay_committed
+_NATIVE_REPLAY_COMMITTED_CODE = _NATIVE_REPLAY_COMMITTED.__code__
 
 
 def _native_codec_gateway(log, records, client, stream):
@@ -389,7 +523,9 @@ _PRIVATE_CODEC_FUNCTIONS = tuple(
 _PRIVATE_CODEC_BINDINGS = tuple((globals(), name, globals()[name]) for name in (
     "_NATIVE_EVENT", "_NATIVE_SCOPE", "_NATIVE_PROVENANCE", "_NATIVE_UUID", "_NATIVE_RECORD",
     "_EVENT_FIELDS", "_SCOPE_FIELDS", "_PROVENANCE_FIELDS", "_NATIVE_OWNER",
-    "_NATIVE_CHECK", "_NATIVE_CHECK_CODE", "_NATIVE_GATEWAY", "_NATIVE_GATEWAY_CODE"))
+    "_NATIVE_CHECK", "_NATIVE_CHECK_CODE", "_NATIVE_GATEWAY", "_NATIVE_GATEWAY_CODE",
+    "_NATIVE_REPLAY", "_NATIVE_REPLAY_CODE", "_NATIVE_REPLAY_COMMITTED",
+    "_NATIVE_REPLAY_COMMITTED_CODE"))
 _PRIVATE_CODEC_BINDINGS += tuple((globals(), name, globals()[name]) for name in (
     "CommittedExperience", "datetime", "timezone", "OrderedDict", "_NATIVE_RECORD_SHAPE"))
 _NATIVE_CONTRACTS = _capture_native_contracts()

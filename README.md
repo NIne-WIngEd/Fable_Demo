@@ -29,6 +29,8 @@ The [registered experiment coordinator](docs/EXPERIMENT_COORDINATOR.md) connects
 
 ## Architecture boundary
 
+The [October 1 architecture recalibration](docs/LATENCY_ARCHITECTURE_RECALIBRATION_2026-10-01.md) confirms that a turn may select zero, one or several memory planes. The [selected source closure](docs/SELECTED_SOURCE_CLOSURE.md) adds exact event lookup and bounded parent resolution with live source-use checks. It is an explicitly named metadata proof; existing consumers and whole-history integrity checks remain in place while the selective route is verified.
+
 The active path follows the A.L.I.C.E. Stage G–J successor design. The old Phase 2 runtime is void as an implementation basis for this demo. It was removed from `main`; the historical work remains in [commit `aad9ad4`](https://github.com/NIne-WIngEd/FloRA/tree/aad9ad46bd0def74755728ed967d5a003f66e93b). Passing tests there never qualified this experiment.
 
 The [alignment and build map](docs/FloRA_ALIGNMENT.md) names the selected planes, what can be built independently, and the evidence required. For the portions exercised by the claim, we use the same logical contracts **and physical engines** chosen for the full system. We will not substitute a convenient local database and count its result as proof for XTDB, KurrentDB, Qdrant, or any other selected engine.
