@@ -155,12 +155,37 @@ qualify the newly isolated jobs.
 - Native before/tail pilot: one case passed in **1,430.465 s**. Its actual BEFORE,
   accepted tail and unrelated correction are retained; this whole-case time
   does not qualify the paired-response deadline.
+- Lineage: both cases passed, suite **1,961.855 s**. Accepted episode/state
+  recreation **1,798.857 s**; approved native state/history/output recreation and
+  current revocation **162.998 s**. These qualify infrastructure, not learned
+  episode or judgment quality.
+- Native outcome/audit pilot: one case passed in **1,965.103 s**. Outcome audit,
+  unknown tail and current permission withdrawal were exercised.
+- Native typed-phase pilot: one case passed in **3,263.089 s** (suite
+  **3,263.090 s**). Typed phase snapshot and grant-proof join preserve the
+  BEFORE/tail boundary. All four isolated pilot cases passed at this head.
+- Retained route: one case passed in **2,287.871 s** (suite **2,287.872 s**).
+  Original claim/state/artifact replacement preserves the BEFORE route and live
+  withdrawal. This is the first completed receipt for the isolated case.
+- Native route: one case passed in **2,577.512 s**. Four distinct actual native
+  invocations were recovered on their declared phase routes; supplied signed
+  outputs qualify wiring, not learned behavior or response latency.
+- History: coordinator passed in **100.530 s**. Preregistration registered
+  original inputs in **96.752 s**, then published no first BEFORE capture in the
+  remaining **55 min 52 s**. The job was cancelled at its unchanged one-hour cap.
+  No chronological BEFORE/AFTER, update, final seal or response is qualified.
 - Transport: BEFORE **15,262 ms**, AFTER **19,598 ms**, both `budget_exceeded`
   under **10,000 ms**. Provider authority case passed in **96.816 s**. Two tests,
   one failure, zero errors; suite **143.592 s**.
 - Native comparison: BEFORE **60,073 ms**, AFTER **60,133 ms**, both timeout
   during owned context authorization under **60,000 ms**. Suite **249.750 s**;
   one test, zero passes. Other jobs retain their own receipt boundaries.
+
+This ordinary run is fully accounted for: **40/43 physical cases passed**,
+**two failed their unchanged response budgets**, and **one chronology case did
+not complete before the unchanged job cap**. Its 695 contracts passed. Whole-case
+pilot/route times and fictional producer receipts establish no learned behavior
+or consumer-response latency.
 
 Only the eligibility checking loops changed in the runtime. Neither query
 batching nor typed-action material handoff was shipped. All **87** FloRA
@@ -206,5 +231,22 @@ JSON SHA256:
 - **37 local observer and seed-contract checks passed**, including the 16 native
   lifecycle/privacy checks. All **88** FloRA procedure traces validate. These are
   mechanics and method evidence, not qualified builder or learned-model cases.
-- The first exact published-head selected-engine worker aggregate is still
-  pending. Optional diagnostics never qualify the ordinary latency gates.
+- [First worker diagnostic](https://github.com/NIne-WIngEd/FloRA/actions/runs/36801543475):
+  commit `58d6966c494d7bff10badc68e24e83c084846bfc`, tree
+  `3e3a57299070f230647dbb86639ce04af9254c97`. Artifact `11136306383` has JSON
+  SHA256 `e6c2ee6d532253db4e7310806f04377ac0b5ce1ebc4fdb99d494ac1c91b81f39`;
+  its ZIP digest matches GitHub.
+- Capped during setup: **180.009 s wall / 133.144 s parent thread CPU**, with
+  **zero owned entries and zero worker ledgers**. Parent setup included 36,199
+  SQL executes, 2,790 fresh streams and five context assemblies. These do not
+  measure the later owned authorization path. All 108 after-source digests match
+  the published tree/reference pin; all 107 before-source hashes remain unchanged.
+- The wrapper workflow is green because it permits diagnostic failure. The
+  fixture was capped with no pass, failure or ordinary error recorded; it remains
+  unqualified. The follow-up omits non-RPC parent setup tags while keeping the
+  same 180-second clock and RPC/owned-work cap fences. Optional diagnostics never
+  qualify the ordinary latency gates.
+- The narrower observer passed **41 local observer/seed-contract checks**,
+  including four new setup-scope, nested-RPC and original-clock checks. All
+  **89** FloRA procedure traces validate. The first published observer trace
+  remains intact. Actual worker coverage for the follow-up is pending.

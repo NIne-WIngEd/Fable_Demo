@@ -12,6 +12,34 @@ receipts and timeout/budget settings. No runtime delegate is wrapped or replaced
 No model or substitute is built. Every timing is **nonqualifying** because
 observation adds overhead.
 
+## First actual result and bounded follow-up
+
+The exact published-head run `36801543475` on `58d6966c494d7bff10badc68e24e83c084846bfc`
+stopped at **180.00928 seconds** before any owned marker. It retained zero worker
+ledgers, so it measured no owned context-authorization cost. Its parent CPU window
+was 133.144 seconds. There were no observer errors, ledger overflows or active
+owned work/RPCs at close. The workflow's success wrapper does not turn that capped
+fixture into a pass.
+
+The artifact ZIP SHA256 is
+`6531e30f623b218784516f900ec4c328c99b94f10bb4077e0a940750a063c2ad`.
+All 108 after-source digests matched the exact published tree and pinned A.L.I.C.E.
+reference; all 107 before-source digests stayed unchanged. This verifies the
+observed code, not native-worker performance.
+
+The native CLI now records only approved parent RPC targets until the first exact
+owned marker is entered. Non-RPC parent setup is deliberately unobserved. After
+that marker it enables the fixed parent tags. Worker observation is unchanged.
+The receipt reports this boundary and the first-owned offset from the original
+observer entry, or null when no marker was reached. The generic observer defaults
+to its original scope for compatibility.
+
+The **180-second** cap stays anchored to the original observer entry. It is not
+reset, delayed or extended when an owned marker arrives. Pre-marker RPC nesting
+and active counters still protect in-flight calls. Whether this narrower setup
+scope reaches an owned worker before the cap remains an actual-engine question;
+no efficiency or latency gain is claimed before that next artifact.
+
 ## What is measured
 
 The future-thread dispatcher recognizes only the exact original ordinary `work`

@@ -111,11 +111,14 @@ class OwnedThreadObserver:
 
     def __init__(self, targets, *, owned_work_code, cap_seconds=180,
                  wall_clock=time.perf_counter_ns, cpu_clock=time.thread_time_ns,
-                 maximum_worker_ledgers=MAX_WORKER_LEDGERS):
+                 maximum_worker_ledgers=MAX_WORKER_LEDGERS,
+                 parent_rpc_only_before_owned=False):
         if cap_seconds is not None and (not math.isfinite(cap_seconds) or not 0 < cap_seconds <= 180):
             raise ValueError("cap must be positive, finite and at most 180 seconds")
         if type(maximum_worker_ledgers) is not int or not 1 <= maximum_worker_ledgers <= MAX_WORKER_LEDGERS:
             raise ValueError("bounded worker ledger count required")
+        if type(parent_rpc_only_before_owned) is not bool:
+            raise ValueError("parent setup scope must be an explicit boolean")
         if any(code.co_flags & (inspect.CO_GENERATOR | inspect.CO_COROUTINE | inspect.CO_ASYNC_GENERATOR)
                 for code in targets):
             raise ValueError("only ordinary synchronous original code objects")
@@ -130,6 +133,7 @@ class OwnedThreadObserver:
         self.cap_ns = None if cap_seconds is None else int(cap_seconds * 1e9)
         self.wall_clock, self.cpu_clock = wall_clock, cpu_clock
         self.maximum_worker_ledgers = maximum_worker_ledgers
+        self.parent_rpc_only_before_owned = parent_rpc_only_before_owned
         self.local = threading.local()
         self.lock = threading.Lock()
         self.workers = []
@@ -140,6 +144,7 @@ class OwnedThreadObserver:
         self.previous_parent_hook = self.previous_future_hook = None
         self.start_wall = self.end_wall = None
         self.active_owned_work = self.owned_entries = self.worker_ledger_overflow = 0
+        self.first_owned_entry_offset_ns = None
         self.open_spans_at_close = self.active_rpcs_at_close = self.active_owned_work_at_close = 0
         self.parent_hook_changed = self.future_hook_changed = False
         self.stopped_before_parent_rpc = False
@@ -219,6 +224,8 @@ class OwnedThreadObserver:
                 if self.closed:
                     return
                 if marker and event == "call":
+                    if self.first_owned_entry_offset_ns is None:
+                        self.first_owned_entry_offset_ns = max(0, wall - self.start_wall)
                     self.owned_entries += 1
                     self.active_owned_work += 1
                     self.local.owned_depth = depth + 1
@@ -245,6 +252,11 @@ class OwnedThreadObserver:
             return
         target = self.targets.get(id(frame.f_code))
         if target is None:
+            return
+        # Native CLI setup keeps RPC nesting/cap safety but does not attribute
+        # non-RPC parent spans before the first exact owned worker entry. The
+        # original start/cap clock is untouched, and workers are unchanged.
+        if self.parent_rpc_only_before_owned and not self.owned_entries and not target[1]:
             return
         wall, cpu = self.wall_clock(), self.cpu_clock()
         stop = False
@@ -281,6 +293,8 @@ class OwnedThreadObserver:
             stopped_before_parent_rpc=self.stopped_before_parent_rpc,
             cap_deferred_parent_entries=self.cap_deferred_entries,
             classified_owned_work_entries=self.owned_entries,
+            first_owned_entry_offset_seconds=(None if self.first_owned_entry_offset_ns is None
+                else self.first_owned_entry_offset_ns / 1e9),
             retained_worker_ledgers=len(self.workers), worker_ledger_overflow=self.worker_ledger_overflow,
             active_owned_work_at_close=self.active_owned_work_at_close,
             open_tagged_spans_at_close=self.open_spans_at_close,
@@ -350,7 +364,11 @@ def build_receipt(*, status, result, observer, cap_seconds, before, after):
         cap_outcome=("not_observed" if summary is None else "stopped_before_parent_rpc"
             if summary["stopped_before_parent_rpc"] else "completed_after_cap"
             if summary["overshoot_seconds"] else "within_cap"),
-        coverage="parent_and_future_threads_classified_by_exact_original_owned_work_code",
+        coverage=("parent_rpc_only_before_first_owned_entry_then_fixed_parent_and_owned_worker_tags"
+            if observer is not None and observer.parent_rpc_only_before_owned
+            else "parent_and_future_threads_classified_by_exact_original_owned_work_code"),
+        parent_non_rpc_setup_observed=(not observer.parent_rpc_only_before_owned
+            if observer is not None else None),
         coverage_limits=["observer_overhead_precludes_latency_qualification",
             "return_events_include_exception_unwind_and_do_not_attest_authorization_success",
             "preexisting_threads_child_processes_and_unclassified_threads_not_measured",
@@ -361,7 +379,9 @@ def build_receipt(*, status, result, observer, cap_seconds, before, after):
             "closed_survivor_dispatchers_remove_only_themselves_on_next_python_event",
             "idle_or_c_blocked_survivors_can_retain_inert_dispatcher_until_next_event",
             "queued_owned_jobs_entering_only_after_close_are_unobserved",
-            "ledger_or_stack_overflow_and_hook_changes_make_coverage_incomplete"],
+            "ledger_or_stack_overflow_and_hook_changes_make_coverage_incomplete"] +
+            (["non_rpc_parent_setup_is_unobserved_before_first_exact_owned_entry"]
+                if observer is not None and observer.parent_rpc_only_before_owned else []),
         outcome_counts=result.counts(), aggregate=summary,
         loaded_source_sha256_before=before, loaded_source_sha256_after=after,
         source_hashes_unchanged=(not changed if before else None), changed_source_modules=changed,
@@ -405,7 +425,8 @@ def main(argv=None):
             module, case = original_case()
             targets, marker = native_targets(module)
             before = source_hashes()
-            observer = OwnedThreadObserver(targets, owned_work_code=marker, cap_seconds=cap_seconds)
+            observer = OwnedThreadObserver(targets, owned_work_code=marker, cap_seconds=cap_seconds,
+                parent_rpc_only_before_owned=True)
             with observer:
                 unittest.TestSuite((case,)).run(result)
             status = result.fixture_status()

@@ -288,6 +288,100 @@ class NativeBoundaryProfilerTest(unittest.TestCase):
         self.assertEqual(calls, [True])
         self.assertFalse(observer.summary()["stopped_before_parent_rpc"])
 
+    def test_native_mode_skips_non_rpc_setup_and_activates_after_exact_marker(self):
+        def non_rpc():
+            return None
+        def rpc():
+            non_rpc()
+        def owned():
+            non_rpc()
+        observer = self.observer(owned, ("non_rpc", non_rpc, False), ("rpc", rpc, True),
+            cap_seconds=None, parent_rpc_only_before_owned=True)
+        with observer:
+            non_rpc()
+            rpc()
+            with self.worker(owned):
+                pass
+            non_rpc()
+        summary = observer.summary()
+        self.assertEqual(self.rows(summary["parent"])["non_rpc"]["calls"], 1)
+        self.assertEqual(self.rows(summary["parent"])["rpc"]["calls"], 1)
+        self.assertEqual(self.rows(summary["workers"][0])["non_rpc"]["calls"], 1)
+        self.assertIsNotNone(summary["first_owned_entry_offset_seconds"])
+        receipt = diagnostic.build_receipt(status="passed", result=diagnostic.AggregateTestResult(),
+            observer=observer, cap_seconds=None, before={}, after={})
+        self.assertFalse(receipt["parent_non_rpc_setup_observed"])
+        self.assertIn("parent_rpc_only_before_first_owned_entry", receipt["coverage"])
+
+    def test_native_mode_keeps_original_cap_when_setup_never_reaches_marker(self):
+        calls, clock = [], [0]
+        def non_rpc():
+            calls.append("unobserved setup")
+        def rpc():
+            calls.append("RPC body")
+        def owned():
+            pass
+        observer = self.observer(owned, ("non_rpc", non_rpc, False), ("rpc", rpc, True),
+            cap_seconds=1, parent_rpc_only_before_owned=True,
+            wall_clock=lambda: clock[0], cpu_clock=lambda: clock[0])
+        with self.assertRaises(diagnostic.DiagnosticSoftCap):
+            with observer:
+                clock[0] = 2_000_000_000
+                non_rpc()
+                rpc()
+        summary = observer.summary()
+        self.assertEqual(calls, ["unobserved setup"])
+        self.assertEqual(self.rows(summary["parent"])["non_rpc"]["calls"], 0)
+        self.assertTrue(summary["stopped_before_parent_rpc"])
+        self.assertEqual(summary["classified_owned_work_entries"], 0)
+        self.assertIsNone(summary["first_owned_entry_offset_seconds"])
+
+    def test_native_mode_keeps_pre_marker_rpc_nesting_safe_at_expired_cap(self):
+        calls, clock = [], [0]
+        def inner_rpc():
+            calls.append(True)
+        def outer_rpc():
+            clock[0] = 2_000_000_000
+            inner_rpc()
+        def owned():
+            pass
+        observer = self.observer(owned, ("inner", inner_rpc, True), ("outer", outer_rpc, True),
+            cap_seconds=1, parent_rpc_only_before_owned=True,
+            wall_clock=lambda: clock[0], cpu_clock=lambda: clock[0])
+        with self.assertRaises(diagnostic.DiagnosticSoftCap):
+            with observer:
+                outer_rpc()
+                outer_rpc()
+        self.assertEqual(calls, [True])
+        self.assertEqual(observer.summary()["cap_deferred_parent_entries"], 1)
+        self.assertEqual(self.rows(observer.summary()["parent"])["inner"]["calls"], 1)
+
+    def test_native_mode_defers_for_owned_work_without_resetting_cap_at_first_marker(self):
+        ready, release = threading.Event(), threading.Event()
+        calls, clock = [], [0]
+        def rpc():
+            calls.append(True)
+        def owned():
+            ready.set()
+            release.wait(timeout=5)
+        observer = self.observer(owned, ("rpc", rpc, True), cap_seconds=1,
+            parent_rpc_only_before_owned=True,
+            wall_clock=lambda: clock[0], cpu_clock=lambda: clock[0])
+        with self.assertRaises(diagnostic.DiagnosticSoftCap):
+            with observer:
+                clock[0] = 900_000_000
+                with self.worker(owned, release):
+                    self.assertTrue(ready.wait(timeout=5))
+                    clock[0] = 1_100_000_000
+                    rpc()
+                    release.set()
+                rpc()
+        summary = observer.summary()
+        self.assertEqual(calls, [True])
+        self.assertEqual(summary["first_owned_entry_offset_seconds"], .9)
+        self.assertEqual(summary["cap_deferred_parent_entries"], 1)
+        self.assertTrue(summary["stopped_before_parent_rpc"])
+
     def test_numeric_windows_and_fixed_tag_totals_are_separate(self):
         ledger = diagnostic.NumericLedger(("outer", "inner"), 0, 0)
         ledger.observe("call", 0, False, 10, 1)
@@ -357,7 +451,8 @@ class NativeBoundaryProfilerTest(unittest.TestCase):
             self.observer(coroutine)
         def owned():
             pass
-        for kwargs in ({"cap_seconds": 181}, {"maximum_worker_ledgers": 33}, {"cap_seconds": float("inf")}):
+        for kwargs in ({"cap_seconds": 181}, {"maximum_worker_ledgers": 33},
+                {"cap_seconds": float("inf")}, {"parent_rpc_only_before_owned": 1}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 self.observer(owned, **kwargs)
 
