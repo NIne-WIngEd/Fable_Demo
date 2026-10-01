@@ -370,6 +370,7 @@ class SelectedNativeReadServices:
         """
         lineage, runtime = session.lineage, session.runtime
         initial_authority = lineage.history_authority
+        original_phase_permissions = runtime.source_policy
         history_domain = getattr(initial_authority, "history_metadata_domain", None)
         history_cap = getattr(initial_authority, "maximum_history_sources", None)
         if (history.scope != runtime.scope or initial_authority.authorize_history(
@@ -460,6 +461,12 @@ class SelectedNativeReadServices:
         install_native_phase_gate(context_policy, "allow_event",
             canonical_predicate=RegisteredJudgmentContextPolicy.allow_event,
             phase_now=phase_now, phase_member=phase_member)
+        if selected_history:
+            from .selected_phase_authority import _issue_selected_phase_authority
+            _issue_selected_phase_authority(runtime=runtime, lineage=lineage,
+                entry=entry, history=history, initial_authority=initial_authority,
+                original_permissions=original_phase_permissions,
+                phase_now=phase_now, phase_member=phase_member)
 
     def _phase_session(self, session, entry, request=None, *, arm=None):
         """Resolve the exact archive on this freshly owned read connection.

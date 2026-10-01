@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "run_id": 36822267124,
+  "run_url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36822267124",
+  "head_sha": "029a7655ca4aac16ba5c7644b7ca579a8ac45aac",
+  "runtime_tree": "dd9211f8691bf84c28a296a0e07b167890015436",
+  "run_status": "completed",
+  "run_conclusion": "failure",
+  "qualification": false,
+  "scope": "infrastructure_and_fixed_budget_gate_only",
+  "budgets": {
+    "standalone_ms": 10000,
+    "native_ms": 60000,
+    "ordinary_job_minutes": 60
+  },
+  "physical_summary": {
+    "scheduled": 53,
+    "passed": 49,
+    "response_budget_failed": 2,
+    "incomplete": 2
+  },
+  "jobs": [
+    {
+      "job_id": 110240195762,
+      "name": "contracts",
+      "status": "completed",
+      "conclusion": "failure",
+      "start": "2026-10-01T05:57:20Z",
+      "end": "2026-10-01T05:59:42Z",
+      "fixture_errors": 2,
+      "error": "NameError_self_in_extracted_bind_actual_history",
+      "failed_module": "test_native_comparison_fixture"
+    },
+    {
+      "job_id": 110240195991,
+      "name": "integration-native-pilot-withdrawal",
+      "status": "completed",
+      "conclusion": "success",
+      "start": "2026-10-01T05:57:20Z",
+      "end": "2026-10-01T06:00:55Z",
+      "scheduled": 1,
+      "passed": 1,
+      "suite_seconds": 139.795
+    },
+    {
+      "job_id": 110240195996,
+      "name": "integration-native-comparison",
+      "status": "completed",
+      "conclusion": "failure",
+      "start": "2026-10-01T05:57:20Z",
+      "end": "2026-10-01T06:02:04Z",
+      "scheduled": 1,
+      "response_budget_failed": 1,
+      "suite_seconds": 198.379,
+      "before": {
+        "elapsed_ms": 60062,
+        "status": "timeout"
+      },
+      "after": {
+        "elapsed_ms": 60125,
+        "status": "timeout"
+      }
+    },
+    {
+      "job_id": 110240196005,
+      "name": "integration-native-pilot-typed-phase",
+      "status": "completed",
+      "conclusion": "success",
+      "start": "2026-10-01T05:57:20Z",
+      "end": "2026-10-01T06:49:00Z",
+      "scheduled": 1,
+      "passed": 1,
+      "suite_seconds": 3035.546
+    },
+    {
+      "job_id": 110240196030,
+      "name": "integration-lineage",
+      "status": "completed",
+      "conclusion": "success",
+      "start": "2026-10-01T05:57:21Z",
+      "end": "2026-10-01T06:31:14Z",
+      "scheduled": 2,
+      "passed": 2,
+      "suite_seconds": 1963.973
+    },
+    {
+      "job_id": 110240196062,
+      "name": "integration-history",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "start": "2026-10-01T05:57:21Z",
+      "end": "2026-10-01T06:57:44Z",
+      "scheduled": 2,
+      "passed": 1,
+      "incomplete": 1,
+      "completed_coordinator_seconds": 98.935,
+      "registered_original_inputs_seconds": 89.276,
+      "first_before_capture_complete": false
+    },
+    {
+      "job_id": 110240196069,
+      "name": "integration-transport",
+      "status": "completed",
+      "conclusion": "failure",
+      "start": "2026-10-01T05:57:20Z",
+      "end": "2026-10-01T06:01:10Z",
+      "scheduled": 2,
+      "passed": 1,
+      "response_budget_failed": 1,
+      "suite_seconds": 90.959,
+      "before": {
+        "elapsed_ms": 12621,
+        "status": "budget_exceeded"
+      },
+      "after": {
+        "elapsed_ms": 19519,
+        "status": "budget_exceeded"
+      }
+    },
+    {
+      "job_id": 110240196089,
+      "name": "integration-history-routes-retained",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "start": "2026-10-01T05:57:20Z",
+      "end": "2026-10-01T06:57:40Z",
+      "scheduled": 1,
+      "incomplete": 1
+    },
+    {
+      "job_id": 110240196110,
+      "name": "integration-native-pilot-before-tail",
+      "status": "completed",
+      "conclusion": "success",
+      "start": "2026-10-01T05:57:21Z",
+      "end": "2026-10-01T06:35:40Z",
+      "scheduled": 1,
+      "passed": 1,
+      "suite_seconds": 2204.365
+    },
+    {
+      "job_id": 110240196127,
+      "name": "integration-native-pilot-outcome-audit",
+      "status": "completed",
+      "conclusion": "success",
+      "start": "2026-10-01T05:57:20Z",
+      "end": "2026-10-01T06:29:25Z",
+      "scheduled": 1,
+      "passed": 1,
+      "suite_seconds": 1844.243
+    },
+    {
+      "job_id": 110240196131,
+      "name": "integration-history-routes-native",
+      "status": "completed",
+      "conclusion": "success",
+      "start": "2026-10-01T05:57:20Z",
+      "end": "2026-10-01T06:28:16Z",
+      "scheduled": 1,
+      "passed": 1,
+      "suite_seconds": 1782.996
+    },
+    {
+      "job_id": 110240196197,
+      "name": "integration-core",
+      "status": "completed",
+      "conclusion": "success",
+      "start": "2026-10-01T05:57:21Z",
+      "end": "2026-10-01T06:14:22Z",
+      "scheduled": 38,
+      "passed": 38,
+      "suite_seconds": 916.972
+    },
+    {
+      "job_id": 110240196259,
+      "name": "integration-readers",
+      "status": "completed",
+      "conclusion": "success",
+      "start": "2026-10-01T05:57:20Z",
+      "end": "2026-10-01T06:00:23Z",
+      "scheduled": 2,
+      "passed": 2,
+      "suite_seconds": 102.143
+    }
+  ],
+  "limits": [
+    "fictional_producer_and_host_fixtures_not_learned_behavior",
+    "case_durations_not_response_latency",
+    "no_budget_relaxation",
+    "no_model_or_builder_transfer_qualification"
+  ]
+}

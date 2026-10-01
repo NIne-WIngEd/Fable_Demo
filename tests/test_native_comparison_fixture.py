@@ -70,6 +70,10 @@ class NativeComparisonFixtureBindingTest(unittest.IsolatedAsyncioTestCase):
     async def test_actual_comparison_binder_recovers_enrolled_approval_on_owned_custody(self):
         original = self.native.runtime.state_approval_verifier
         runtime, lineage = self.bound_runtime()
+        self.assertEqual(runtime.context_integrity_domain, "selected-current-context-v1")
+        self.assertEqual(runtime.maximum_context_sources, 128)
+        self.assertEqual(lineage.history_authority.history_metadata_domain, "selected-history-metadata-v1")
+        self.assertEqual(lineage.history_authority.maximum_history_sources, 32)
         owner = runtime.state_approval_verifier
         self.assertIsNot(owner, original)
         self.assertIsNot(owner.proofs, original.proofs)

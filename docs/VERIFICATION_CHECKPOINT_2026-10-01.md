@@ -454,3 +454,101 @@ still pending; **latency improvement remains unverified**.
 Next: read ordinary physical receipts for the selected consumers and their
 unchanged response budgets. Selected-record correctness and response latency
 remain separate gates; the earlier failed budgets remain part of the record.
+
+### Consumer physical receipts and proof-composition foundation
+
+These receipts belong to runtime `029a7655ca4aac16ba5c7644b7ca579a8ac45aac`
+in [ordinary run 36822267124](https://github.com/NIne-WIngEd/FloRA/actions/runs/36822267124).
+
+- Core passed **38/38 cases**, suite **916.972 s**, including all four new
+  selected-history cases. Exact manifest reconstruction, original-ID phase
+  exclusion, signed terminal withdrawal and the explicit unrelated-tail
+  integrity boundary passed on actual XTDB/Kurrent. Restart and persistent
+  Temporal probes also passed. These are infrastructure checks, not learned
+  behavior or response latency.
+- Readers passed **2/2**, suite **102.143 s**; withdrawal **1/1**,
+  **139.795 s**; lineage **2/2**, **1,963.973 s**; before/tail **1/1**,
+  **2,204.365 s**; outcome/audit **1/1**, **1,844.243 s**; native history
+  routes **1/1**, **1,782.996 s**; typed phase **1/1**, **3,035.546 s**.
+  Whole-case durations do not qualify a
+  paired response budget.
+- Standalone comparison still failed **10,000 ms**: BEFORE **12,621 ms**,
+  AFTER **19,519 ms**, both `budget_exceeded`. The independent provider case
+  passed; the two-case transport suite took **90.959 s**.
+- Native comparison still failed **60,000 ms**: BEFORE **60,062 ms**,
+  AFTER **60,125 ms**, both `timeout`; suite **198.379 s**. Differences from
+  prior runs are not a controlled speedup or a passing budget.
+- Contracts stopped at two errors in `test_native_comparison_fixture`.
+  The actual integration binder used `self.assertEqual` inside a callback
+  extracted without a unittest instance. The preceding focused suite omitted
+  that module. Explicit domain/cap checks now preserve its requirements without
+  depending on `self`; both actual-binder cases pass locally.
+- The complete local contract selection then passed **866 tests in 74
+  modules**, with no failures or errors; wall time **494.660 s**. Each module
+  ran in its own process. This validates the fixture repair and broad regression
+  coverage; the subsequent descriptor foundation needs its separate final
+  focused checks and exact published CI receipt.
+
+The existing automatic transport diagnostic was retrieved, not rerun. Artifact
+`11143943320` matches archive SHA-256
+`cede326213fa6a7cf2816b75abd23cae425ccf58aad647414c323f9c720c1590`.
+All seven reported loaded-source hashes match the tested runtime tree.
+The [preserved aggregate](evidence/2026-10-01_029a7655_transport_profile.json)
+reports `qualification=false`: whole fixture **66.235585484 s**, **189**
+combined history checks, **2,215** committed replays, **4,105** Kurrent reads,
+**44,403** SQL executions, **12,888** current-action resolutions and **2,748**
+permission predicates. These inclusive whole-fixture counts cannot be assigned
+to one response or the native case.
+
+The read-only causal audit found repeated proof construction inside nested
+phase/source checks. It found no demonstrated new authorization defect in the
+selected consumers. The [bounded authority-frame protocol](SELECTED_AUTHORITY_FRAME_PROTOCOL.md)
+requires all held-history and selected-context rights to join the same final
+fence. Its first implementation step is a privately issued native phase-binding
+descriptor. Descriptor recognition skips no existing check; shared collectors
+and frame integration remain separate work.
+
+History coordinator passed in **98.935 s**. Preregistration registered its
+original inputs in **89.276 s**, then completed no first BEFORE capture before
+the unchanged one-hour job cap cancelled the job. Retained history routes also
+completed no case receipt before the unchanged one-hour cap. Neither cancellation
+qualifies chronology, retained-route recovery, an update or a final seal.
+
+All ordinary results are now accounted for: **49/53 physical cases passed**,
+**two failed their unchanged response budgets**, and **two did not complete
+before their unchanged job caps**. The separate contracts job failed the two
+actual-binder fixture errors described above. **No latency improvement,
+complete demo, learned model win or builder transfer is qualified.**
+
+### Selected-phase binding foundation: frozen local receipt
+
+- Added a privately issued identity descriptor for the actual selected native
+  phase installer. It binds original held inputs, phase/domain/cap, controller,
+  actual readers and callback closures. Exact gate copies and supported
+  selected transfers retain the original owner. Generic/custom gates receive
+  no descriptor and keep their existing checks.
+- Independent review reproduced effectful custom hashing, dictionary access
+  and nested iteration during validation of tampered fields. Validation now
+  rejects primitive or independently sealed own-field changes before accessing
+  nested replacements. All four reproductions reject with **zero effects**;
+  an unknown transfer target also rejects before its custom getter runs.
+- Private issuance uses weak references and identity keys. Closed owned-session
+  cycles are collectible. Descriptor fields, origin fields, reader bindings,
+  callback code and held values cannot silently change the recognized phase.
+- Final frozen-source verification passed **276 tests in 19 modules**, no
+  failures or errors; wall time **51.396 s**. Recorded source hashes stayed
+  unchanged during execution. The [controlled receipt](evidence/2026-10-01_selected_phase_foundation_local_contracts.json)
+  includes the 18 descriptor cases and current context, history, native read,
+  lineage, runtime, private-read, phase, fixture and inventory regressions.
+  Independent descriptor review also passed all **18** cases.
+- All **94 procedure traces** validate. The new
+  [phase-binding procedure seed](fbm-seeds/2026-10-01_flora_selected_phase_authority.jsonl)
+  remains a partial infrastructure method in FloRA only. It is not builder
+  weights, an eligible supervised case, or demonstrated host transfer.
+
+Every existing phase, ancestry, live grant, qualification and private-read
+predicate still runs. This foundation introduces **no proof-sharing frame,
+permission cache or check bypass** and makes no performance claim. Its exact
+physical CI receipt is pending publication. Next implementation work is the
+shared history/source collector and fresh protected-boundary frame described in
+the protocol. That work does not require personality or MFM.

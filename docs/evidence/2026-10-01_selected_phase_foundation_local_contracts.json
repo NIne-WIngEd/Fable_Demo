@@ -1,0 +1,153 @@
+{
+  "all_passed": true,
+  "cases": 276,
+  "domain": "controlled_component_contracts",
+  "modules": 19,
+  "qualification": false,
+  "results": [
+    {
+      "cases": 18,
+      "exit_code": 0,
+      "module": "test_selected_phase_authority",
+      "process_seconds": 3.217,
+      "suite_seconds": 1.854
+    },
+    {
+      "cases": 21,
+      "exit_code": 0,
+      "module": "test_native_reads",
+      "process_seconds": 44.123,
+      "suite_seconds": 42.779
+    },
+    {
+      "cases": 23,
+      "exit_code": 0,
+      "module": "test_selected_context",
+      "process_seconds": 49.495,
+      "suite_seconds": 48.172
+    },
+    {
+      "cases": 11,
+      "exit_code": 0,
+      "module": "test_selected_context_fence",
+      "process_seconds": 5.292,
+      "suite_seconds": 3.972
+    },
+    {
+      "cases": 24,
+      "exit_code": 0,
+      "module": "test_selected_history_fence",
+      "process_seconds": 2.689,
+      "suite_seconds": 1.47
+    },
+    {
+      "cases": 31,
+      "exit_code": 0,
+      "module": "test_selected_source_closure",
+      "process_seconds": 2.961,
+      "suite_seconds": 1.849
+    },
+    {
+      "cases": 29,
+      "exit_code": 0,
+      "module": "test_current_context_guard",
+      "process_seconds": 7.688,
+      "suite_seconds": 6.426
+    },
+    {
+      "cases": 25,
+      "exit_code": 0,
+      "module": "test_history_fence",
+      "process_seconds": 2.636,
+      "suite_seconds": 1.394
+    },
+    {
+      "cases": 18,
+      "exit_code": 0,
+      "module": "test_authenticated_history",
+      "process_seconds": 2.835,
+      "suite_seconds": 1.62
+    },
+    {
+      "cases": 8,
+      "exit_code": 0,
+      "module": "test_runtime_context_domain",
+      "process_seconds": 1.515,
+      "suite_seconds": 0.403
+    },
+    {
+      "cases": 2,
+      "exit_code": 0,
+      "module": "test_native_comparison_fixture",
+      "process_seconds": 2.588,
+      "suite_seconds": 1.482
+    },
+    {
+      "cases": 6,
+      "exit_code": 0,
+      "module": "test_combined_history_guard",
+      "process_seconds": 1.719,
+      "suite_seconds": 0.522
+    },
+    {
+      "cases": 4,
+      "exit_code": 0,
+      "module": "test_registered_judgment_context",
+      "process_seconds": 1.492,
+      "suite_seconds": 0.146
+    },
+    {
+      "cases": 14,
+      "exit_code": 0,
+      "module": "test_phase_source_fence",
+      "process_seconds": 2.105,
+      "suite_seconds": 0.937
+    },
+    {
+      "cases": 11,
+      "exit_code": 0,
+      "module": "test_selected_judgment_lineage",
+      "process_seconds": 33.588,
+      "suite_seconds": 32.365
+    },
+    {
+      "cases": 5,
+      "exit_code": 0,
+      "module": "test_selected_integration_partition",
+      "process_seconds": 1.79,
+      "suite_seconds": 1.448
+    },
+    {
+      "cases": 3,
+      "exit_code": 0,
+      "module": "test_fbm_seed_contract",
+      "process_seconds": 0.054,
+      "suite_seconds": 0.009
+    },
+    {
+      "cases": 10,
+      "exit_code": 0,
+      "module": "test_native_arm",
+      "process_seconds": 25.943,
+      "suite_seconds": 24.493
+    },
+    {
+      "cases": 13,
+      "exit_code": 0,
+      "module": "test_selected_experiment_runtime",
+      "process_seconds": 5.43,
+      "suite_seconds": 4.167
+    }
+  ],
+  "schema_version": 1,
+  "source_hashes": {
+    "src/flora/selected/native_phase_gate.py": "3893586557c9005b263b761d2e4f80b3e4d7697e10a92d700ed1676bca10e908",
+    "src/flora/selected/native_reads.py": "c790c66e76577a2e68b32a4e386ec50bcc5f7c2c8e6b8555fe84ef56407cda3a",
+    "src/flora/selected/selected_phase_authority.py": "eedaeab7a5f4b374931666ce43fd2c65a379440de3bd5845f12b9d77f78b21f2",
+    "tests/integration/test_selected_native_comparison.py": "60d1d55b635b9b63c7acb18d6a04bb1676f31f3133ac8932e55beef48c473850",
+    "tests/test_native_comparison_fixture.py": "2cca4ceb87f38b2e3cac1f70713ddf637accbe6ca16e07b5767ef502bd257fbf",
+    "tests/test_selected_phase_authority.py": "15ad3f8d8f966f24ba20e4311e7deef748dae82fb2e63b36190bfb1024bc9403"
+  },
+  "source_unchanged": true,
+  "wall_seconds": 51.396
+}

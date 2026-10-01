@@ -191,8 +191,9 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
             # Runtime dispatch also checks the actual prepared log/policy
             # domain. Setting this explicit finite route cannot fall back to
             # the legacy context producer inside the 60-second passive gate.
-            self.assertEqual(runtime.context_integrity_domain, "selected-current-context-v1")
-            self.assertEqual(runtime.maximum_context_sources, 128)
+            if (runtime.context_integrity_domain != "selected-current-context-v1"
+                    or runtime.maximum_context_sources != 128):
+                raise AssertionError("native comparison requires selected context domain and cap")
             owner = copy(runtime.state_approval_verifier)
             owner.proofs = copy(owner.proofs)
             owner.proofs.custody = runtime.original_references.custody
@@ -204,8 +205,9 @@ class SelectedNativeComparisonIntegrationTest(unittest.TestCase):
             lineage.history_authority = SelectedRunEvidencePolicy(custody=owned, run_id="native-run",
                 permissions=runtime.source_policy,
                 history_metadata_domain="selected-history-metadata-v1", maximum_history_sources=32)
-            self.assertEqual(lineage.history_authority.history_metadata_domain, "selected-history-metadata-v1")
-            self.assertEqual(lineage.history_authority.maximum_history_sources, 32)
+            if (lineage.history_authority.history_metadata_domain != "selected-history-metadata-v1"
+                    or lineage.history_authority.maximum_history_sources != 32):
+                raise AssertionError("native comparison requires selected history domain and cap")
         bridge.read_hook = bind_actual_history
         class PhaseMeter(_native.FixtureMeter):
             def payload(self, request):

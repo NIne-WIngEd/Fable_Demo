@@ -120,6 +120,8 @@ def transfer_native_phase_gate(source_owner, name, target_owner, *,
     installed = MethodType(gate, target_owner)
     _CREATED_GATES.add(gate)
     setattr(target_owner, name, installed)
+    from .selected_phase_authority import _inherit_selected_phase_authority
+    _inherit_selected_phase_authority(source_owner, name, target_owner)
     return True
 
 
@@ -131,4 +133,6 @@ def copy_native_phase_view(service):
         if (isinstance(method, MethodType) and method.__self__ is service
                 and method.__func__ in _CREATED_GATES):
             setattr(result, name, MethodType(method.__func__, result))
+            from .selected_phase_authority import _inherit_selected_phase_authority
+            _inherit_selected_phase_authority(service, name, result)
     return result
