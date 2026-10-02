@@ -318,8 +318,12 @@ def original_case():
 
 
 def native_targets(module):
-    from flora.selected import context, experiment_runtime, judgment_lineage, native_reads
+    from flora.selected import (context, context_guard, experiment_runtime,
+        judgment_lineage, native_reads, selected_authority_frame, selected_history_contribution)
     reads = native_reads.SelectedNativeReadServices
+    frame = selected_authority_frame.SharedSelectedAuthorityFrame
+    physical = selected_authority_frame._FramePhysicalData
+    history = selected_history_contribution.SelectedHistoryContribution
     method = getattr(getattr(module, FIXTURE_CLASS), FIXTURE_METHOD)
     targets = transport.selected_targets()
     fixed = (("fixture.original_native_case", method),
@@ -328,7 +332,20 @@ def native_targets(module):
         ("runtime.context", experiment_runtime.FloRAExperimentRuntime._context),
         ("context.assemble", context.assemble_context),
         ("lineage.authorize_context", judgment_lineage.NativeJudgmentLineageVerifier.authorize_context),
-        ("lineage.context", judgment_lineage.NativeJudgmentLineageVerifier.context_lineage))
+        ("lineage.context", judgment_lineage.NativeJudgmentLineageVerifier.context_lineage),
+        ("context.prepare_current", context_guard.prepare_current_context),
+        ("context.metadata_current", context_guard.PreparedCurrentContext.metadata_current),
+        ("shared.frame.create", selected_authority_frame.create_shared_selected_frame),
+        ("shared.frame.initialize", frame.__init__),
+        ("shared.frame.base_bindings", frame._base_bindings),
+        ("shared.frame.binding", frame.binding),
+        ("shared.frame.finish", frame.finish),
+        ("shared.frame.physical_closure", physical.closure),
+        ("shared.frame.physical_reobserve", physical.reobserve),
+        ("shared.history.initialize", history.__init__),
+        ("shared.history.permissions", history.validate_permissions),
+        ("shared.history.member", history.member),
+        ("shared.history.manifest_reobserve", history.reobserve_manifest))
     for tag, function in fixed:
         targets[transport._target_function(function)] = Target(tag)
     closures = (("native.owned_work", reads._read, "work"),

@@ -24,6 +24,26 @@ SPEC.loader.exec_module(diagnostic)
 
 
 class NativeBoundaryProfilerTest(unittest.TestCase):
+    def test_shared_frame_targets_bind_original_code_without_wrapping(self):
+        from flora.selected import selected_authority_frame, selected_history_contribution
+        def fixture(self):
+            pass
+        fixture_class = type('Fixture', (), {diagnostic.FIXTURE_METHOD: fixture})
+        module = types.SimpleNamespace(**{diagnostic.FIXTURE_CLASS: fixture_class})
+        frame = selected_authority_frame.SharedSelectedAuthorityFrame
+        history = selected_history_contribution.SelectedHistoryContribution
+        before = frame.binding, frame.binding.__code__, history.member, history.member.__code__
+        targets, marker = diagnostic.native_targets(module)
+        self.assertEqual(targets[before[1]].tag, 'shared.frame.binding')
+        self.assertEqual(targets[before[3]].tag, 'shared.history.member')
+        self.assertEqual(targets[frame.finish.__code__].tag, 'shared.frame.finish')
+        self.assertEqual(targets[frame._base_bindings.__code__].tag, 'shared.frame.base_bindings')
+        self.assertEqual(targets[marker].tag, 'native.owned_work')
+        self.assertIs(frame.binding, before[0])
+        self.assertIs(frame.binding.__code__, before[1])
+        self.assertIs(history.member, before[2])
+        self.assertIs(history.member.__code__, before[3])
+
     def observer(self, marker, *fixed, **kwargs):
         targets = {marker.__code__: diagnostic.Target("owned")}
         targets.update({function.__code__: diagnostic.Target(tag, rpc)
