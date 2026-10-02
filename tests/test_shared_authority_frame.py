@@ -157,6 +157,27 @@ class SharedAuthorityFrameTest(unittest.TestCase):
             prepared.metadata_current()
         self.assertEqual(calls, 2)
 
+    def test_independent_guard_code_replacement_rejects_before_changed_body_runs(self):
+        prepared = self.prepare(plan=replace(self.plan, state_routes=()))
+        calls = []
+        def guard():
+            calls.append("original")
+            guard.__code__ = replacement.__code__
+        def replacement():
+            calls.append("replacement")
+            guard.__code__ = replacement.__code__
+        self.assertEqual(guard.__code__.co_freevars, replacement.__code__.co_freevars)
+        original_code = guard.__code__
+        prepared.authority_guard = guard
+        try:
+            with patch.object(self.f.objects.backend, "get_object", side_effect=AssertionError("private reopen")):
+                with self.assertRaises(PermissionError):
+                    prepared.metadata_current()
+            self.assertIs(guard.__code__, replacement.__code__)
+            self.assertEqual(calls, ["original"])
+        finally:
+            guard.__code__ = original_code
+
     def test_unselected_history_withdrawal_at_joint_sql_is_in_terminal_domain(self):
         prepared = self.prepare(plan=replace(self.plan, state_routes=()))
         change = self._head_replacement(self.f.source_two.event_id, evaluation=True)

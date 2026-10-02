@@ -110,6 +110,28 @@ def _native_context_binding(function):
         raise TypeError("shared frame requires native pure snapshot helpers")
 
 
+def _capture_context_binding(function, opaque_codes):
+    """Seal native pure closures without adopting opaque callback internals.
+
+    A prepared guard closes over an independent authority callable. Its exact
+    identity stays bound by the native closure and owner reader, but counters
+    and other state inside that callable are allowed to evolve when it runs.
+    Only the known nested pure context guards are recursively sealed here.
+    """
+    _native_context_binding(function)
+    cells = tuple((cell, cell.cell_contents) for cell in function.__closure__ or ())
+    named = dict(zip(function.__code__.co_freevars, function.__closure__ or ()))
+    nested_name = _BINDING_NESTED.get(function.__code__)
+    nested_function = None if nested_name is None else named[nested_name].cell_contents
+    opaque_codes.extend((value, value.__code__) for _, value in cells
+        if type(value) is FunctionType and value is not nested_function)
+    nested = (() if nested_name is None else
+        (_capture_context_binding(nested_function, opaque_codes),))
+    return _FunctionBinding(function, function.__code__, cells,
+        tuple((name, function.__globals__.get(name, phase_contracts._ABSENT))
+            for name in set(function.__code__.co_names)), nested)
+
+
 def shared_phase_origin(permissions, policy):
     """Validate dual issuance before callbacks, without metadata/private I/O.
 
@@ -332,7 +354,9 @@ class SharedSelectedAuthorityFrame:
         _native_context_binding(binding_guard)
         self.log, self.policy, self.claims, self.state = log, policy, claims, state
         self.origin, self._binding_guard = origin, binding_guard
-        self._guard_binding = _FunctionBinding.capture(binding_guard)
+        opaque_codes = []
+        self._guard_binding = _capture_context_binding(binding_guard, opaque_codes)
+        self._guard_codes = tuple(opaque_codes)
         self._permission_descriptor = selected_phase_authority(policy.permissions, "permits")
         self._event_descriptor = selected_phase_authority(policy, "allow_event")
         self._sources, self._resolver, self._original = log.sources, log.resolver, log._original
@@ -422,6 +446,9 @@ class SharedSelectedAuthorityFrame:
                 or self._event_descriptor._origin is not self.origin):
             raise PermissionError("shared authority frame lost its exact native origin")
         _verify_binding(self._guard_binding)
+        if any(type(function) is not FunctionType or function.__code__ is not code
+               for function, code in self._guard_codes):
+            raise PermissionError("shared frame independent callback code changed")
         for reader in self._readers:
             _verify_binding(reader)
         self._binding_guard()
@@ -584,7 +611,7 @@ def _require_frame_contracts():
 
 _PURE = tuple((function.__name__, function, function.__code__) for function in (
     _identity, _register_owner, _verify_owner, _set_owned, _register_binding, _verify_binding,
-    _native_context_binding,
+    _native_context_binding, _capture_context_binding,
     shared_phase_origin, _entry_snapshot, create_shared_selected_frame, _require_frame_contracts))
 _SHAPES = tuple((cls, tuple(vars(cls).items())) for cls in (
     _FramePhysicalData, SharedSelectedAuthorityFrame, SelectedContextSources, CommittedExperience))
