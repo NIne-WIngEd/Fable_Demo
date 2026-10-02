@@ -12,6 +12,34 @@ receipts and timeout/budget settings. No runtime delegate is wrapped or replaced
 No model or substitute is built. Every timing is **nonqualifying** because
 observation adds overhead.
 
+## Current original-code observation
+
+Source `d0f90655` adds only four numeric fixed targets for descriptor tree,
+descriptor contracts, origin seals and frame contracts; all prior targets and
+budgets remain. Runtime source/tests are identical to `da370ebc`. All 32
+observer contracts pass in 3.493 s, separate from the 72 runtime contracts.
+The [checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) and
+[receipt](evidence/2026-10-02_d0f90655_observer_contracts.json) link pending
+diagnostic 37073820659 and ordinary PR CI 37073825647. The extra targets add
+sampling overhead, so this new scope supports attribution rather than direct
+equal-overhead speedup measurement. The previous failed fixture is preserved.
+
+## Completed da370ebc observation
+
+The source-verified fixture failed; collection success does not qualify the
+response. Six owned jobs recorded 120.902 s wall / 109.280 s thread CPU and
+two preparation calls consumed 119.398 s inclusive wall. More frame/RPC work
+was reached within unchanged deadlines, while public descriptor work moved
+into private tree traversal under base_bindings. Parent setup is unobserved;
+no equal-work speedup or downstream generation attribution follows.
+
+The [latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) preserves all
+116 source hashes, original artifact, numeric comparison, complete 72 targeted
+passes and current ordinary CI. The bounded next observation adds only four
+original-code tags for descriptor tree/contracts, origin seals and frame
+contracts. Added observer overhead changes coverage; it supports diagnosis,
+not another runtime rewrite or more memory/mission infrastructure.
+
 ## Current candidate and comparable observation
 
 Measured runtime `bf597366` reached six owned jobs: 121.382 s wall and
@@ -30,7 +58,8 @@ CPU, original origin-body counts, reached stages and overlap. Parent setup
 stays unobserved; the diagnostic does not qualify response latency.
 
 [Diagnostic 37072026458](https://github.com/NIne-WIngEd/FloRA/actions/runs/37072026458)
-was dispatched once at this exact source and remains pending. The
+was dispatched once at this exact source; its completed failed fixture is
+recorded in the latest section above. The
 [checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) retains controlled tests,
 prior capped/failed observations and the unchanged 60,000 ms response clock.
 Earlier default CLI/global-cap descriptions below are historical or explicitly

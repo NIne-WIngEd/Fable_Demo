@@ -4,6 +4,75 @@ Updated: 2026-10-02, America/Chicago. Recovery baseline:
 `main@885be57abb582510d27a98177facd2a358c11387`; recovery starting runtime
 `74f42417be37a2fbdc6c603a1ea657b040e0052e`.
 
+## Current continuation: bounded contract-cost observation
+
+Observation source `d0f906550ca36a35903702a205d263a8b1b21061`, tree
+`a24132ef82b59f972ca5398e4ab0928079d147a6`, adds exactly four fixed original
+code tags: `phase.descriptor_tree_verify`, `phase.descriptor_contracts`,
+`phase.origin_seal_verify`, and `shared.frame.contracts`. Runtime and its four
+candidate source/test hashes stay identical to `da370ebc`. Every old tag,
+worker/default-mode semantic, numeric-only privacy rule and budget remains.
+No native function is wrapped or replaced.
+
+All **32 observer contracts passed in 3.493 s** on native Linux/ARM64, including
+the existing 31 and a controlled-thread regression that excludes an equal
+copied code object while counting the original target once. The
+[source-pinned receipt](evidence/2026-10-02_d0f90655_observer_contracts.json)
+separates these observer tests from the 72 passed runtime contracts and the
+failed `da370ebc` engine fixture. Added sampling changes observation overhead;
+compare reached stages and attribution, not equal-overhead speedups.
+
+The existing push filter launched
+[diagnostic 37073820659](https://github.com/NIne-WIngEd/FloRA/actions/runs/37073820659)
+once. [PR CI 37073825647](https://github.com/NIne-WIngEd/FloRA/actions/runs/37073825647)
+and push CI 37073820636 are also pending. Recover their exact checkouts and
+artifacts next; no current response pass is claimed. When only runs remain,
+stop the turn and resume when the owner returns.
+
+## Completed candidate observation — no response qualification
+
+[Native diagnostic 37072026458](https://github.com/NIne-WIngEd/FloRA/actions/runs/37072026458)
+completed collection at 22:25:33 UTC, but the exact fixture **failed** and
+qualification remains false. The [original artifact](evidence/2026-10-02_da370ebc_native_profile.json)
+is retained byte-for-byte. [Validation](evidence/2026-10-02_da370ebc_native_profile_validation.json)
+matches all 116 after-source hashes (60 FloRA `da370ebc`, 56 Alice `4f287a`),
+all 115 before hashes, and the sole newly loaded authenticated-history module.
+Job logs confirm both checkouts and `--workers-only --cap-seconds 180`.
+File hashes and separately bound original code identities remain distinct.
+
+Both observations have six owned jobs on one ledger. Neither reached the
+180 s worker cutoff, changed hooks, overflowed, recorded observer errors or
+left active/open spans at close. Parent setup and CPU remain unobserved.
+
+| Observed quantity | bf597366 | da370ebc |
+| --- | ---: | ---: |
+| Worker wall seconds | 121.382 | 120.902 |
+| Worker thread CPU seconds | 110.109 | 109.280 |
+| Two preparation calls, inclusive wall seconds | 118.229 | 119.398 |
+| Two preparation calls, inclusive CPU seconds | 108.083 | 108.309 |
+| Frames created | 8 | 17 |
+| Kurrent reads / SQL executes | 870 / 9,180 | 2,261 / 23,836 |
+| Origin-body calls / exclusive CPU seconds | 5,436 / 21.012 | 4,201 / 8.045 |
+
+More frame/RPC progress occurred before unchanged deadlines, so these are
+different work mixes, not equal-work speedup measurements. Whole elapsed fell
+from 247.910 s to 182.645 s while first owned entry moved from 126.165 s to
+61.569 s; unobserved setup prevents attributing that difference to the candidate.
+Public descriptor calls fell from 5,434 to 292, but private pair/tree traversal
+moved their remaining cost into `base_bindings`, whose exclusive CPU was
+29.698 s. Context binding checks ran 297,586 times at 14.207 s exclusive CPU.
+These are overlapping stages' exclusive measurements, not connection counts.
+
+The [read-only review](evidence/2026-10-02_da370ebc_native_profile_review.json)
+localizes the remaining reached stage to context preparation/assembly and
+current-authority frame work. Native authorization and lineage tags remain
+zero; downstream generation was not measured. Four additional fixed original
+code tags are the bounded next observation: descriptor tree, descriptor
+contract scan, origin seal and frame contract scan. They add observation
+overhead and must not be treated as identical old measurement coverage. No
+further runtime rewrite is supported yet. Ordinary CI for `da370ebc` remains
+the independent response/correctness gate under unchanged clocks.
+
 ## Published measured-origin candidate
 
 Runtime `da370ebc9b089aec430859059cc83af52e623089`, tree
@@ -24,13 +93,16 @@ in 2.656 s and consumer/frame 8 in 64.170 s. The first consumer run had seven
 passes and one test-placement failure: the prepared wrapper rejected changed
 scope before the intended origin assertion. The corrected test mutates scope
 inside the real frame callback and requires origin-specific rejection. Runtime
-bytes stayed unchanged. Original frame 20 regressions are running separately;
-no completed result is assigned to them at this checkpoint.
+bytes stayed unchanged. The separate original frame suite then passed **20/20
+in 823.111 s** (827.967 s process) at 22:32:20 UTC, with runtime/test hashes
+unchanged. Total current targeted coverage is **72 passes**. These component
+timings do not establish response latency or a controlled speedup over old runs.
 
 [Ordinary PR CI 37072008699](https://github.com/NIne-WIngEd/FloRA/actions/runs/37072008699),
 push CI 37072002344 and the once-dispatched
 [engine diagnostic 37072026458](https://github.com/NIne-WIngEd/FloRA/actions/runs/37072026458)
-are pending for this source. Component passes do not inherit older physical
+were pending at publication. The completed diagnostic is recorded above;
+ordinary CI remains pending. Component passes do not inherit older physical
 results or establish response improvement. The original 10,000 ms standalone,
 60,000 ms native and 60-minute CI limits remain. No learned model is run.
 
@@ -41,12 +113,12 @@ show removed cost. Compare whole observed worker/preparation CPU and wall,
 original origin-body counts, reached stages and overlapping fixed-tag spans.
 Retain setup coverage limits and observation overhead.
 
-The necessary Alice-aligned loop remains source Experience Ã¢â€ â€™ external proposal
-Ã¢â€ â€™ deterministic Claim admission Ã¢â€ â€™ governed current state Ã¢â€ â€™ exact context Ã¢â€ â€™
-native judgment/decision Ã¢â€ â€™ linked outcome Ã¢â€ â€™ externally proposed successor Ã¢â€ â€™
+The necessary Alice-aligned loop remains source Experience → external proposal
+→ deterministic Claim admission → governed current state → exact context →
+native judgment/decision → linked outcome → externally proposed successor →
 separate activation. [The middle-layer audit](ALICE_MIDDLE_LAYER_DESIGN_AUDIT_2026-10-02.md)
 binds that loop to Alice's architecture and revised comic. The remaining full-H
-reconstruction, HÃƒâ€”C evaluation and lineage/context reconstruction are measured
+reconstruction, H×C evaluation and lineage/context reconstruction are measured
 follow-up candidates, not permission to add a full mission platform or skip
 authority. Personality and MFM remain external integration inputs.
 
@@ -197,7 +269,8 @@ is now published on `codex/flora-shared-source-caps` at
 `1f9b955849cbc69ed1f0244366876bbe672fd0c6`, in
 [draft PR #1](https://github.com/NIne-WIngEd/FloRA/pull/1).
 Historical frame identity above is `ef9c190e`; worker repair is at `9b57ed3`;
-the unchanged observer is published at `bf597366`. Current runtime is `da370ebc`
+the four-tag observer extension is published at `d0f90655`. Current runtime
+code is `da370ebc`
 as recorded in the latest section. The context branch records that work;
 code remains on the development branch
 until reviewed. Do not infer its implementation from the context branch's
@@ -497,16 +570,18 @@ The two local worker failures were separately reproduced and repaired; residual
 warnings remain. Current observation mechanics pass 31 cases, while their actual
 engine result and current ordinary gate remain pending.
 
-Next recover the original frame regression receipt, the da370ebc ordinary CI
-and its actual-engine aggregate. Verify their exact checkouts/source hashes and
-reached stages before comparing cost. The pure-origin candidate addresses one
-measured repetition; original descriptor seals, H/C evaluation, context and
-lineage work remain. Preserve independent callback, withdrawal, physical and
-terminal ordering checks; keep all work inside the frozen response clocks.
-Report construction, response, correction propagation and recovery separately.
-If the result still exceeds budget, localize the remaining stage before changing
-hydration/reconstruction. Stop while only runs are pending and resume when the
-owner returns; do not burn tokens waiting.
+Next recover d0f90655's four-tag native aggregate and current ordinary CI;
+the da370ebc aggregate and complete original frame contracts are recorded above.
+Verify exact source/checkout identities and reached stages. Resolve relocated
+tree traversal, independent origin seals, descriptor contract scans and frame
+contract scans inside the observed preparation path before another runtime
+change. Older and extended tag sets have different sampling overhead. The
+pure-origin candidate addresses one repetition; H/C evaluation, context and
+lineage work remain. Preserve independent callbacks, withdrawal, physical and
+terminal ordering and keep all work inside frozen response clocks. Report
+construction, response, correction propagation and recovery separately. Stop
+while only runs remain and resume when the owner returns; do not burn tokens
+waiting. Expand infrastructure only for a named experimental need.
 
 Use a frozen explicit context route first. An adaptive learned planner, complete
 episode subsystem or mission platform is not required to fix this proof
@@ -523,9 +598,9 @@ rows under Alice trace schema v0.1. Record observable inputs, choices,
 constraints, method, authority, actual validation, outcome and failure lesson.
 Link a repair to earlier trace IDs; preserve failures. Validate schema and
 unique IDs with `docs/fbm-seeds/validate_traces.py`.
-The latest inventory has **108 schema-valid procedure records**. Three FBM
-contract tests passed at the 107-record checkpoint; the appended completion
-record was separately validated with the complete 108-record inventory.
+The latest inventory has **110 schema-valid procedure records**. All three FBM
+contract tests passed against that complete inventory in 0.071 s. These tests
+validate record shape and rejection rules, not learning or linked-case readiness.
 
 These are builder construction-method seeds, not Flora's runtime personal
 memory. They are not weights or automatically eligible training/evaluation

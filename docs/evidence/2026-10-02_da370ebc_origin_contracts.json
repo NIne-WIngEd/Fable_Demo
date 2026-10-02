@@ -150,13 +150,25 @@
       "planned_modules": [
         "test_shared_authority_frame.py"
       ],
-      "completed_modules": [],
+      "completed_modules": [
+        {
+          "module": "test_shared_authority_frame.py",
+          "exit_code": 0,
+          "tests": 20,
+          "unittest_seconds": 823.111,
+          "process_seconds": 827.967,
+          "source_hashes_unchanged": true
+        }
+      ],
       "qualification": false,
-      "physical_engines_run": false
+      "physical_engines_run": false,
+      "observed_at_utc": "2026-10-02T22:32:20Z",
+      "selection_complete": true,
+      "all_completed_modules_passed": true
     }
   },
-  "completed_targeted_tests": 52,
-  "original_frame_regressions_status": "running",
+  "completed_targeted_tests": 72,
+  "original_frame_regressions_status": "complete_pass",
   "receipt_mapping": [
     "Fast receipt runtime and executed phase/history modules match published source bytes. Its unrelated focused-test file hash is the pre-correction file, which these isolated modules do not import. It is not an assertion that its complete file inventory matches the later published tree.",
     "Only focused scope regression placement changed after its initial 7-pass/1-fail run. Both runtime files and phase/history test sources remained unchanged. Corrected focused receipt matches the published four-file inventory.",
@@ -177,5 +189,12 @@
   "qualification": false,
   "response_latency_qualified": false,
   "learned_behavior_run": false,
-  "observation_limit": "New private frame pair traversal is charged within base_bindings rather than the public descriptor_verify tag. Descriptor count/CPU alone is not a comparable reduction. Inspect total observed worker/preparation cost, original origin-body counts, reached stages and fixed-tag overlap; observation overhead remains."
+  "observation_limit": "New private frame pair traversal is charged within base_bindings rather than the public descriptor_verify tag. Descriptor count/CPU alone is not a comparable reduction. Inspect total observed worker/preparation cost, original origin-body counts, reached stages and fixed-tag overlap; observation overhead remains.",
+  "original_frame_observed_at_utc": "2026-10-02T22:32:20Z",
+  "fbm_inventory": {
+    "schema_valid_records": 110,
+    "contract_tests": 3,
+    "contract_inventory": 110,
+    "contract_seconds": 0.071
+  }
 }
