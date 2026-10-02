@@ -354,3 +354,26 @@ remains **pending**. The older `36f39b36` run's reader job passed, but native re
 Earlier failed response budgets remain failures. Local
 construction or contract tests do not qualify physical consistency, response
 latency, learned personal judgment or FBM transfer.
+
+## Completed CI and measurement boundary update
+
+Ordinary ef9c190e CI is now complete: 944 component cases in 78 modules passed,
+including H 19 and frame 20; physical results are 49 pass, two failed responses
+and two incomplete cases of 53. Earlier pending statements above are historical.
+Standalone 25,743 / 40,144 ms exceeds 10,000 ms; native 60,061 / 60,108 ms
+exceeds 60,000 ms. The checkpoint links the exact completed receipt.
+
+The local worker input race was independently confirmed and repaired at 9b57ed3.
+All 13 worker contracts passed on unchanged source after a preserved initial
+deadline-fixture error; residual transport warnings remain. This change does
+not alter frame contracts or claim latency improvement. The native profiler's
+21 contracts passed, but its physical diagnostic capped during setup before
+any owned reader. No frame timing was collected. The next observation mode
+explicitly excludes parent setup and bounds each owned worker's numeric window;
+it must never turn its observation cutoff into authorization or cancellation.
+
+Primary implementation research is linked in LATENCY_RESEARCH_2026-10-02.md.
+Exact immutable dependency sharing is a measured hypothesis, while independent
+effectful guards, fresh permissions, manifest/physical reobservation and the
+terminal joint XTDB fence remain required. The protocol is a necessary prototype
+slice and does not mandate Alice's full memory, experience or mission platform.

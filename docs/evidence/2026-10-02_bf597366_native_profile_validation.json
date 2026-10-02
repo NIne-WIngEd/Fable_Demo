@@ -1,0 +1,1057 @@
+{
+  "alice_runtime_contract_head_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "alice_runtime_contract_tree_sha": "461f857518173000aa42dfc9071e1be8c4c48283",
+  "diagnostic": {
+    "active_observed_rpcs_at_close": 0,
+    "active_owned_work_at_close": 0,
+    "cap_outcome": "worker_windows_closed_with_observer",
+    "cap_policy": "per_worker_first_exact_owned_entry_to_last_in_cap_sample_observation_only",
+    "classified_owned_work_entries": 6,
+    "coverage": "future_threads_classified_by_exact_original_owned_work_code_workers_only",
+    "elapsed_seconds": 247.910255978,
+    "first_owned_entry_offset_seconds": 126.164740796,
+    "fixture_id": "test_selected_native_comparison.SelectedNativeComparisonIntegrationTest.test_actual_phase_context_execution_parent_and_private_run_custody",
+    "future_hook_changed": false,
+    "observer_errors": 0,
+    "open_tagged_spans_at_close": 0,
+    "outcome_counts": {
+      "capped": 0,
+      "errors": 0,
+      "expected_failures": 0,
+      "failures": 1,
+      "passed": 0,
+      "skipped": 0,
+      "tests": 1,
+      "unexpected_successes": 0
+    },
+    "parent_hook_changed": false,
+    "parent_setup_and_cpu_observed": false,
+    "qualification": false,
+    "retained_worker_ledgers": 1,
+    "selected_fixed_tag_aggregates": [
+      {
+        "calls": 870,
+        "exclusive_thread_cpu_seconds": 1.078898509,
+        "exclusive_wall_seconds": 2.117544129,
+        "return_events": 870,
+        "tag": "rpc.kurrent_get_stream",
+        "thread_cpu_seconds": 1.078898509,
+        "wall_minus_thread_cpu_seconds": 1.03864562,
+        "wall_seconds": 2.117544129
+      },
+      {
+        "calls": 9180,
+        "exclusive_thread_cpu_seconds": 2.724104502,
+        "exclusive_wall_seconds": 10.929909095,
+        "return_events": 9180,
+        "tag": "rpc.psycopg_execute",
+        "thread_cpu_seconds": 2.724104502,
+        "wall_minus_thread_cpu_seconds": 8.205804593,
+        "wall_seconds": 10.929909095
+      },
+      {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 0.035696958,
+        "exclusive_wall_seconds": 0.03697554,
+        "return_events": 2,
+        "tag": "runtime.context",
+        "thread_cpu_seconds": 108.744307996,
+        "wall_minus_thread_cpu_seconds": 10.307032604,
+        "wall_seconds": 119.0513406
+      },
+      {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 3.922415195,
+        "exclusive_wall_seconds": 3.96352037,
+        "return_events": 2,
+        "tag": "context.assemble",
+        "thread_cpu_seconds": 63.769437857,
+        "wall_minus_thread_cpu_seconds": 8.336716052,
+        "wall_seconds": 72.106153909
+      },
+      {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 0.268061085,
+        "exclusive_wall_seconds": 0.273892748,
+        "return_events": 2,
+        "tag": "context.prepare_current",
+        "thread_cpu_seconds": 108.082883146,
+        "wall_minus_thread_cpu_seconds": 10.145888882,
+        "wall_seconds": 118.228772028
+      },
+      {
+        "calls": 5434,
+        "exclusive_thread_cpu_seconds": 23.257397383,
+        "exclusive_wall_seconds": 23.480088767,
+        "return_events": 5434,
+        "tag": "phase.descriptor_verify",
+        "thread_cpu_seconds": 64.947219043,
+        "wall_minus_thread_cpu_seconds": 0.654671167,
+        "wall_seconds": 65.60189021
+      },
+      {
+        "calls": 5436,
+        "exclusive_thread_cpu_seconds": 21.01171196,
+        "exclusive_wall_seconds": 21.229675683,
+        "return_events": 5436,
+        "tag": "phase.origin_verify",
+        "thread_cpu_seconds": 22.940498208,
+        "wall_minus_thread_cpu_seconds": 0.24472867,
+        "wall_seconds": 23.185226878
+      },
+      {
+        "calls": 93790,
+        "exclusive_thread_cpu_seconds": 5.358803765,
+        "exclusive_wall_seconds": 5.422249105,
+        "return_events": 93790,
+        "tag": "phase.function_binding_verify",
+        "thread_cpu_seconds": 12.149035476,
+        "wall_minus_thread_cpu_seconds": 0.13124626,
+        "wall_seconds": 12.280281736
+      },
+      {
+        "calls": 132111,
+        "exclusive_thread_cpu_seconds": 12.830981948,
+        "exclusive_wall_seconds": 12.951503214,
+        "return_events": 132111,
+        "tag": "shared.frame.context_binding_verify",
+        "thread_cpu_seconds": 27.865130662,
+        "wall_minus_thread_cpu_seconds": 0.267245372,
+        "wall_seconds": 28.132376034
+      },
+      {
+        "calls": 8,
+        "exclusive_thread_cpu_seconds": 0.256061894,
+        "exclusive_wall_seconds": 0.258896553,
+        "return_events": 8,
+        "tag": "shared.frame.initialize",
+        "thread_cpu_seconds": 26.110840056,
+        "wall_minus_thread_cpu_seconds": 0.481136432,
+        "wall_seconds": 26.591976488
+      },
+      {
+        "calls": 2948,
+        "exclusive_thread_cpu_seconds": 4.961785669,
+        "exclusive_wall_seconds": 5.012764871,
+        "return_events": 2948,
+        "tag": "shared.frame.base_bindings",
+        "thread_cpu_seconds": 64.808832941,
+        "wall_minus_thread_cpu_seconds": 0.649545656,
+        "wall_seconds": 65.458378597
+      },
+      {
+        "calls": 7,
+        "exclusive_thread_cpu_seconds": 0.096177499,
+        "exclusive_wall_seconds": 0.098059055,
+        "return_events": 7,
+        "tag": "shared.frame.finish",
+        "thread_cpu_seconds": 9.973072246,
+        "wall_minus_thread_cpu_seconds": 1.235528348,
+        "wall_seconds": 11.208600594
+      },
+      {
+        "calls": 74,
+        "exclusive_thread_cpu_seconds": 1.525184943,
+        "exclusive_wall_seconds": 1.539830394,
+        "return_events": 74,
+        "tag": "shared.history.permissions",
+        "thread_cpu_seconds": 13.346836253,
+        "wall_minus_thread_cpu_seconds": 0.132183208,
+        "wall_seconds": 13.479019461
+      }
+    ],
+    "status": "failed",
+    "worker_ledger_overflow": 0,
+    "worker_observation_cap_reached": false,
+    "worker_observation_cap_seconds": 180.0,
+    "worker_stack_overflow": 0,
+    "worker_window_thread_cpu_seconds": 110.109234759,
+    "worker_window_wall_seconds": 121.38238225
+  },
+  "interpretation_limits": [
+    "This fixture failed one test. Source validation and completed observation do not make physical, response, or learned behavior qualification pass.",
+    "Inclusive function totals overlap through nested calls and cannot be added. Worker windows must not be added to the whole observer elapsed time.",
+    "Exclusive totals remove only observed tagged child intervals; they do not remove observer overhead or establish all untagged cost.",
+    "The profile itself adds overhead. No unprofiled control establishes response latency or an optimization effect.",
+    "The first-owned-entry offset and whole elapsed are clock offsets; parent setup RPC, non-RPC and CPU work remain unobserved in workers-only mode.",
+    "RPC/SQL statement counts are not connection-open counts. Wall minus thread CPU is not a direct attribution to a particular wait cause.",
+    "Return events include exception unwind and do not attest authorization success.",
+    "Earlier diagnostics used different observation scopes; no numeric improvement comparison is claimed.",
+    "No new origin-verifier optimization result is measured by this artifact."
+  ],
+  "private_content_retained": false,
+  "published_flora_head_sha": "bf59736673d4f054ff85636ca80a1983d14d7cd5",
+  "published_flora_tree_sha": "58510702886b9915c84305e070fec9fe24a5b8fd",
+  "qualification": false,
+  "receipt_kind": "completed_nonqualifying_native_profile_source_validation",
+  "schema_version": 1,
+  "source_artifact": "2026-10-02_bf597366_native_profile.json",
+  "source_artifact_sha256": "10aff8b40735c9ea8834b03f038bf0e1a4474200225f67344ba9d0fc488349ec",
+  "source_file_validation": {
+    "all_after_hashes_match_pinned_blobs": true,
+    "all_before_hashes_unchanged": true,
+    "before_keys_subset_of_after": true,
+    "changed_before_modules": [],
+    "compiled_code_provenance_independently_attested_by_hashes": false,
+    "dynamic_fixture_loader": "tests/integration/test_selected_native_comparison.py:42",
+    "dynamic_path_mapping_independently_reviewed": true,
+    "dynamic_paths": {
+      "flora_native_comparison_backend_fixture": "tests/integration/test_selected_runtime_bridge.py",
+      "flora_native_comparison_phase_fixture": "tests/test_selected_judgment_lineage.py",
+      "flora_native_comparison_process_fixture": "tests/native_contract_fixture.py",
+      "native_diagnostic_script": "scripts/profile_selected_native_boundaries.py",
+      "shared_transport_diagnostic": "scripts/profile_selected_transport_boundaries.py"
+    },
+    "fixed_code_targets": "scripts/profile_selected_native_boundaries.py:361",
+    "hash_mismatches": [],
+    "limits": [
+      "The artifact hashes bytes at module.__file__, plus explicit profiler/helper paths; it does not retain actual runtime paths or hash compiled code objects.",
+      "Pinned loader/import definitions and completed checkout logs make the expected file mapping unambiguous; this is source-file identity evidence, not an independent proof against altered in-memory module metadata or code.",
+      "Fixed profiler targets hold loaded ordinary original code objects by identity without wrapping selected delegates; native authority contracts separately validate their code identities.",
+      "Only the recorded module prefixes and explicit profiler/helper files are covered, not every dependency or environment file.",
+      "Presence in the loaded-source list does not show a module executed on the measured hot path."
+    ],
+    "loaded_after_count": 116,
+    "loaded_before_count": 115,
+    "method": "For every after-source key, map its pinned package/import/loader path; hash exact raw git show COMMIT:PATH bytes with SHA256; compare to the artifact digest without newline conversion or runtime imports.",
+    "newly_loaded_source_modules": [
+      "flora.selected.authenticated_history"
+    ],
+    "original_fixture_import": "scripts/profile_selected_native_boundaries.py:356",
+    "source_hash_function": "scripts/profile_selected_native_boundaries.py:407",
+    "unresolved_module_paths": [],
+    "verified_counts": {
+      "alice": 56,
+      "flora": 60
+    },
+    "verified_sources": [
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.adjudication_contracts",
+        "path": "src/cognitive_kernel/adjudication_contracts.py",
+        "repository": "alice",
+        "sha256": "59e245fe81247ed937d3240157051bc342a2f72c321f434d8afb46bf5f1dfe1e"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.attention",
+        "path": "src/cognitive_kernel/attention.py",
+        "repository": "alice",
+        "sha256": "2fc6c3138ac327c7995589691d49d2d702a6e59a91a25821f578ce894c1ca0f0"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.attention_policy",
+        "path": "src/cognitive_kernel/attention_policy.py",
+        "repository": "alice",
+        "sha256": "4ed9093bec3ecd0b3bb4dedff02d841472dadd33e06aef38940b2ee592f3fe0e"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.authority",
+        "path": "src/cognitive_kernel/authority.py",
+        "repository": "alice",
+        "sha256": "5479cd69a42181f0c1657d1dbeb26f3fa238821d86d996edded079aac76b8604"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.bounded_serving_prototype",
+        "path": "src/cognitive_kernel/bounded_serving_prototype.py",
+        "repository": "alice",
+        "sha256": "09cd11bfee9b2cf4bb2475e099a07d91c45fc1eecd93c094f81bf315d363229d"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.canonical",
+        "path": "src/cognitive_kernel/canonical.py",
+        "repository": "alice",
+        "sha256": "d3f78be7e367bd8a3115b75e8d05d3f5fa5b177a32b44dea6e01f8375adf2ae8"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.claim_authority_prototype",
+        "path": "src/cognitive_kernel/claim_authority_prototype.py",
+        "repository": "alice",
+        "sha256": "c688b138d499e78cdf70e700e48f282c31564aaf529934fe2ab529702a8025f0"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.claim_contracts",
+        "path": "src/cognitive_kernel/claim_contracts.py",
+        "repository": "alice",
+        "sha256": "d5535175cbd361c2a00f8b4d59cc05d169af80cb63d94dd50e9d1483cdcd4e75"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.contracts",
+        "path": "src/cognitive_kernel/contracts.py",
+        "repository": "alice",
+        "sha256": "3cb7a5f228816056bb335bae206c88a69d08dc7c809833dc267c9027e9454e3a"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.curation_contracts",
+        "path": "src/cognitive_kernel/curation_contracts.py",
+        "repository": "alice",
+        "sha256": "463fab732f4a6796835d4a7a8aa69a37377bf1e26acf5809300d905ebba8cd5e"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.deletion_contracts",
+        "path": "src/cognitive_kernel/deletion_contracts.py",
+        "repository": "alice",
+        "sha256": "df30438dae8c663cedb12074b92da6b48a6219abf845010cf0a9287ea6635290"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.deletion_prototype",
+        "path": "src/cognitive_kernel/deletion_prototype.py",
+        "repository": "alice",
+        "sha256": "a757187280fe0952cbb2f7e014588a40f33eee64074e86303e1730ae1756acd4"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.durable_workflow_prototype",
+        "path": "src/cognitive_kernel/durable_workflow_prototype.py",
+        "repository": "alice",
+        "sha256": "7094a3342f017d37e44a40f9e2fd42786ffefffeefb615f6b19f82d0857dc346"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.experience",
+        "path": "src/cognitive_kernel/experience.py",
+        "repository": "alice",
+        "sha256": "07fa74978ce555256f9eaeb4c0ab812aa674fda5fd5efcff912367e965baf15c"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.formation_context_planner",
+        "path": "src/cognitive_kernel/formation_context_planner.py",
+        "repository": "alice",
+        "sha256": "0441994076c1f867f86d2e78e0d3ff9350ab85e53fa4df2b4679244b713f2cd0"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.formation_contracts",
+        "path": "src/cognitive_kernel/formation_contracts.py",
+        "repository": "alice",
+        "sha256": "4130c59b61cc2aa119ef8658af57639d9185a7727ecf461508b655724e55cb8a"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.formation_retrieval",
+        "path": "src/cognitive_kernel/formation_retrieval.py",
+        "repository": "alice",
+        "sha256": "f5b9aba868fb01225bf30683c99e8da3cbc47331e9416291849f126360025b7e"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.formation_sources",
+        "path": "src/cognitive_kernel/formation_sources.py",
+        "repository": "alice",
+        "sha256": "415cb8b13fbd9fcd4fce9478df913dc470f1529222714903ffc55c5b4e0a202a"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.guest",
+        "path": "src/cognitive_kernel/guest.py",
+        "repository": "alice",
+        "sha256": "4ffe563d0c68cea1a4bded009bd7fb744467d5d5896ece1890c51204764a973c"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.interaction_policy",
+        "path": "src/cognitive_kernel/interaction_policy.py",
+        "repository": "alice",
+        "sha256": "88e67fd8def614ca520297aca2b573926d4fe0ae2e487d10dc196a1fe9de0b0c"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.ledger",
+        "path": "src/cognitive_kernel/ledger.py",
+        "repository": "alice",
+        "sha256": "5a77cc9d142fbe0692b1f023f4610b03ebdc12bdf1ae69559ae03c88c203d06d"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.ledger_policy",
+        "path": "src/cognitive_kernel/ledger_policy.py",
+        "repository": "alice",
+        "sha256": "eccbe0b71215597617b5d14d191ef675209926972f6ee25846a84ceb881483c1"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.ledger_store",
+        "path": "src/cognitive_kernel/ledger_store.py",
+        "repository": "alice",
+        "sha256": "d36f710f13e9b2ab2e309f3a5e429185a0e14319859704fbc9f0d329a780111a"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.lifecycle",
+        "path": "src/cognitive_kernel/lifecycle.py",
+        "repository": "alice",
+        "sha256": "9da069d7aa34b0a797a4443f6ba97d413f472d784a9fb017899a45ad9ca1a431"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.lifecycle_policy",
+        "path": "src/cognitive_kernel/lifecycle_policy.py",
+        "repository": "alice",
+        "sha256": "37434734aba96d2de82b60759292c606ec94cbcaf6d48eb281d50c12a11fb9e3"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.lifecycle_store",
+        "path": "src/cognitive_kernel/lifecycle_store.py",
+        "repository": "alice",
+        "sha256": "8550b7266e5ab526a4cdca53243d7fc4c4f3b7352c65bc7f692287d90d0b46cc"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.m2_closeout",
+        "path": "src/cognitive_kernel/m2_closeout.py",
+        "repository": "alice",
+        "sha256": "4a185b5d85d1545802e3e2414ce740699bbd56c0a6bd0fc8ae79d0f529ab15b6"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.memory_contracts",
+        "path": "src/cognitive_kernel/memory_contracts.py",
+        "repository": "alice",
+        "sha256": "b533c8a83e41ea22ae7b761f70c8859ec1d867c072f2c1e23eea26947a367e86"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.mission",
+        "path": "src/cognitive_kernel/mission.py",
+        "repository": "alice",
+        "sha256": "e4bba264405ef192f5dc3150b21e7dd9d2d2e9b9206b2f54dd648606bac1e5a7"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.mission_policy",
+        "path": "src/cognitive_kernel/mission_policy.py",
+        "repository": "alice",
+        "sha256": "bf38e476fb8cc904ab36973323e11226ce5e008b5312b80da6e60a1f42c696be"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.payload_store",
+        "path": "src/cognitive_kernel/payload_store.py",
+        "repository": "alice",
+        "sha256": "ace7660bcb4be6273402141c4b392014d5398a7dd9b056338014450d49e14524"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.phase2_shadow_adapter",
+        "path": "src/cognitive_kernel/phase2_shadow_adapter.py",
+        "repository": "alice",
+        "sha256": "1ed3e555ac50a80f56d622d0d7552eece7b14f50e99cb9144a8b85f738e2b675"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.policy",
+        "path": "src/cognitive_kernel/policy.py",
+        "repository": "alice",
+        "sha256": "f47fdb975241c5fd9820afec3906f7582fbb5ce363464b22c33c9a153413929b"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.projection_contracts",
+        "path": "src/cognitive_kernel/projection_contracts.py",
+        "repository": "alice",
+        "sha256": "92026b96625dc91ec9779e70343ffe3cf187a94336f59200270704790537fd77"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.projection_prototype",
+        "path": "src/cognitive_kernel/projection_prototype.py",
+        "repository": "alice",
+        "sha256": "19391a1a3b7a3a3d9a46947769f2f70267406a2997459f2a05b634e196e7d3c9"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.raw_buffer",
+        "path": "src/cognitive_kernel/raw_buffer.py",
+        "repository": "alice",
+        "sha256": "5631c42a3ef0570aa08ca9b006b4698a3272c069206a8863583e03b5c5c301ed"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.raw_buffer_policy",
+        "path": "src/cognitive_kernel/raw_buffer_policy.py",
+        "repository": "alice",
+        "sha256": "7edef26aec1c340ce2966d648890f31cc274fc79577108f735626362bf46c3dc"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.release",
+        "path": "src/cognitive_kernel/release.py",
+        "repository": "alice",
+        "sha256": "39c654ed93317b11b714090837af88193f62d290a06356e47f8a7900a7987013"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.release_policy",
+        "path": "src/cognitive_kernel/release_policy.py",
+        "repository": "alice",
+        "sha256": "b73c2417fca05e5d2556f5c6c6584b5a6ab684c4902e652c505868e772e0a8e6"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.results",
+        "path": "src/cognitive_kernel/results.py",
+        "repository": "alice",
+        "sha256": "dac1ba0ecdbac5e53c6cea4fa6b31d7571121f3d3cb3e7be16276e2f0e238624"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.routing",
+        "path": "src/cognitive_kernel/routing.py",
+        "repository": "alice",
+        "sha256": "8c48b2e8ef37dcbd71ca1bd000590105a421643534ba970517cea0b6fb8d3c9f"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.serving_contracts",
+        "path": "src/cognitive_kernel/serving_contracts.py",
+        "repository": "alice",
+        "sha256": "2cfd732c0ca9d07dbfb4298f78eadeb56bd5af1b618610b909f0cbd1afd6c6cc"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.shadow_adjudication_prototype",
+        "path": "src/cognitive_kernel/shadow_adjudication_prototype.py",
+        "repository": "alice",
+        "sha256": "68c11fe998f0ee6226441df1b75dd745ef32960ade5a2fbfbc917213029db999"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.shadow_migration_contracts",
+        "path": "src/cognitive_kernel/shadow_migration_contracts.py",
+        "repository": "alice",
+        "sha256": "bb9a43f13144cf7a47a6d448063612a3793a16fa6f05dd22bc8460f97b2bccd4"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.shadow_migration_stage_c_e",
+        "path": "src/cognitive_kernel/shadow_migration_stage_c_e.py",
+        "repository": "alice",
+        "sha256": "1b18645403fbc80509b1bcae8376c8e04cd3f0b92b043c2668f11ea1cc980c07"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.shadow_migration_stage_c_e_evaluation",
+        "path": "src/cognitive_kernel/shadow_migration_stage_c_e_evaluation.py",
+        "repository": "alice",
+        "sha256": "ae26ed605cba806ea54dafdf15e46f376a5667151a22315d5ce87c8a59cd2561"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.shadow_migration_stage_d",
+        "path": "src/cognitive_kernel/shadow_migration_stage_d.py",
+        "repository": "alice",
+        "sha256": "991fa58799fa7cbcb3873703676d9efdfa224f58b438707c5f26573ccc7e6b42"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.shadow_migration_stage_f_g",
+        "path": "src/cognitive_kernel/shadow_migration_stage_f_g.py",
+        "repository": "alice",
+        "sha256": "c0233a60dcf08fb31f3498c0085d82b7162b31e875f705b40e9bb0b3ac4a9d5b"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.shadow_migration_stage_f_g_evaluation",
+        "path": "src/cognitive_kernel/shadow_migration_stage_f_g_evaluation.py",
+        "repository": "alice",
+        "sha256": "5accde1e30b4094b697b64494b8e10c2be5f7b9566062ef5f9915f11b3fd360d"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.shadow_migration_stage_f_g_persistent",
+        "path": "src/cognitive_kernel/shadow_migration_stage_f_g_persistent.py",
+        "repository": "alice",
+        "sha256": "799cb10f575c9d032dd29f3b396fc8065505dd8f93a4635c379dba1470b084fc"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.shadow_migration_stage_f_g_persistent_evaluation",
+        "path": "src/cognitive_kernel/shadow_migration_stage_f_g_persistent_evaluation.py",
+        "repository": "alice",
+        "sha256": "3bc9a4a65a0895779791d681a8b845d1df71ab85223d2863cee983a122de83ea"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.speaker",
+        "path": "src/cognitive_kernel/speaker.py",
+        "repository": "alice",
+        "sha256": "bf342d5fa2980d3c1b6cfa32ad8a30f8ba289b6605048b7cfd9ea0ea6bdaba80"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.tier_transition",
+        "path": "src/cognitive_kernel/tier_transition.py",
+        "repository": "alice",
+        "sha256": "3e46f2b87f172a9acfed605b5082a35df62018bd08e9abcb8f599f1fa0fdd698"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.tier_transition_policy",
+        "path": "src/cognitive_kernel/tier_transition_policy.py",
+        "repository": "alice",
+        "sha256": "0c6ecac4fa843f9e851abe7e64a26c8fa47f6edb2d2fc742b4652aa2ae20776c"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.tier_transition_store",
+        "path": "src/cognitive_kernel/tier_transition_store.py",
+        "repository": "alice",
+        "sha256": "f42c972fd244a4ba8e6e02085d8853bc77f24b49096ae43dbd46b3863524ceda"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "cognitive_kernel.workspace",
+        "path": "src/cognitive_kernel/workspace.py",
+        "repository": "alice",
+        "sha256": "980ae3680c489a00b48ad518c30647a3720f8ddbe76664a0346622a921686d8d"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.comparison_run",
+        "path": "src/flora/comparison_run.py",
+        "repository": "flora",
+        "sha256": "a4fcee755a0b5bb72a58d67d4c2c6744c3c3a518bf4746f6f9252ec50577ce3f"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.evaluation_protocol",
+        "path": "src/flora/evaluation_protocol.py",
+        "repository": "flora",
+        "sha256": "462b6180d7a732738c4a849a12d394f00bd7a995489a3ec8f2d479d038ecbe0f"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected",
+        "path": "src/flora/selected/__init__.py",
+        "repository": "flora",
+        "sha256": "b1068b7e21a7cdae7d928b081abf8d7cb45ccf7a143f0dda10b3397cebf9e477"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.artifact_registry",
+        "path": "src/flora/selected/artifact_registry.py",
+        "repository": "flora",
+        "sha256": "fcf128a00174638117a3b9f6f04e9a61e926c5113fd1d65ae7cbab34a289d810"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.authenticated_history",
+        "path": "src/flora/selected/authenticated_history.py",
+        "repository": "flora",
+        "sha256": "097615b65c63dd58bc48661ff17f0236294df0a52b1c3ef7e3b5ab0da5011bd5"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.authority_binding",
+        "path": "src/flora/selected/authority_binding.py",
+        "repository": "flora",
+        "sha256": "a816f8cd62d63c4467f07f3c8879c92a5d48b2352c74f164ed23c8d6a350059a"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.bounded_xtdb_reads",
+        "path": "src/flora/selected/bounded_xtdb_reads.py",
+        "repository": "flora",
+        "sha256": "3f3bbf52a4703d0b8694091b7b191dbd0a15f657ae21092c9f0019d88d09b418"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.claim_controller",
+        "path": "src/flora/selected/claim_controller.py",
+        "repository": "flora",
+        "sha256": "e1589f7d9c4616380017c41ce406395064d4e502ffb99cc2ea1f16be948d684b"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.claims",
+        "path": "src/flora/selected/claims.py",
+        "repository": "flora",
+        "sha256": "191e04d017cba1a3fbc159e96711d592678f17a6142987d546044e3eaee57728"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.comparison_custody",
+        "path": "src/flora/selected/comparison_custody.py",
+        "repository": "flora",
+        "sha256": "f6edab4b16df89892297ed985214539313944f62ec0d72e8b78802652cb42572"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.context",
+        "path": "src/flora/selected/context.py",
+        "repository": "flora",
+        "sha256": "730f5035d1fe549ab2d06e83055bfe90ef55c4ead983d2f18e8da5f1a1ace6f9"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.context_guard",
+        "path": "src/flora/selected/context_guard.py",
+        "repository": "flora",
+        "sha256": "84877fc0101521f79dabfa9b0f4f787235e980b742d512228cf55ad54e4fa778"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.decision_outcome",
+        "path": "src/flora/selected/decision_outcome.py",
+        "repository": "flora",
+        "sha256": "2f2246a26b178c0e2800ec0ac0ba3fb517ba471de6cd4e65db7fd665236d16fd"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.development_sources",
+        "path": "src/flora/selected/development_sources.py",
+        "repository": "flora",
+        "sha256": "a0ab962e0df33b1eabd115fcecf587c01393d989d38428bf9df78e5d8feca226"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.episodes",
+        "path": "src/flora/selected/episodes.py",
+        "repository": "flora",
+        "sha256": "4fb601c9a881c9ea6e7b4d4c3b276d5184957486de4e1f6c5c7174a41bc88ebf"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.experience",
+        "path": "src/flora/selected/experience.py",
+        "repository": "flora",
+        "sha256": "61b1e81b343ae5fef98175108d97db620770dd9aa04e6b591c3eae6ef0087f9a"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.experiment_runtime",
+        "path": "src/flora/selected/experiment_runtime.py",
+        "repository": "flora",
+        "sha256": "ffd9a124795c5df095a38cede697f1534fedb1c2820610490fd97640030c567d"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.formation_admission",
+        "path": "src/flora/selected/formation_admission.py",
+        "repository": "flora",
+        "sha256": "2608f5681b97b596cd02d5747a2f516a8e80d461eb138f9a109ef998ece2bb10"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.formation_candidates",
+        "path": "src/flora/selected/formation_candidates.py",
+        "repository": "flora",
+        "sha256": "ec3f3222b0b8156cbf6968d216d97f24578c2a088642fb8b27702a778d9c4f7b"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.formation_context",
+        "path": "src/flora/selected/formation_context.py",
+        "repository": "flora",
+        "sha256": "e1a2c4ba3ce9bd1d4212007ca6d15e71e7edd6a0946b4955a7c2610da94bf9fd"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.formation_policy",
+        "path": "src/flora/selected/formation_policy.py",
+        "repository": "flora",
+        "sha256": "b8b088256d5ef3f55f310181fd207559c0dd978ec90ceb4ee129e527a2214278"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.formation_registry",
+        "path": "src/flora/selected/formation_registry.py",
+        "repository": "flora",
+        "sha256": "ec3282e9f123f9af99713dd3fdc0366ac1a9574c8b6019f9d28d9fc29b06581f"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.governed_development",
+        "path": "src/flora/selected/governed_development.py",
+        "repository": "flora",
+        "sha256": "a93d7585421113780473a4eb50eb18bb74b160eec9e9c057e32816a3b1b17a7b"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.governed_episodes",
+        "path": "src/flora/selected/governed_episodes.py",
+        "repository": "flora",
+        "sha256": "0965b0d76ff0c5f0e7ff7dce8ecaa1cf5464d5c2eae885dc7611abb0d6eb8b69"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.graph_recollection",
+        "path": "src/flora/selected/graph_recollection.py",
+        "repository": "flora",
+        "sha256": "647130ac6ac9a202714ceb03d8145325c417e2e70a1499fc293a933b150e4d36"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.history_fence",
+        "path": "src/flora/selected/history_fence.py",
+        "repository": "flora",
+        "sha256": "73fea72846ea94ea2cdcc7088e52a19e3dbce6c62a02668724410d65cd25b0b9"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.judgment_context",
+        "path": "src/flora/selected/judgment_context.py",
+        "repository": "flora",
+        "sha256": "5d21a667fa6d44681ef93ca3de98d989ca28891b9aa0e8efca9c8c56683fae72"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.judgment_lineage",
+        "path": "src/flora/selected/judgment_lineage.py",
+        "repository": "flora",
+        "sha256": "9c19afa50816992382965da7f2476f4268ec81382e6072bfe900daf4595d63b9"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.native_arm",
+        "path": "src/flora/selected/native_arm.py",
+        "repository": "flora",
+        "sha256": "4bb71bdad32d8ffc8ce6f1f57454631cc70224a4263fc34dce35f636b513dd21"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.native_phase_gate",
+        "path": "src/flora/selected/native_phase_gate.py",
+        "repository": "flora",
+        "sha256": "3893586557c9005b263b761d2e4f80b3e4d7697e10a92d700ed1676bca10e908"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.native_reads",
+        "path": "src/flora/selected/native_reads.py",
+        "repository": "flora",
+        "sha256": "c790c66e76577a2e68b32a4e386ec50bcc5f7c2c8e6b8555fe84ef56407cda3a"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.native_worker",
+        "path": "src/flora/selected/native_worker.py",
+        "repository": "flora",
+        "sha256": "83b76e8c63398b90b1d4c6e2e6ff5290862b5d8670c77c2ac351cb73cc3138bb"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.native_writer_guard",
+        "path": "src/flora/selected/native_writer_guard.py",
+        "repository": "flora",
+        "sha256": "281020690c0203dad6697207f4919b89518eafbadadf18b31d120cdc7223fb8a"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.object_store",
+        "path": "src/flora/selected/object_store.py",
+        "repository": "flora",
+        "sha256": "373de1e874c571555d6866b2178865e1b3b736a50660b16f57ea20101fe12073"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.outcome_revision",
+        "path": "src/flora/selected/outcome_revision.py",
+        "repository": "flora",
+        "sha256": "9ae5148abdbad19d4c31f78683f81978a4d7387bb666c5428d8e980f30256cc2"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.owner_authorization",
+        "path": "src/flora/selected/owner_authorization.py",
+        "repository": "flora",
+        "sha256": "da41c70b31a5e1880fdbc44d4fc49788bb2c78eccd632f74cfa1b5d53ac3f884"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.personal_artifact_custody",
+        "path": "src/flora/selected/personal_artifact_custody.py",
+        "repository": "flora",
+        "sha256": "a83906892589b1f4bd7b51cf8acc821ce49998f74f1f6c8557a70937e3243fa9"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.personal_state",
+        "path": "src/flora/selected/personal_state.py",
+        "repository": "flora",
+        "sha256": "a564a23027ff6af4427320fad478efd14a6461d44b660dad87f3fda06a8da475"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.phase_routes",
+        "path": "src/flora/selected/phase_routes.py",
+        "repository": "flora",
+        "sha256": "34aa39d6e604ff999cf1b598617657d97a460b17ee9c4ffeb75a6fd66cbb880d"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.phase_snapshots",
+        "path": "src/flora/selected/phase_snapshots.py",
+        "repository": "flora",
+        "sha256": "caf029c475821b6f736e7a1b433fb9c601a61064d4cbc99e432bc60981e29a8c"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.phase_source_fence",
+        "path": "src/flora/selected/phase_source_fence.py",
+        "repository": "flora",
+        "sha256": "b0829cf3995179b37a0beaf7bf4d42f0f06833b636d52b3231a13962bbb50015"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.revocation",
+        "path": "src/flora/selected/revocation.py",
+        "repository": "flora",
+        "sha256": "345f75c57a43b8f268348fdae57eb28ccd85980d034a783cca4eac7d7547efe8"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.selected_authority_frame",
+        "path": "src/flora/selected/selected_authority_frame.py",
+        "repository": "flora",
+        "sha256": "73302f5edb934dc536c16ac7554a084ff85f604d8e6ad2f4eae3e0def7c2a197"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.selected_context",
+        "path": "src/flora/selected/selected_context.py",
+        "repository": "flora",
+        "sha256": "c11d75502049966ae1949c2c7f696141b493fd4e7714e799a7ceee1c5d78b243"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.selected_context_fence",
+        "path": "src/flora/selected/selected_context_fence.py",
+        "repository": "flora",
+        "sha256": "556826540bfac77979f696e49b8eb2406315a710d21bc2d68fdc983027ed668a"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.selected_history_contribution",
+        "path": "src/flora/selected/selected_history_contribution.py",
+        "repository": "flora",
+        "sha256": "12aa389e4b33bd0aa98b5c3d2b7c6435d225386020de38c45ac6b1182894be9b"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.selected_history_fence",
+        "path": "src/flora/selected/selected_history_fence.py",
+        "repository": "flora",
+        "sha256": "40d599f96d8e495d0cfa6cc4b1007a11efe3a4a58d2d2edb1fcefee921ece2b1"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.selected_phase_authority",
+        "path": "src/flora/selected/selected_phase_authority.py",
+        "repository": "flora",
+        "sha256": "eedaeab7a5f4b374931666ce43fd2c65a379440de3bd5845f12b9d77f78b21f2"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.source_closure",
+        "path": "src/flora/selected/source_closure.py",
+        "repository": "flora",
+        "sha256": "641b5eed5d11b1a656bb5ce024820807f6764fa7aabba3b397674f8019b7dcdd"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.source_native",
+        "path": "src/flora/selected/source_native.py",
+        "repository": "flora",
+        "sha256": "24e1fe5596442cf4c3d46460fee12429578e08b17bb8d2d53efe2251c144470b"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora.selected.vector_recollection",
+        "path": "src/flora/selected/vector_recollection.py",
+        "repository": "flora",
+        "sha256": "b7f8a338d79ebfbbe746ab56caed82d37f9819353305a7ae0a4f428877ffa34a"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora_native_comparison_backend_fixture",
+        "path": "tests/integration/test_selected_runtime_bridge.py",
+        "repository": "flora",
+        "sha256": "bb76abe24ace38c4dca4cdda1933f4a70f1fb38c114a5e343b8dfb9c2d26b6d7"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora_native_comparison_phase_fixture",
+        "path": "tests/test_selected_judgment_lineage.py",
+        "repository": "flora",
+        "sha256": "0b62ca8a2c6b62bd0b9ba91c19135852dbbe19ec5563389c41b2f2db214a879d"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "flora_native_comparison_process_fixture",
+        "path": "tests/native_contract_fixture.py",
+        "repository": "flora",
+        "sha256": "c1bc8ab278587602196a7ba8d4b2c886ea6c9400bd196c5c6669f1ce28d2b918"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "native_diagnostic_script",
+        "path": "scripts/profile_selected_native_boundaries.py",
+        "repository": "flora",
+        "sha256": "10bd63df7b05b130db3da4ab05ed8cb3903144cf01f91445f1235f0c180b33ea"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "shared_transport_diagnostic",
+        "path": "scripts/profile_selected_transport_boundaries.py",
+        "repository": "flora",
+        "sha256": "4be23d3f2eb874647ee0cc9b23744664043df26935bb127b6cd07b537761617d"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "test_selected_formation_admission",
+        "path": "tests/test_selected_formation_admission.py",
+        "repository": "flora",
+        "sha256": "88727ebaec247ae61ecb20940aea899d2c46834f9f3ce79ca1035cecf2e6a07d"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "test_selected_formation_candidates",
+        "path": "tests/test_selected_formation_candidates.py",
+        "repository": "flora",
+        "sha256": "10e802f472c362d1ee49ba1ad0838a2731ecf926866497724a794ef5a35086e6"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "test_selected_formation_registry",
+        "path": "tests/test_selected_formation_registry.py",
+        "repository": "flora",
+        "sha256": "c496f44077144999dc73f6962570377eb17e989286561346771458b0d17037d6"
+      },
+      {
+        "matches_pinned_blob": true,
+        "module": "test_selected_native_comparison",
+        "path": "tests/integration/test_selected_native_comparison.py",
+        "repository": "flora",
+        "sha256": "60d1d55b635b9b63c7acb18d6a04bb1676f31f3133ac8932e55beef48c473850"
+      }
+    ]
+  },
+  "workflow_checkout": {
+    "alice_checkout_logged_at": "2026-10-02T21:44:21.3787213Z",
+    "alice_checkout_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+    "command": "python scripts/profile_selected_native_boundaries.py --workers-only --cap-seconds 180 --output selected-native-profile.json",
+    "command_logged_at": "2026-10-02T21:45:29.9543739Z",
+    "flora_checkout_logged_at": "2026-10-02T21:44:20.0354695Z",
+    "flora_checkout_sha": "bf59736673d4f054ff85636ca80a1983d14d7cd5",
+    "job_id": 111042384651,
+    "job_url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37068588428/job/111042384651",
+    "pinned_workflow_path": ".github/workflows/native-profile.yml",
+    "pinned_workflow_sha256": "e72684f0d9376347b79eba03babcd31851bb6449d916b2d78b9ccac5a2b2f897",
+    "repository": "NIne-WIngEd/FloRA",
+    "run_id": 37068588428,
+    "verified_from_completed_job_logs": true
+  }
+}

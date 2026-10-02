@@ -1,22 +1,130 @@
 # FloRA continuation context
 
 Updated: 2026-10-02, America/Chicago. Recovery baseline:
-`main@885be57abb582510d27a98177facd2a358c11387`; last runtime change
+`main@885be57abb582510d27a98177facd2a358c11387`; recovery starting runtime
 `74f42417be37a2fbdc6c603a1ea657b040e0052e`.
 
-## Latest completed frame result
+## Measured owned work at bf597366
 
-At 19:48:46 UTC, the repaired `ef9c190e` native Linux/ARM64 frame module
-completed **20/20 cases passing in 944.073 s**. The
-[exact-source receipt](evidence/2026-10-02_ef9c190e_frame_contract_pass.json)
-preserves all six startup hashes and the runtime/environment identity. This
-supersedes the earlier pending frame observation below. It is a controlled
-module pass, not a complete contract, physical-engine or response-latency pass.
-The two existing-worker issues and 41 unrun modules remain open; the ordinary
-CI result must still be collected. No further serving change is authorized by
-this test duration itself.
+[Native diagnostic 37068588428](https://github.com/NIne-WIngEd/FloRA/actions/runs/37068588428)
+completed at 21:49:45UTC. Its [artifact](evidence/2026-10-02_bf597366_native_profile.json)
+records a failed fixture and qualification=false. The corrected scope reached
+six original owned jobs on one worker ledger:121.382s wall/110.109s thread CPU,
+with first entry126.165s after observation started and 247.910s total elapsed.
+Parent/setup timing is unobserved; no worker window capped and no hook change,
+overflow, observer error or open span remained at close. Return events include
+exception unwind and never certify authority success.
 
-## Published continuation
+The [source validation](evidence/2026-10-02_bf597366_native_profile_validation.json)
+matches all 116 loaded after-source file hashes to pinned Git blobs:60 FloRA
+atbf597366 and 56 Alice at 4f287a. All115 before-source hashes are unchanged;
+newly loaded authenticated_history also matches. These are file hashes, not
+compiled-code attestation; fixed targets separately bind original code identities.
+The job logs confirm both exact checkouts and the explicit workers-only command.
+
+| Original-code tag | Calls | Exclusive thread CPU | Inclusive thread CPU |
+| --- | ---: | ---: | ---: |
+| phase.descriptor_verify |5,434|23.257s|64.947s|
+| phase.origin_verify |5,436|21.012s|22.940s|
+| phase.function_binding_verify |93,790|5.359s|12.149s|
+| shared.frame.context_binding_verify |132,111|12.831s|27.865s|
+| shared.frame.base_bindings |2,948|4.962s|64.809s|
+| context.prepare_current |2|0.268s|108.083s|
+
+The first four exclusive tagged totals sum62.459s, about56.7% of this observed
+worker CPU window. They include untargeted work within those spans and observer
+overhead. Inclusive spans overlap and must not be added. This localizes pure
+verification work; it does not predict an equivalent response speedup.
+Kurrent recorded 870reads, SQL 9,180executes; these are not connection-open counts.
+Preparation alone accounts for118.229s inclusive wall across two calls. Later
+authorization/lineage stages were not reached in this fixture, which uses
+controlled recovered producer receipts rather than learned inference.
+
+This supports testing the audit's narrow exact-origin de-duplication within
+one pure descriptor traversal. Every descriptor seal remains independent;
+tracking ends before callbacks and later checks start fresh. Removing repeated
+origin bodies cannot remove all descriptor, seal, binding, H/C or context work.
+No serving improvement,60-second pass or learned result is claimed. The original
+standalone10,000ms/native60,000ms response and 60-minute CI limits still govern.
+Current ordinary CI remains pending; the candidate's source and controlled
+results must be recorded separately before publishing a runtime claim.
+
+## Preserved recovery and observation checkpoint
+
+The repaired frame's ordinary [run 37054784829](https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829)
+completed with failure at 20:32:57 UTC. Runtime `ef9c190e` and merge checkout
+`2f166a9d` share exact tree `1f9b9558`; all 944 component tests in 78 modules
+passed, including H 19, frame 20 and the original worker 11. Physical results
+are **49 passed, two failed and two incomplete out of 53**. Standalone
+BEFORE/AFTER attempts were 25,743 / 40,144 ms against 10,000 ms; native attempts
+were 60,061 / 60,108 ms against 60,000 ms. History preregistration and retained
+history did not finish. The [completed receipt](evidence/2026-10-02_ef9c190e_completed_ci_receipts.json)
+supersedes pending observations below; earlier failures remain historical evidence.
+
+The separate local worker failures were reproduced. A child exiting before
+input dispatch could raise `ConnectionResetError` while awaiting stdin closure,
+hiding its exit status; cancellation could cancel the protocol-owned close
+future. Runtime `9b57ed3ce0d634409c967983bd5878ff74b48d3b`, tree
+`9541734db403ed1931c974a7e2a1bdab0e2b9c1e`, applies Python's subprocess
+stdin handling and adds process regressions. Its unchanged-source local rerun
+passed 13/13 worker tests in 1.972 s; fixed-tag profiler contracts passed 21/21
+in 6.388 s on native ARM64. The first worker run's deadline-fixture error and
+remaining transport warnings are preserved in the [component receipt](evidence/2026-10-02_9b57ed3_worker_profile_contracts.json).
+This resolves the confirmed input race; it does not establish cleanup or latency
+qualification. The new [ordinary PR run](https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026)
+remains pending at this checkpoint and inherits none of the older CI results.
+
+The [actual-engine diagnostic 37065691146](https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691146)
+completed its workflow, but its [artifact](evidence/2026-10-02_9b57ed3_native_profile_setup_cap.json)
+is **capped, qualification false**: 180.013 s, zero owned-work entries and zero
+worker ledgers. Parent setup recorded 2,673 Kurrent reads and 35,577 SQL executes;
+those are statements/RPCs, not connection-open counts. Non-RPC setup was
+unobserved. It never reached the fresh-frame native path, so no frame-cost or
+response attribution is justified. An all-call local diagnostic was also
+stopped incomplete without usable stage timings; its interruption stack is
+not quantitative evidence.
+
+The owner's clarification means comparable systems and their open implementations,
+not a request to name a benchmark provider. [Pinned primary research](LATENCY_RESEARCH_2026-10-02.md)
+covers Graphify, Graphiti, Mem0, Letta, SpiceDB and Alice's research branches.
+The useful hypothesis is reuse of exact immutable dependency work inside one
+fresh boundary. First measure the remaining duplicated work; keep independent
+authority callbacks, physical reobservation and the terminal joint row fence.
+No cached positive authority or full memory/mission platform is proposed.
+
+The observation update is published at `bf59736673d4f054ff85636ca80a1983d14d7cd5`,
+tree `58510702886b9915c84305e070fec9fe24a5b8fd`. All 31 controlled profiler
+contracts passed in 4.990 s on native ARM64; the original 21 and default cap
+semantics remain. The [source-pinned receipt](evidence/2026-10-02_bf597366_owned_observer_contracts.json)
+records the separate worker windows and review. The workflow explicitly uses
+`--workers-only`: parent setup stays unprofiled, each worker gets one bounded
+180-second observation window from its first original owned entry, and cutoff
+never cancels the worker or fabricates a CPU sample. Response and CI clocks
+are unchanged. Four original-code tags expose descriptor/origin/function-binding
+work. [Actual-engine diagnostic 37068588428](https://github.com/NIne-WIngEd/FloRA/actions/runs/37068588428)
+and [ordinary PR CI 37068593649](https://github.com/NIne-WIngEd/FloRA/actions/runs/37068593649)
+are pending; no observed speedup or new full gate is claimed.
+
+The owner's latest reminder also makes middle-layer design alignment explicit.
+The [source audit](ALICE_MIDDLE_LAYER_DESIGN_AUDIT_2026-10-02.md) compares the
+implemented experience/Claim/state/judgment/outcome links with Alice's original
+docs and revised comic. Current roles are connected and aligned; a full mission
+subsystem is absent and not required by this case. Concrete repeated history
+authentication, H-per-C evaluation and native-origin verifier traversal remain.
+Their response cost still needs measurement. The smallest proposed next change
+is call-local de-duplication of the same native origin during one pure descriptor
+validation pass, retaining every descriptor seal and fresh live boundary. This
+is a conditional implementation proposal, not an implemented Alice mechanism
+or cached authorization. Personality and MFM remain external.
+
+Kaggle and Magnolia remain preferred for eligible compute; Hugging Face and
+local PC Docker are also available. Paid GPU hours remain the last fallback.
+Docker has been used for native CPU contracts; no GPU or model work was launched.
+Personality and MFM are built in the other chats and will be plugged in here.
+When only a run is pending and no independent work remains, end the turn and
+resume when the owner returns; do not spend tokens polling unchanged jobs.
+
+## Preserved frame publication and earlier observations
 
 The context recovery began on `codex/flora-context` at
 `d584f29e622b875220d408240a21a7d8bf661ebd`. The fresh shared authority frame
@@ -24,7 +132,9 @@ is now published on `codex/flora-shared-source-caps` at
 `ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f`, tree
 `1f9b955849cbc69ed1f0244366876bbe672fd0c6`, in
 [draft PR #1](https://github.com/NIne-WIngEd/FloRA/pull/1).
-The context branch records that work; code remains on the development branch
+Frame identity above remains `ef9c190e`; worker repair is at `9b57ed3`; current observation source is
+`bf59736673d4f054ff85636ca80a1983d14d7cd5`. The context branch records that work;
+code remains on the development branch
 until reviewed. Do not infer its implementation from the context branch's
 runtime files. Final frame SHA-256 is
 `73302f5edb934dc536c16ac7554a084ff85f604d8e6ad2f4eae3e0def7c2a197`;
@@ -92,8 +202,8 @@ or system, and their primary papers or open-source implementations. Record
 source identity, applicable mechanism and a falsifiable expected effect before
 changing the serving path. Do not adopt an unrelated stack or relax authority
 and experimental gates on the strength of an analogy. Graphify remains a
-development aid; original source pointers govern. No new external research or
-competitor result is claimed by this instruction record.
+development aid; original source pointers govern. The primary research is now recorded in LATENCY_RESEARCH_2026-10-02.md;
+no competitor speedup is attributed to FloRA.
 
 The October 2 continuation instruction is authoritative: FloRA is a prototype
 to test one Alice/Fable claim. It does **not** need the complete Alice memory,
@@ -263,9 +373,9 @@ See [SELECTED_AUTHORITY_FRAME_PROTOCOL.md](SELECTED_AUTHORITY_FRAME_PROTOCOL.md)
 This optimization is confined to existing prototype checks, not a new full
 Alice memory platform or a reusable permission lease.
 
-## Exact latest physical status
+## Preserved collector and baseline physical status
 
-The latest completed ordinary
+The completed collector-only ordinary
 [run 37041602495](https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495)
 belongs to collector-only runtime `3a6e03cf` and completed with failure.
 Its 905 component tests passed in 76 modules. Physical results were 50 passed,
@@ -315,28 +425,21 @@ terminal observation; only sealed native comparisons follow.
 
 Original `assemble_context` services, opaque independent guards and some
 immutable-row sampling still repeat work. These are explicit remaining costs.
-The earlier native runner at `36f39b36` passed 19 H tests in 4.535 s but failed
-the frame at 17/19 in 930.594 s. The repaired `ef9c190e` binds native helper
-closures and independent function identity/code separately; its targeted
-withdrawal pair and code-swap case pass. Current broad existing-contract
-validation halted at two unresolved worker issues after 35/76 modules; the
-20-case frame suite and ordinary complete source qualification remain pending.
-Earlier QEMU candidate frame/context tests stopped incomplete when superseded;
-two candidate CI runs were intentionally canceled, not qualified. Verify the
-new withdrawal, head, physical, descriptor, helper, reader,
-held-value and qualification race selection in ordinary CI. Fully unissued
-paths retain their existing behavior; unsupported partial issuance rejects.
-Only after correctness passes interpret original exact-engine responses
-against unchanged clocks and caps.
-Report construction, response, propagation and recovery separately.
+The failed 36f39b36 frame selection and repaired ef9c190e result are
+preserved in the checkpoint. Its completed ordinary CI covers all 78 component
+modules but fails response budgets and leaves two physical cases incomplete.
+The two local worker failures were separately reproduced and repaired; residual
+warnings remain. Current observation mechanics pass 31 cases, while their actual
+engine result and current ordinary gate remain pending.
 
-Next collect `work/frame-contracts-repaired-frame/receipt.json` and
-`work/frame-contracts-repaired-existing/receipt.json` from this continuation
-workspace, plus completed jobs from ordinary run 37054784829. Original tool
-sessions were 25400/67177 if still available. Investigate the worker failure
-and error before treating the 41 unrun modules as covered; a final-source H
-19-case run is optional if needed. This checkpoint intentionally ends the
-turn while results remain pending; it is not a full pass.
+Next collect the exact bf597366 native aggregate, verify source hashes and owned
+coverage, and compare pure binding, H/C evaluation, context preparation, lineage
+and RPC cost. Use the middle-layer audit's smallest falsifiable proposal if the
+observations support it. Keep independent callback, withdrawal, physical and
+terminal ordering cases; do not move old work out of frozen clocks. Then compare
+the original exact-engine responses under unchanged caps. Report construction,
+response, correction propagation and recovery separately. Stop while only runs
+are pending, then resume when the owner returns.
 
 Use a frozen explicit context route first. An adaptive learned planner, complete
 episode subsystem or mission platform is not required to fix this proof

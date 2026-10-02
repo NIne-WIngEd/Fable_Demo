@@ -76,7 +76,8 @@ reported incomplete and closed numerically at that thread's last sample; another
 thread's CPU clock is never substituted. Queued jobs entering only after the
 observer closes are outside coverage.
 
-The workflow and CLI default to a **180-second** parent-only soft cap. The CLI
+The original workflow and default CLI use a **180-second** parent-only soft cap.
+The explicit October 2 workers-only workflow mode is recorded below. The CLI
 accepts only a positive finite value at or below that bound. It stops only before the next approved outer parent RPC
 when both the observed RPC depth and active classified owned-work count are
 zero. It never raises in a worker or during an active observed RPC or owned
@@ -138,3 +139,73 @@ This localizes a CPU cost for further investigation. It does not justify removin
 fresh authorization or terminal revocation checks. The previous zero-worker
 aggregate cannot establish a worker performance comparison. No learned-model
 advantage or successful builder transfer has been demonstrated.
+
+## October 2 owned-worker coverage correction
+
+At 9b57ed3, run 37065691146 capped during setup at 180.013s with zero owned
+entries. Its saved artifact is not shared-frame timing and does not count
+connections opened. Non-RPC parent setup was unobserved.
+
+Source bf597366 (tree 58510702) adds explicit `--workers-only`; the existing
+workflow now selects it. Parent/setup hooks and CPU sampling are absent. Each
+classified future worker ledger gets one 180-second observation window at its
+first exact original work entry, unchanged on later work in the same thread.
+On a later targeted event crossing its bound, numeric recording freezes at the
+last actual in-window sample. Open native/RPC spans stay partial; marker
+lifecycle accounting continues. There is no cap exception, cancellation, fake
+deadline CPU sample, altered response deadline or altered60-minute CI limit.
+Whole elapsed is separate from worker windows; parent=null, soft_cap=null and
+global overshoot=null make the changed scope explicit. Default CLI behavior
+and its original global clock remain covered by the original 21 tests.
+
+All31 controlled observer contracts passed on native ARM64 in4.990s, including
+10 new coverage/lifecycle cases. Original functions remain unwrapped; four
+additional fixed code tags identify native descriptor/origin/function-binding
+verification and frame binding verification. The checkpoint links exact hashes
+and source. Native run 37068588428 and ordinary PR run 37068593649 are pending.
+This observation change is not a serving optimization or latency result.
+
+## Measured owned work at bf597366
+
+[Native diagnostic 37068588428](https://github.com/NIne-WIngEd/FloRA/actions/runs/37068588428)
+completed at 21:49:45UTC. Its [artifact](evidence/2026-10-02_bf597366_native_profile.json)
+records a failed fixture and qualification=false. The corrected scope reached
+six original owned jobs on one worker ledger:121.382s wall/110.109s thread CPU,
+with first entry126.165s after observation started and 247.910s total elapsed.
+Parent/setup timing is unobserved; no worker window capped and no hook change,
+overflow, observer error or open span remained at close. Return events include
+exception unwind and never certify authority success.
+
+The [source validation](evidence/2026-10-02_bf597366_native_profile_validation.json)
+matches all 116 loaded after-source file hashes to pinned Git blobs:60 FloRA
+atbf597366 and 56 Alice at 4f287a. All115 before-source hashes are unchanged;
+newly loaded authenticated_history also matches. These are file hashes, not
+compiled-code attestation; fixed targets separately bind original code identities.
+The job logs confirm both exact checkouts and the explicit workers-only command.
+
+| Original-code tag | Calls | Exclusive thread CPU | Inclusive thread CPU |
+| --- | ---: | ---: | ---: |
+| phase.descriptor_verify |5,434|23.257s|64.947s|
+| phase.origin_verify |5,436|21.012s|22.940s|
+| phase.function_binding_verify |93,790|5.359s|12.149s|
+| shared.frame.context_binding_verify |132,111|12.831s|27.865s|
+| shared.frame.base_bindings |2,948|4.962s|64.809s|
+| context.prepare_current |2|0.268s|108.083s|
+
+The first four exclusive tagged totals sum62.459s, about56.7% of this observed
+worker CPU window. They include untargeted work within those spans and observer
+overhead. Inclusive spans overlap and must not be added. This localizes pure
+verification work; it does not predict an equivalent response speedup.
+Kurrent recorded 870reads, SQL 9,180executes; these are not connection-open counts.
+Preparation alone accounts for118.229s inclusive wall across two calls. Later
+authorization/lineage stages were not reached in this fixture, which uses
+controlled recovered producer receipts rather than learned inference.
+
+This supports testing the audit's narrow exact-origin de-duplication within
+one pure descriptor traversal. Every descriptor seal remains independent;
+tracking ends before callbacks and later checks start fresh. Removing repeated
+origin bodies cannot remove all descriptor, seal, binding, H/C or context work.
+No serving improvement,60-second pass or learned result is claimed. The original
+standalone10,000ms/native60,000ms response and 60-minute CI limits still govern.
+Current ordinary CI remains pending; the candidate's source and controlled
+results must be recorded separately before publishing a runtime claim.

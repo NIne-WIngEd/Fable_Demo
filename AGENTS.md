@@ -12,6 +12,14 @@ Alice's current logical contracts and selected physical adapter. Do not add
 product infrastructure merely because it exists in Alice's full architecture.
 `docs/ALICE_INFRASTRUCTURE_MAP.md` explains that architecture and its provenance.
 
+Review the necessary evidence/Experience/Claim/state/judgment and outcome links
+against Alice's revised comic and original architecture docs. Latency may expose
+a design mismatch in this middle layer. Separate immutable dependency work,
+materialized current state, live authority, and explicit historical recovery;
+measure their costs before changing the serving design. Mission context must
+retain its proper evidence and outcome role when exercised, without requiring
+the full mission platform for this prototype.
+
 Personality and MFM are built in other chats, not in FloRA. Build only their
 integration interfaces here and plug in qualified external outputs when ready.
 Do not train, fine-tune or implement either model here. Do not substitute a scripted

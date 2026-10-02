@@ -1,0 +1,50 @@
+{
+  "CI_timeout_minutes": 60,
+  "additional_original_code_tags": [
+    "phase.descriptor_verify",
+    "phase.origin_verify",
+    "phase.function_binding_verify",
+    "shared.frame.context_binding_verify"
+  ],
+  "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "cap_policy": "each_worker_first_exact_owned_entry_to_last_actual_in_window_sample_observation_only",
+  "cap_seconds": 180,
+  "docker_image_sha256": "bbb524290db6a69edc7479eec6ee6a2d2b9946d5c0be0af86eb948575b5379e2",
+  "errors": 0,
+  "existing_cases_preserved": 21,
+  "failures": 0,
+  "glibc": "2.41",
+  "independent_source_review": "no publication blocker",
+  "limitations": [
+    "no_actual_engine_timing_yet",
+    "no_serving_authority_or_model_change",
+    "no_response_latency_learned_judgment_or_FBM_transfer_qualification"
+  ],
+  "long_span_policy": "partial_at_last_actual_in_window_sample_no_fabricated_deadline_CPU",
+  "mode": "explicit_workers_only",
+  "never_cancel_raise_or_stop_worker": true,
+  "new_cases": 10,
+  "observed_at_utc": "2026-10-02T21:49:51Z",
+  "original_default_parent_cap_preserved": true,
+  "parent_cpu_sampled": false,
+  "parent_setup_observed": false,
+  "passed": 31,
+  "pending_native_run": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37068588428",
+  "pending_ordinary_PR_run": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37068593649",
+  "platform": "native Linux aarch64",
+  "published_source": "bf59736673d4f054ff85636ca80a1983d14d7cd5",
+  "published_tree": "58510702886b9915c84305e070fec9fe24a5b8fd",
+  "python": "3.12.15",
+  "qualification": false,
+  "runtime_response_budget_ms": 60000,
+  "schema_version": 1,
+  "scope": "controlled_observation_mechanics_only",
+  "source_sha256": {
+    ".github/workflows/native-profile.yml": "e72684f0d9376347b79eba03babcd31851bb6449d916b2d78b9ccac5a2b2f897",
+    "scripts/profile_selected_native_boundaries.py": "10bd63df7b05b130db3da4ab05ed8cb3903144cf01f91445f1235f0c180b33ea",
+    "tests/test_native_boundary_profiler.py": "ebbd4bb9aedb504ec108f864d6cf246e71051fe66e532e34160f0e7537b21f5a"
+  },
+  "suite_duration_seconds": 4.99,
+  "tests": 31,
+  "worker_reuse_policy": "first_entry_clock_not_reset_on_later_work"
+}
