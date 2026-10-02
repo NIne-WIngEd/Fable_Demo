@@ -1,0 +1,55 @@
+{
+  "observation_commit": "d0f906550ca36a35903702a205d263a8b1b21061",
+  "observation_tree": "a24132ef82b59f972ca5398e4ab0928079d147a6",
+  "runtime_code_identity": "da370ebc9b089aec430859059cc83af52e623089",
+  "native_component_receipt": {
+    "source_status": "frozen_unpublished_observation_candidate",
+    "source_sha256": {
+      "scripts/profile_selected_native_boundaries.py": "56e3000009353d1ca96e89a39a15a87bb5110ea757281cad49256cdf33ba31fe",
+      "tests/test_native_boundary_profiler.py": "131f3488c0164e771a8f2d24a33a2198695499f0c23efd69bd72765f7394797e",
+      "src/flora/selected/selected_phase_authority.py": "de50b7f75a041b5be426f0171466a0330a4e618bf15eb090cc8b5cf447a1812f",
+      "src/flora/selected/selected_authority_frame.py": "2d6c40adc5d141498aea9e999733bff39e537770d55e04dcc9ca146faa983e9f",
+      "tests/test_selected_phase_authority.py": "fba8e8b69d9b05e858a0fbcf3d9ff8ad9769225149425e50acbad4d567b55e11",
+      "tests/test_shared_phase_authority.py": "f473f346e8bc5686d03da12bae4fc253a10feef05c9ee766978c2e02552d69b4"
+    },
+    "runtime_code_commit": "da370ebc9b089aec430859059cc83af52e623089",
+    "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.41",
+    "python": "3.12.15 (main, Oct  1 2026, 21:52:41) [GCC 14.2.0]",
+    "docker_image_sha256": "bbb524290db6a69edc7479eec6ee6a2d2b9946d5c0be0af86eb948575b5379e2",
+    "started_at_utc": "2026-10-02T22:40:34Z",
+    "qualification": false,
+    "physical_engines_run": false,
+    "observed_at_utc": "2026-10-02T22:40:38Z",
+    "module": "test_native_boundary_profiler.py",
+    "exit_code": 0,
+    "tests": 32,
+    "unittest_seconds": 3.493,
+    "process_seconds": 4.398,
+    "source_hashes_unchanged": true
+  },
+  "added_tags": [
+    "phase.descriptor_tree_verify",
+    "phase.descriptor_contracts",
+    "phase.origin_seal_verify",
+    "shared.frame.contracts"
+  ],
+  "old_tags_preserved": true,
+  "runtime_four_file_hashes_unchanged": true,
+  "source_change_scope": "only native diagnostic target list/prose/coverage caveat and original-identity tests",
+  "current_runs": {
+    "diagnostic_push": 37073820659,
+    "ordinary_pr": 37073825647,
+    "ordinary_push": 37073820636
+  },
+  "diagnostic_dispatch": "existing push path filter launched once; no second manual dispatch",
+  "observation_limits": [
+    "Four added target samples change profiler overhead/coverage; no equal-overhead comparison.",
+    "All existing worker-only/default modes, numeric-only privacy, 180-second worker observation cap and original response/CI caps remain.",
+    "Code-object identity, not structural equality, classifies a fixed target; an equal copied code object is rejected by the new controlled-thread regression.",
+    "No native delegate is wrapped/replaced, no callback/gate is omitted, and no runtime proof is cached."
+  ],
+  "qualification": false,
+  "actual_engine_result_pending": true,
+  "learned_behavior_run": false
+}

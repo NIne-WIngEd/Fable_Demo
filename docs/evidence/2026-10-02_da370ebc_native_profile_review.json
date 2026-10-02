@@ -1,0 +1,257 @@
+{
+  "runtime_commit": "da370ebc9b089aec430859059cc83af52e623089",
+  "runtime_tree": "5a904dbd310814bf5dbeeaac8832dc4fc53d573c",
+  "alice_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "run_id": 37072026458,
+  "job_id": 111053439176,
+  "event": "workflow_dispatch",
+  "workflow_status": "completed",
+  "workflow_conclusion": "success",
+  "workflow_updated_at_utc": "2026-10-02T22:25:33Z",
+  "root_job_log_verification": {
+    "flora_checkout": true,
+    "alice_checkout": true,
+    "workers_only_command": true,
+    "cap_seconds": 180
+  },
+  "fixture_status": "failed",
+  "outcome_counts": {
+    "capped": 0,
+    "errors": 0,
+    "expected_failures": 0,
+    "failures": 1,
+    "passed": 0,
+    "skipped": 0,
+    "tests": 1,
+    "unexpected_successes": 0
+  },
+  "qualification": false,
+  "artifact_sha256": "b87e1becf62a7ff864074584fa7f2cf826a083a0461383cd6dc5cc8a4e34b37d",
+  "validation_sha256": "4ea7f4acd832bb55fb15508fff8df5dda08eb3b5f655991ca0047da53e28ae9a",
+  "previous_run_id": 37068588428,
+  "previous_runtime": "bf59736673d4f054ff85636ca80a1983d14d7cd5",
+  "observer_script_identical_between_old_and_new": true,
+  "comparison_limits": [
+    "Both fixtures fail; workflow success only records diagnostic collection.",
+    "Both reach six owned jobs on one ledger, no 180-second worker cutoff, overflow/error/hook change or open span at close. Parent setup is unobserved.",
+    "Both reach two preparation calls but perform different work before unchanged deadlines. More frame/RPC progress is not an equal-work response speedup.",
+    "Private tree traversal moves descriptor work into base_bindings. The public descriptor tag reduction is not elimination of the underlying work.",
+    "Actual origin body call/CPU totals differ, but reached progress, work mix and observation overhead prevent a controlled causal speedup claim.",
+    "Native authorization and lineage tags have zero calls in the observed worker path. Downstream execution/generation is not localized by this artifact.",
+    "The aggregate retains failure counts and the 60000ms budget, not individual response attempt statuses or times. Ordinary CI is the separate exact-engine response gate.",
+    "Four additional original-code tags can split tree traversal, descriptor contract scans, origin seals and frame contract scans before any further runtime change. Their added overhead changes observation coverage."
+  ],
+  "comparison": [
+    {
+      "tag": "phase.descriptor_verify",
+      "bf597366": {
+        "calls": 5434,
+        "exclusive_thread_cpu_seconds": 23.257397383,
+        "thread_cpu_seconds": 64.947219043,
+        "wall_seconds": 65.60189021
+      },
+      "da370ebc": {
+        "calls": 292,
+        "exclusive_thread_cpu_seconds": 0.994996474,
+        "thread_cpu_seconds": 1.711868362,
+        "wall_seconds": 1.718463184
+      }
+    },
+    {
+      "tag": "phase.origin_verify",
+      "bf597366": {
+        "calls": 5436,
+        "exclusive_thread_cpu_seconds": 21.01171196,
+        "thread_cpu_seconds": 22.940498208,
+        "wall_seconds": 23.185226878
+      },
+      "da370ebc": {
+        "calls": 4201,
+        "exclusive_thread_cpu_seconds": 8.044751973,
+        "thread_cpu_seconds": 8.763823716,
+        "wall_seconds": 8.799707137
+      }
+    },
+    {
+      "tag": "phase.function_binding_verify",
+      "bf597366": {
+        "calls": 93790,
+        "exclusive_thread_cpu_seconds": 5.358803765,
+        "thread_cpu_seconds": 12.149035476,
+        "wall_seconds": 12.280281736
+      },
+      "da370ebc": {
+        "calls": 164235,
+        "exclusive_thread_cpu_seconds": 4.56443077,
+        "thread_cpu_seconds": 11.286273433,
+        "wall_seconds": 11.339580251
+      }
+    },
+    {
+      "tag": "shared.frame.context_binding_verify",
+      "bf597366": {
+        "calls": 132111,
+        "exclusive_thread_cpu_seconds": 12.830981948,
+        "thread_cpu_seconds": 27.865130662,
+        "wall_seconds": 28.132376034
+      },
+      "da370ebc": {
+        "calls": 297586,
+        "exclusive_thread_cpu_seconds": 14.206509273,
+        "thread_cpu_seconds": 31.767604411,
+        "wall_seconds": 31.895112392
+      }
+    },
+    {
+      "tag": "shared.frame.base_bindings",
+      "bf597366": {
+        "calls": 2948,
+        "exclusive_thread_cpu_seconds": 4.961785669,
+        "thread_cpu_seconds": 64.808832941,
+        "wall_seconds": 65.458378597
+      },
+      "da370ebc": {
+        "calls": 6687,
+        "exclusive_thread_cpu_seconds": 29.698301044,
+        "thread_cpu_seconds": 54.988920383,
+        "wall_seconds": 55.209495977
+      }
+    },
+    {
+      "tag": "shared.frame.create",
+      "bf597366": {
+        "calls": 8,
+        "exclusive_thread_cpu_seconds": 0.010552095,
+        "thread_cpu_seconds": 26.54357451,
+        "wall_seconds": 27.028745652
+      },
+      "da370ebc": {
+        "calls": 17,
+        "exclusive_thread_cpu_seconds": 0.011163018,
+        "thread_cpu_seconds": 22.237865338,
+        "wall_seconds": 22.568324671
+      }
+    },
+    {
+      "tag": "context.prepare_current",
+      "bf597366": {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 0.268061085,
+        "thread_cpu_seconds": 108.082883146,
+        "wall_seconds": 118.228772028
+      },
+      "da370ebc": {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 0.127114682,
+        "thread_cpu_seconds": 108.309413143,
+        "wall_seconds": 119.397544412
+      }
+    },
+    {
+      "tag": "context.assemble",
+      "bf597366": {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 3.922415195,
+        "thread_cpu_seconds": 63.769437857,
+        "wall_seconds": 72.106153909
+      },
+      "da370ebc": {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 5.366757207,
+        "thread_cpu_seconds": 91.134497417,
+        "wall_seconds": 101.485181516
+      }
+    },
+    {
+      "tag": "native.phase_now",
+      "bf597366": {
+        "calls": 84,
+        "exclusive_thread_cpu_seconds": 8.96723386,
+        "thread_cpu_seconds": 19.506939756,
+        "wall_seconds": 24.940688906
+      },
+      "da370ebc": {
+        "calls": 237,
+        "exclusive_thread_cpu_seconds": 12.260295753,
+        "thread_cpu_seconds": 26.139391435,
+        "wall_seconds": 32.796657736
+      }
+    },
+    {
+      "tag": "rpc.kurrent_get_stream",
+      "bf597366": {
+        "calls": 870,
+        "exclusive_thread_cpu_seconds": 1.078898509,
+        "thread_cpu_seconds": 1.078898509,
+        "wall_seconds": 2.117544129
+      },
+      "da370ebc": {
+        "calls": 2261,
+        "exclusive_thread_cpu_seconds": 1.332607125,
+        "thread_cpu_seconds": 1.332607125,
+        "wall_seconds": 2.708255855
+      }
+    },
+    {
+      "tag": "rpc.psycopg_execute",
+      "bf597366": {
+        "calls": 9180,
+        "exclusive_thread_cpu_seconds": 2.724104502,
+        "thread_cpu_seconds": 2.724104502,
+        "wall_seconds": 10.929909095
+      },
+      "da370ebc": {
+        "calls": 23836,
+        "exclusive_thread_cpu_seconds": 3.137678732,
+        "thread_cpu_seconds": 3.137678732,
+        "wall_seconds": 12.162987757
+      }
+    },
+    {
+      "tag": "native.authorize_context",
+      "bf597366": {
+        "calls": 0,
+        "exclusive_thread_cpu_seconds": 0.0,
+        "thread_cpu_seconds": 0.0,
+        "wall_seconds": 0.0
+      },
+      "da370ebc": {
+        "calls": 0,
+        "exclusive_thread_cpu_seconds": 0.0,
+        "thread_cpu_seconds": 0.0,
+        "wall_seconds": 0.0
+      }
+    },
+    {
+      "tag": "lineage.authorize_context",
+      "bf597366": {
+        "calls": 0,
+        "exclusive_thread_cpu_seconds": 0.0,
+        "thread_cpu_seconds": 0.0,
+        "wall_seconds": 0.0
+      },
+      "da370ebc": {
+        "calls": 0,
+        "exclusive_thread_cpu_seconds": 0.0,
+        "thread_cpu_seconds": 0.0,
+        "wall_seconds": 0.0
+      }
+    },
+    {
+      "tag": "lineage.context",
+      "bf597366": {
+        "calls": 0,
+        "exclusive_thread_cpu_seconds": 0.0,
+        "thread_cpu_seconds": 0.0,
+        "wall_seconds": 0.0
+      },
+      "da370ebc": {
+        "calls": 0,
+        "exclusive_thread_cpu_seconds": 0.0,
+        "thread_cpu_seconds": 0.0,
+        "wall_seconds": 0.0
+      }
+    }
+  ],
+  "private_content_retained": false
+}

@@ -1,8 +1,36 @@
-# FloRA / Alice middle-layer audit â€” 2026-10-02
+# FloRA / Alice middle-layer audit — 2026-10-02
 
 Source-grounded design review for the narrow prototype. This record changes no
 serving contract and qualifies no model, response latency or behavioral result.
 The source audit and independent proposal review are separate from test execution.
+
+## Current original-code observation
+
+Source `d0f90655` adds only four numeric fixed targets for descriptor tree,
+descriptor contracts, origin seals and frame contracts; all prior targets and
+budgets remain. Runtime source/tests are identical to `da370ebc`. All 32
+observer contracts pass in 3.493 s, separate from the 72 runtime contracts.
+The [checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) and
+[receipt](evidence/2026-10-02_d0f90655_observer_contracts.json) link pending
+diagnostic 37073820659 and ordinary PR CI 37073825647. The extra targets add
+sampling overhead, so this new scope supports attribution rather than direct
+equal-overhead speedup measurement. The previous failed fixture is preserved.
+
+## Completed da370ebc observation
+
+The source-verified fixture failed; collection success does not qualify the
+response. Six owned jobs recorded 120.902 s wall / 109.280 s thread CPU and
+two preparation calls consumed 119.398 s inclusive wall. More frame/RPC work
+was reached within unchanged deadlines, while public descriptor work moved
+into private tree traversal under base_bindings. Parent setup is unobserved;
+no equal-work speedup or downstream generation attribution follows.
+
+The [latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) preserves all
+116 source hashes, original artifact, numeric comparison, complete 72 targeted
+passes and current ordinary CI. The bounded next observation adds only four
+original-code tags for descriptor tree/contracts, origin seals and frame
+contracts. Added observer overhead changes coverage; it supports diagnosis,
+not another runtime rewrite or more memory/mission infrastructure.
 
 ## Current bounded implementation
 
@@ -16,8 +44,8 @@ Candidate `da370ebc9b089aec430859059cc83af52e623089` implements only call-local
 exact-origin body de-duplication, with every descriptor/parent seal and fresh
 post-callback/next-boundary check retained. The
 [component receipt](evidence/2026-10-02_da370ebc_origin_contracts.json) records
-52 focused passes; original frame regressions and current engine gates remain
-pending. It changes no ledger or evidence/Claim/state/judgment/outcome role,
+72 targeted passes, including the complete original frame suite; ordinary
+engine gates remain pending. It changes no ledger or evidence/Claim/state/judgment/outcome role,
 adds no mission platform and implements no personality or MFM model.
 
 The source findings below still identify overlapping full-H recovery, H×C
@@ -72,23 +100,23 @@ Consequential findings below follow original sources and code, not summaries.
 Canonical originals:
 
 - [Execution plan8ea804](https://github.com/NIne-WIngEd/A.L.I.C.E/blob/8ea804aa25c3d1c5f46e9be5810d072ed0fadb4b/docs/ALICE_PHASE2_REPLACEMENT_AND_FABLE_V1_EXECUTION_PLAN_2026-09-27.md):
-  MFM1:262â€“275 selective Formation Context Planner; MFM3:298â€“300 semantic
-  proposals cannot authorize themselves; MFM5:313â€“336 fast/slow formation;
-  D2:364â€“384 canonical Experience contracts; D3:388â€“409 XTDB bitemporal
-  Claim authority; D13/D14:578â€“616 scheduler and selective recollection;
-  F1/F2:779â€“785 persistent mission state/workspace projection.
+  MFM1:262–275 selective Formation Context Planner; MFM3:298–300 semantic
+  proposals cannot authorize themselves; MFM5:313–336 fast/slow formation;
+  D2:364–384 canonical Experience contracts; D3:388–409 XTDB bitemporal
+  Claim authority; D13/D14:578–616 scheduler and selective recollection;
+  F1/F2:779–785 persistent mission state/workspace projection.
 - [Memory Architecture v4.1](https://github.com/NIne-WIngEd/A.L.I.C.E/blob/8ea804aa25c3d1c5f46e9be5810d072ed0fadb4b/docs/MEMORY_ARCHITECTURE_V4.md):
-  Â§3.1 Experience records observation/action/invocation/outcome/correction/
-  processing; Â§3.2:55â€“63 adjudicated Claim authority and materialized current
+  §3.1 Experience records observation/action/invocation/outcome/correction/
+  processing; §3.2:55–63 adjudicated Claim authority and materialized current
   serving, with historical reconstruction explicit and bounded.
 - [Record/provenance standard](https://github.com/NIne-WIngEd/A.L.I.C.E/blob/8ea804aa25c3d1c5f46e9be5810d072ed0fadb4b/docs/MEMORY_RECORD_AND_PROVENANCE_STANDARD.md):
-  Â§Â§3.4â€“3.8:69â€“87 stable Claim identity, immutable versions, rebuildable current
+  §§3.4–3.8:69–87 stable Claim identity, immutable versions, rebuildable current
   projection, typed evidence relations and adjudication.
 - [Performance standard](https://github.com/NIne-WIngEd/A.L.I.C.E/blob/8ea804aa25c3d1c5f46e9be5810d072ed0fadb4b/docs/MEMORY_PERFORMANCE_AND_RELIABILITY_STANDARD.md):
-  Â§Â§4â€“7 materialized state, batch hydration, bounded plans, generation-aware
+  §§4–7 materialized state, batch hydration, bounded plans, generation-aware
   indexes, selective context and separately scheduled reconstruction.
 - [StageG matrix](https://github.com/NIne-WIngEd/A.L.I.C.E/blob/8ea804aa25c3d1c5f46e9be5810d072ed0fadb4b/docs/STAGE_G_MEMORY_FABRIC_CANDIDATE_QUALIFICATION_MATRIX.md):
-  Â§Â§6.1â€“6.5:245â€“270 consumed evidence, consolidation path dependence, calibrated
+  §§6.1–6.5:245–270 consumed evidence, consolidation path dependence, calibrated
   influence, capable route selection and procedural-versus-factual roles.
 - [Mission contracts](https://github.com/NIne-WIngEd/A.L.I.C.E/blob/8ea804aa25c3d1c5f46e9be5810d072ed0fadb4b/docs/PHASE_5_MISSION_GRAPH_CONTRACTS.md):
   stable scoped identities; successor state; typed hierarchy/dependency links;
@@ -103,7 +131,7 @@ structure is persistent goal/dependency state; workspace/retrieval are views.
 One representation cannot silently become another's truth authority.
 
 The verified [storyboard](https://github.com/NIne-WIngEd/Fable_Sleight/blob/1805a01c73575378246cac8cbbb72cd891e8528e/comic/STORYBOARD.md)
-makes this concrete. Pages33â€“35 retain a project's technical success and missed
+makes this concrete. Pages33–35 retain a project's technical success and missed
 deadline, the original goal/evidence/warning/override and failed assumptions,
 then retrieve only relevant workload and project-value lessons. Page37 governs
 future influence with the owner. Page42 is context-sensitive long-horizon
@@ -123,19 +151,19 @@ name the inspected originals, not a proposed implementation.
 | Proposal / Claim authority | selected/experiment_runtime.py:694 form_experience consumes external qualified MFM output; admission is separate. selected/claims.py:240,304,346,410 stores immutable versions, typed evidence relations and CAS-like current heads in XTDB. load_current reads materialized current state; current_history is an explicit historical API. |
 | Personal state | selected/personal_state.py:410 follows active head to exact version and approval; governed_development.py:208,293 adds immutable activation/rollback receipts and current source checks. Candidate, formation permission and activation are distinct. Host/relationship/assistant-self identities remain scoped. |
 | Judgment input | selected/context.py:153 assembles declared exact Claim/state routes and optional qualified retrieval routes. selected_context.py:235 supplies a finite current C view while retaining original Kurrent owner/positions; exact selected route excludes unsupported episode/vector/graph cases rather than silently falling back. |
-| Protected boundary | context_guard.py:841,888 makes fresh initial barriers before nested private bytes; separate baseline and post-assembly capture frames finish before adoption. selected_authority_frame.py:550 orders independent callback â†’ H validation/manifest observation â†’ physical reobservation â†’ joint terminal XTDB rows â†’ pure bindings/discard. |
+| Protected boundary | context_guard.py:841,888 makes fresh initial barriers before nested private bytes; separate baseline and post-assembly capture frames finish before adoption. selected_authority_frame.py:550 orders independent callback → H validation/manifest observation → physical reobservation → joint terminal XTDB rows → pure bindings/discard. |
 | Native decision | experiment_runtime.py:862 records exact context delivery, producer input/output and decision source parents; judgment_lineage.py:272 checks source/current-state/artifact/phase lineage. Decision receipts support attribution but do not prove learned behavior or model attention. |
-| Outcome / revision | decision_outcome.py:108 records an independent observation linked to an earlier decision. outcome_revision.py:24â€“91 verifies those raw events and active predecessor, then registers an externally proposed successor candidate. governed_development.py:312 retains a separate activation boundary. |
-| Comparison lifecycle | selected/native_arm.py:438â€“546 applies independent current authorization before preparation, dispatch, recovery, acceptance and selected writes. These are separate protected operations, not a mission command graph. |
+| Outcome / revision | decision_outcome.py:108 records an independent observation linked to an earlier decision. outcome_revision.py:24–91 verifies those raw events and active predecessor, then registers an externally proposed successor candidate. governed_development.py:312 retains a separate activation boundary. |
+| Comparison lifecycle | selected/native_arm.py:438–546 applies independent current authorization before preparation, dispatch, recovery, acceptance and selected writes. These are separate protected operations, not a mission command graph. |
 
 The minimum prototype loop therefore exists structurally:
-source Experience â†’ qualified proposal â†’ deterministic admission â†’ current
-Claim/personal state â†’ relevant exact context â†’ native judgment/decision â†’
-linked observed evidence â†’ proposed governed revision. Models, semantic
+source Experience → qualified proposal → deterministic admission → current
+Claim/personal state → relevant exact context → native judgment/decision →
+linked observed evidence → proposed governed revision. Models, semantic
 quality and causal behavioral evidence remain outside this structural result.
 
 The pilot deliberately separates original evidence from native audit:
-pilot_lifecycle.py:383â€“413 appends an equal-arm original observation/correction,
+pilot_lifecycle.py:383–413 appends an equal-arm original observation/correction,
 and for an outcome adds a separate audit linking that observation to the prior
 native decision. Its causal_claim is none and its synthetic status is explicit.
 Only the original observation enters AFTER history; the native audit/decision
@@ -152,14 +180,14 @@ including unselected originals and the physical manifest. C is the selected
 judgment/source closure. Their purposes/caps are independent; small C cannot
 erase H's current evaluation rights.
 
-However, comparison_custody.py:945â€“967 authorize_history performs complete
+However, comparison_custody.py:945–967 authorize_history performs complete
 replay_committed and raw_custody.read of every original to compare plaintext,
 then a terminal metadata fence. Native_reads.py:375 calls this at phase-gate
 installation, and judgment_lineage.py:291 calls it again at lineage entry.
 This is more than a fresh permission/head observation.
 
 Later guards already use authorize_history_metadata. The existing
-authenticated_history.py:157â€“176 holds actually authenticated bytes and
+authenticated_history.py:157–176 holds actually authenticated bytes and
 rechecks current authority without reopening originals. Its owner/controller
 binding prevents treating a caller's bytes or positive boolean as proof.
 The actual integration fixture history_for is a held histories dictionary
@@ -174,11 +202,11 @@ and fresh target contracts must be designed and tested first.
 
 ### 2. Fresh frame shares rows; canonical work can still multiply
 
-selected_authority_frame.py:411â€“420 local permits calls
+selected_authority_frame.py:411–420 local permits calls
 history.validate_permissions for each C predicate. That method,
-selected_history_contribution.py:287â€“300, loops all H evaluation IDs.
+selected_history_contribution.py:287–300, loops all H evaluation IDs.
 Other frame construction/binding checks are deliberately repeated around
-callbacks. This can create logical HÃ—C work even when sampled SQL rows are shared.
+callbacks. This can create logical H×C work even when sampled SQL rows are shared.
 
 Known: this code nesting. Hypothesis: cost and the eligible pure-work subset.
 Fresh live permission answers cannot be retained across boundaries. Unknown
@@ -189,9 +217,9 @@ by this observation.
 ### 3. Original assembly and independent lineage remain outside that sharing
 
 - context_guard.py:944 calls assemble_context with original services/view;
-  context.py:189â€“207 reads Claim sources and active state, then:269â€“291 reads
+  context.py:189–207 reads Claim sources and active state, then:269–291 reads
   active state again for its final authority/content comparison.
-- selected_context.py:89â€“128 replay resolves the finite C closure, hydrates it
+- selected_context.py:89–128 replay resolves the finite C closure, hydrates it
   and resolves again. Its allow_event:135 calls that replay. The shared frame
   replaces those local metadata traversals within its own boundary; original
   assembly still performs them.
@@ -199,7 +227,7 @@ by this observation.
   runtime.log.replay. Runtime.log remains the original Kurrent log; selected
   preparation only passes a separate finite facade (experiment_runtime.py:840).
 - lineage verification resolves both artifact roles at:417, runs independent
-  phase qualifier callbacks and revalidates afterward:445â€“457.
+  phase qualifier callbacks and revalidates afterward:445–457.
 - verify_native_result_details:480,503 constructs context lineage before and
   after recovery. Actual producer/recovery independence is required; repeated
   private context reconstruction is not thereby a necessary implementation.
@@ -216,7 +244,7 @@ zero-entry diagnostic establishes none of their timings.
 
 No Mission/ResultCapsule/Traceback/mission_id/node_id symbols were found in
 src/flora. Original versus internal approval/delivery/decision/artifact records
-are explicitly separated in judgment_lineage.py:215â€“221, source closure,
+are explicitly separated in judgment_lineage.py:215–221, source closure,
 phase membership and pilot shared-history construction.
 
 Episodes, graph/vector projection, Temporal and broader lifecycle modules exist
@@ -231,7 +259,7 @@ selected, rather than a proven requirement for more middle-layer services.
 Independent inspection found a smaller pure-work hypothesis before broader
 history or assembly changes. In selected_authority_frame.py:_base_bindings,
 permission and event descriptors each call verify. At
-selected_phase_authority.py:252â€“280, descriptor verification validates its
+selected_phase_authority.py:252–280, descriptor verification validates its
 origin and recursively validates inherited parent descriptors; these may share
 the identical origin. There is no authority callback or live read between
 those duplicate original-origin traversals. This source structure is known;
@@ -287,7 +315,7 @@ mechanism. Keep the wider hypotheses below separate and measured.
 
 Existing test definitions were inspected, not run by this audit:
 
-- test_shared_authority_frame.py:108â€“290 covers one joint terminal/two physical
+- test_shared_authority_frame.py:108–290 covers one joint terminal/two physical
   observations, final selected C and unselected H withdrawal, separate purposes,
   Claim/state/activation terminal inclusion, pre-private qualification denial,
   and fresh barriers around ciphertext/plaintext.
