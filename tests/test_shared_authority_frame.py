@@ -326,6 +326,21 @@ class SharedAuthorityFrameTest(unittest.TestCase):
         self.assertEqual(after, [])
 
     def test_delegated_native_authority_helpers_cannot_be_replaced(self):
+        effects = []
+        class EffectfulDependency:
+            def __getattr__(self, name):
+                effects.append(name)
+            def __call__(self, *args, **kwargs):
+                effects.append("factory")
+            def get(self, *args):
+                effects.append("registry")
+        for name in ("SharedSelectedAuthorityFrame", "SelectedHistoryContribution",
+                     "phase_contracts", "context_contracts", "_OWNERS"):
+            with self.subTest(dependency=name), patch.object(shared_frames, name, EffectfulDependency()):
+                with self.assertRaises(PermissionError):
+                    shared_frames.create_shared_selected_frame(log=None, policy=None,
+                        claims=None, state=None, binding_guard=None)
+                self.assertEqual(effects, [])
         prepared = self.prepare()
         with patch.object(prepared, "_verify_authorities", new=lambda **kwargs: None):
             with self.assertRaises(PermissionError):

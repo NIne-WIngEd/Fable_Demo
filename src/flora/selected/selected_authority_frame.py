@@ -557,6 +557,9 @@ def create_shared_selected_frame(*, log, policy, claims, state, binding_guard):
 
 
 def _require_frame_contracts():
+    for name, value in _NATIVE_NAMES:
+        if globals().get(name) is not value:
+            raise PermissionError("shared frame native dependency identity changed")
     for module, name, function, code in _PRODUCERS:
         if getattr(module, name) is not function or function.__code__ is not code:
             raise PermissionError("shared frame native producer/composition helper changed")
@@ -603,3 +606,10 @@ _BINDING_CODES = tuple(code for function, name in (
 _BINDING_NESTED = {code: name for code in _BINDING_CODES for function_name, name in (
     ("frame_bindings", "binding_guard"), ("initial_bindings", "bindings_current"),
     ("bindings", "actual_bindings")) if code.co_name == function_name}
+_NATIVE_NAMES = tuple((cls.__name__, cls) for cls in (
+    _FramePhysicalData, SharedSelectedAuthorityFrame, SelectedHistoryContribution,
+    SelectedContextMetadataSample, SelectedContextLogView, SelectedContextSources,
+    SelectedJudgmentContextPolicy, XTDBClaimAuthority, XTDBGovernedPersonalDevelopment,
+    XTDBFormationPermissionPolicy, CanonicalSourceCommitment, CommittedExperience,
+    _FunctionBinding, _ReaderBinding)) + (("phase_contracts", phase_contracts),
+        ("context_contracts", context_contracts), ("_OWNERS", _OWNERS))
