@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import threading
 import types
 import unittest
@@ -25,7 +26,8 @@ SPEC.loader.exec_module(diagnostic)
 
 class NativeBoundaryProfilerTest(unittest.TestCase):
     def test_shared_frame_targets_bind_original_code_without_wrapping(self):
-        from flora.selected import selected_authority_frame, selected_history_contribution
+        from flora.selected import (selected_authority_frame, selected_history_contribution,
+            selected_phase_authority)
         def fixture(self):
             pass
         fixture_class = type('Fixture', (), {diagnostic.FIXTURE_METHOD: fixture})
@@ -33,6 +35,11 @@ class NativeBoundaryProfilerTest(unittest.TestCase):
         frame = selected_authority_frame.SharedSelectedAuthorityFrame
         history = selected_history_contribution.SelectedHistoryContribution
         before = frame.binding, frame.binding.__code__, history.member, history.member.__code__
+        pure_proofs = (("phase.descriptor_verify", selected_phase_authority.SelectedPhaseAuthorityDescriptor.verify),
+            ("phase.origin_verify", selected_phase_authority._Origin.verify),
+            ("phase.function_binding_verify", selected_phase_authority._FunctionBinding.verify),
+            ("shared.frame.context_binding_verify", selected_authority_frame._verify_binding))
+        proof_codes = tuple(function.__code__ for _, function in pure_proofs)
         targets, marker = diagnostic.native_targets(module)
         self.assertEqual(targets[before[1]].tag, 'shared.frame.binding')
         self.assertEqual(targets[before[3]].tag, 'shared.history.member')
@@ -43,6 +50,10 @@ class NativeBoundaryProfilerTest(unittest.TestCase):
         self.assertIs(frame.binding.__code__, before[1])
         self.assertIs(history.member, before[2])
         self.assertIs(history.member.__code__, before[3])
+        for (tag, function), code in zip(pure_proofs, proof_codes):
+            self.assertIs(function.__code__, code)
+            self.assertEqual(targets[code].tag, tag)
+            self.assertFalse(targets[code].rpc)
 
     def observer(self, marker, *fixed, **kwargs):
         targets = {marker.__code__: diagnostic.Target("owned")}
@@ -416,6 +427,276 @@ class NativeBoundaryProfilerTest(unittest.TestCase):
         self.assertAlmostEqual(rows["outer"]["wall_seconds"], 90 / 1e9)
         self.assertAlmostEqual(rows["outer"]["exclusive_thread_cpu_seconds"], 20 / 1e9)
         self.assertAlmostEqual(rows["inner"]["thread_cpu_seconds"], 4 / 1e9)
+
+    def test_workers_only_never_installs_parent_hook_or_samples_pre_owned_cpu(self):
+        parent_ident = threading.get_ident()
+        original_setprofile = sys.setprofile
+        cpu_samples, phases = [], []
+        def cpu_clock():
+            self.assertNotEqual(threading.get_ident(), parent_ident)
+            cpu_samples.append(True)
+            return 0
+        def setprofile(hook):
+            self.assertNotEqual(threading.get_ident(), parent_ident)
+            original_setprofile(hook)
+        def rpc():
+            phases.append(len(cpu_samples))
+        def owned():
+            rpc()
+        def impostor():
+            rpc()
+        impostor.__name__ = owned.__name__
+        def worker():
+            rpc()
+            impostor()
+            self.assertEqual(cpu_samples, [])
+            owned()
+        observer = self.observer(owned, ("rpc", rpc, True), workers_only=True,
+            cpu_clock=cpu_clock)
+        original_future = threading.getprofile()
+        with patch.object(sys, "setprofile", side_effect=setprofile):
+            with observer:
+                self.assertIsNone(sys.getprofile())
+                rpc()
+                owned()  # A matching code in the parent is outside this scope.
+                with self.worker(worker):
+                    pass
+            self.assertIsNone(sys.getprofile())
+        summary = observer.summary()
+        self.assertIsNone(summary["parent"])
+        self.assertEqual(summary["classified_owned_work_entries"], 1)
+        self.assertEqual(self.rows(summary["workers"][0])["rpc"]["calls"], 1)
+        self.assertTrue(cpu_samples)
+        self.assertFalse(summary["parent_hook_changed"])
+        self.assertIs(threading.getprofile(), original_future)
+
+    def test_workers_only_long_parent_setup_does_not_consume_worker_window(self):
+        clock, completed = [0], []
+        def rpc():
+            completed.append(True)
+        def owned():
+            rpc()
+            clock[0] += 900_000_000
+        observer = self.observer(owned, ("rpc", rpc, True), workers_only=True,
+            cap_seconds=1, wall_clock=lambda: clock[0], cpu_clock=lambda: 0)
+        with observer:
+            clock[0] = 200_000_000_000
+            rpc()
+            with self.worker(owned):
+                pass
+            rpc()
+        summary = observer.summary()
+        self.assertEqual(completed, [True, True, True])
+        self.assertEqual(summary["elapsed_seconds"], 200.9)
+        self.assertEqual(summary["first_owned_entry_offset_seconds"], 200)
+        self.assertEqual(summary["workers"][0]["window_wall_seconds"], .9)
+        self.assertFalse(summary["workers"][0]["observation_cap_reached"])
+        self.assertIsNone(summary["overshoot_seconds"])
+        self.assertFalse(summary["stopped_before_parent_rpc"])
+
+    def test_workers_only_reused_worker_window_is_not_reset_and_stops_numeric_sampling(self):
+        clock, cpu, cpu_samples, completed = [0], [0], [], []
+        def cpu_clock():
+            cpu_samples.append(clock[0])
+            return cpu[0]
+        def rpc():
+            completed.append(True)
+            clock[0] += 400_000_000
+            cpu[0] += 40_000_000
+        def owned():
+            rpc()
+        def worker():
+            owned()
+            clock[0] = 900_000_000
+            owned()
+            clock[0] = 2_000_000_000
+            owned()
+        observer = self.observer(owned, ("rpc", rpc, True), workers_only=True,
+            cap_seconds=1, wall_clock=lambda: clock[0], cpu_clock=cpu_clock)
+        with observer:
+            with self.worker(worker):
+                pass
+        summary = observer.summary()
+        ledger = summary["workers"][0]
+        self.assertEqual(completed, [True, True, True])
+        self.assertEqual(summary["classified_owned_work_entries"], 3)
+        self.assertEqual(summary["active_owned_work_at_close"], 0)
+        self.assertEqual(ledger["first_owned_entry_offset_seconds"], 0)
+        self.assertEqual(ledger["cap_crossing_elapsed_seconds"], 1.3)
+        self.assertEqual(ledger["window_wall_seconds"], .9)
+        self.assertEqual(ledger["window_thread_cpu_seconds"], .04)
+        self.assertTrue(all(value <= 900_000_000 for value in cpu_samples))
+        self.assertEqual(self.rows(ledger)["owned"]["calls"], 2)
+        self.assertEqual(self.rows(ledger)["owned"]["return_events"], 1)
+        self.assertEqual(self.rows(ledger)["rpc"]["calls"], 2)
+        self.assertEqual(self.rows(ledger)["rpc"]["return_events"], 1)
+
+    def test_workers_only_long_rpc_remains_partial_without_deadline_cpu_fabrication(self):
+        clock, cpu, cpu_samples, completed = [0], [0], [], []
+        def cpu_clock():
+            cpu_samples.append(clock[0])
+            return cpu[0]
+        def rpc():
+            clock[0] = 2_000_000_000
+            cpu[0] = 900_000_000
+            completed.append(True)
+        def owned():
+            clock[0] = 100_000_000
+            cpu[0] = 10_000_000
+            rpc()
+        observer = self.observer(owned, ("rpc", rpc, True), workers_only=True,
+            cap_seconds=1, wall_clock=lambda: clock[0], cpu_clock=cpu_clock)
+        with observer:
+            with self.worker(owned):
+                pass
+        summary = observer.summary()
+        ledger = summary["workers"][0]
+        self.assertEqual(completed, [True])
+        self.assertEqual(ledger["cap_crossing_elapsed_seconds"], 2)
+        self.assertEqual(ledger["window_wall_seconds"], .1)
+        self.assertEqual(ledger["window_thread_cpu_seconds"], .01)
+        self.assertNotIn(2_000_000_000, cpu_samples)
+        self.assertEqual(ledger["open_tagged_spans_at_cap"], 2)
+        self.assertEqual(ledger["active_observed_rpcs_at_cap"], 1)
+        self.assertEqual(ledger["active_owned_work_at_cap"], 1)
+        self.assertEqual(summary["active_owned_work_at_close"], 0)
+        self.assertEqual(summary["open_tagged_spans_at_close"], 0)
+        self.assertEqual(self.rows(ledger)["owned"]["return_events"], 0)
+        self.assertEqual(self.rows(ledger)["rpc"]["return_events"], 0)
+        receipt = diagnostic.build_receipt(status="passed", result=diagnostic.AggregateTestResult(),
+            observer=observer, cap_seconds=1, before={}, after={})
+        self.assertEqual(receipt["cap_outcome"], "worker_observation_window_capped")
+        self.assertFalse(receipt["qualification"])
+        self.assertEqual(receipt["response_budget_ms"], 60000)
+
+    def test_workers_only_each_new_worker_gets_its_own_first_entry_window(self):
+        clock, duration, completed = [0], [2_000_000_000], []
+        def rpc():
+            clock[0] += duration[0]
+            completed.append(True)
+        def owned():
+            rpc()
+        observer = self.observer(owned, ("rpc", rpc, True), workers_only=True,
+            cap_seconds=1, wall_clock=lambda: clock[0], cpu_clock=lambda: 0)
+        with observer:
+            with self.worker(owned):
+                pass
+            clock[0], duration[0] = 10_000_000_000, 500_000_000
+            with self.worker(owned):
+                pass
+        workers = observer.summary()["workers"]
+        self.assertEqual(completed, [True, True])
+        self.assertEqual([worker["first_owned_entry_offset_seconds"] for worker in workers], [0, 10])
+        self.assertEqual([worker["observation_cap_reached"] for worker in workers], [True, False])
+        self.assertEqual([worker["window_wall_seconds"] for worker in workers], [0, .5])
+        self.assertEqual(self.rows(workers[1])["rpc"]["return_events"], 1)
+
+    def test_workers_only_no_owned_entry_reports_unobserved_parent_and_setup(self):
+        clock, completed = [0], []
+        def owned():
+            pass
+        def rpc():
+            completed.append(True)
+        def no_cpu_sample():
+            self.fail("unowned setup must not sample thread CPU")
+        observer = self.observer(owned, ("rpc", rpc, True), workers_only=True,
+            wall_clock=lambda: clock[0], cpu_clock=no_cpu_sample)
+        with observer:
+            clock[0] = 1_000_000_000_000
+            rpc()
+            with self.worker(rpc):
+                pass
+        receipt = diagnostic.build_receipt(status="passed", result=diagnostic.AggregateTestResult(),
+            observer=observer, cap_seconds=180, before={}, after={})
+        self.assertEqual(completed, [True, True])
+        self.assertEqual(receipt["cap_outcome"], "owned_work_not_observed")
+        self.assertIsNone(receipt["soft_cap_seconds"])
+        self.assertEqual(receipt["worker_observation_cap_seconds"], 180)
+        self.assertIsNone(receipt["aggregate"]["parent"])
+        self.assertIsNone(receipt["aggregate"]["overshoot_seconds"])
+        self.assertEqual(receipt["aggregate"]["elapsed_seconds"], 1000)
+        self.assertEqual(receipt["aggregate"]["workers"], [])
+        for key in ("parent_non_rpc_setup_observed", "parent_rpc_setup_observed",
+                "parent_profile_hook_installed", "parent_thread_cpu_observed", "qualification"):
+            self.assertFalse(receipt[key])
+        self.assertIn("workers_only", receipt["coverage"])
+        self.assertIn("observation_only", receipt["cap_policy"])
+        self.assertIn("all_parent_and_setup_rpc_non_rpc_cpu_timings_are_unobserved", receipt["coverage_limits"])
+        failed_setup = diagnostic.build_receipt(status="setup_error", result=diagnostic.AggregateTestResult(),
+            observer=None, cap_seconds=180, before={}, after={}, workers_only=True)
+        self.assertEqual(failed_setup["cap_outcome"], "not_observed")
+        self.assertIn("workers_only", failed_setup["coverage"])
+
+    def test_workers_only_context_close_does_not_cancel_surviving_rpc(self):
+        ready, release, completed = threading.Event(), threading.Event(), []
+        def rpc():
+            ready.set()
+            release.wait(timeout=5)
+            completed.append(True)
+        def owned():
+            rpc()
+        observer = self.observer(owned, ("rpc", rpc, True), workers_only=True)
+        with self.worker_when_observed(observer, owned, release):
+            self.assertTrue(ready.wait(timeout=5))
+        summary = observer.summary()
+        self.assertEqual(completed, [True])
+        self.assertIsNone(summary["parent"])
+        self.assertEqual(summary["active_owned_work_at_close"], 1)
+        self.assertEqual(summary["active_observed_rpcs_at_close"], 1)
+        self.assertEqual(summary["open_tagged_spans_at_close"], 2)
+        self.assertFalse(summary["workers"][0]["observation_cap_reached"])
+        self.assertEqual(self.rows(summary["workers"][0])["rpc"]["return_events"], 0)
+
+    def test_workers_only_preserves_later_parent_and_future_hooks(self):
+        def owned():
+            pass
+        def replacement(frame, event, argument):
+            pass
+        observer = self.observer(owned, workers_only=True)
+        original_parent, original_future = sys.getprofile(), threading.getprofile()
+        try:
+            with observer:
+                sys.setprofile(replacement)
+                threading.setprofile(replacement)
+            self.assertIs(sys.getprofile(), replacement)
+            self.assertIs(threading.getprofile(), replacement)
+            self.assertTrue(observer.summary()["parent_hook_changed"])
+            self.assertTrue(observer.summary()["future_hook_changed"])
+        finally:
+            sys.setprofile(original_parent)
+            threading.setprofile(original_future)
+
+    def test_workers_only_cli_is_explicit_and_does_not_change_default_scope(self):
+        def owned():
+            pass
+        targets = {owned.__code__: diagnostic.Target("owned")}
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "receipt.json"
+            for scope in ([], ["--workers-only"]):
+                with self.subTest(scope=scope), patch.object(diagnostic, "original_case",
+                        return_value=(None, unittest.FunctionTestCase(lambda: None))), \
+                        patch.object(diagnostic, "native_targets", return_value=(targets, owned.__code__)), \
+                        patch.object(diagnostic, "source_hashes", return_value={}), \
+                        patch.object(diagnostic, "_discard_cli_output", return_value=diagnostic.os.dup(1)), \
+                        patch.object(diagnostic.os, "write"):
+                    self.assertEqual(diagnostic.main(["--output", str(output), *scope]), 0)
+                    receipt = json.loads(output.read_text())
+                    if scope:
+                        self.assertIsNone(receipt["aggregate"]["parent"])
+                        self.assertEqual(receipt["cap_outcome"], "owned_work_not_observed")
+                        self.assertEqual(receipt["worker_observation_cap_seconds"], 180)
+                    else:
+                        self.assertIsNotNone(receipt["aggregate"]["parent"])
+                        self.assertEqual(receipt["soft_cap_seconds"], 180)
+                        self.assertIn("parent_rpc_only_before_first_owned_entry", receipt["coverage"])
+
+    def test_workers_only_scope_rejects_ambiguous_or_unbounded_configuration(self):
+        def owned():
+            pass
+        for kwargs in ({"workers_only": 1}, {"workers_only": True, "cap_seconds": None},
+                {"workers_only": True, "parent_rpc_only_before_owned": True}):
+            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                self.observer(owned, **kwargs)
 
     def test_stack_overflow_is_bounded_and_incomplete(self):
         ledger = diagnostic.NumericLedger(("recursive",), 0, 0)

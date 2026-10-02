@@ -68,9 +68,9 @@ jobs:
           done
       - name: Wait for persistent Temporal and namespace
         run: python scripts/temporal_restart_probe.py health --retry-seconds 120
-      - name: Observe original owned native workers without qualifying latency
+      - name: Observe owned workers only with separate bounded observation windows
         continue-on-error: true
-        run: python scripts/profile_selected_native_boundaries.py --cap-seconds 180 --output selected-native-profile.json
+        run: python scripts/profile_selected_native_boundaries.py --workers-only --cap-seconds 180 --output selected-native-profile.json
       - name: Upload aggregate diagnostic only
         if: always()
         uses: actions/upload-artifact@v4
