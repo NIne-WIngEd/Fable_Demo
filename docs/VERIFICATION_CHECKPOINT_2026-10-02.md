@@ -76,6 +76,19 @@ hashes. Summed suite duration 28.614 s is test execution time, not response
 latency. The [exact local receipt](evidence/2026-10-02_shared_source_caps_local_contracts.json)
 preserves the test selection, source identity and failures/repairs.
 
+The tested source was published at
+`3a6e03cfeb2207a88f555c1fa88d10aad5bd987b` on
+`codex/flora-shared-source-caps`, in
+[draft PR #1](https://github.com/NIne-WIngEd/FloRA/pull/1).
+Ordinary [run 37041602495](https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495)
+checks merge commit `1573eeb47bf804ae7b06b98ffbe0472f04b57d5a`, whose complete
+tree exactly matches that development commit. At 2026-10-02 17:40:19 UTC the
+run remained in progress: guarded readers/writer faults passed 2/2 physical
+cases and native pilot withdrawal passed its one case. Contracts and other
+physical jobs were still pending completion. This partial observation is not
+a completed same-commit gate, latency pass or behavioral result. Inspect the
+run before replacing pending status with a completed receipt.
+
 | Source | LF SHA-256 |
 | --- | --- |
 | `src/flora/selected/phase_source_fence.py` | `b0829cf3995179b37a0beaf7bf4d42f0f06833b636d52b3231a13962bbb50015` |
