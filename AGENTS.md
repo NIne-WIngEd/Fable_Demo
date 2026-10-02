@@ -12,7 +12,9 @@ Alice's current logical contracts and selected physical adapter. Do not add
 product infrastructure merely because it exists in Alice's full architecture.
 `docs/ALICE_INFRASTRUCTURE_MAP.md` explains that architecture and its provenance.
 
-Personality and MFM belong to separate workstreams. Do not substitute a scripted
+Personality and MFM are built in other chats, not in FloRA. Build only their
+integration interfaces here and plug in qualified external outputs when ready.
+Do not train, fine-tune or implement either model here. Do not substitute a scripted
 judgment or supplied fictional receipt for a learned result. Existing modules
 are implementation inventory, not a requirement to complete every plane.
 

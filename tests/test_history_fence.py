@@ -245,12 +245,23 @@ class HistoryFenceTest(unittest.TestCase):
         self.assertEqual(calls, 2)
 
     def test_registry_subclass_still_uses_uncached_second_pass(self):
+        reads = []
         class CustomRegistry(XTDBFormationSourceRegistry):
-            pass
+            def _fetch(service, table, key):
+                reads.append((table, key))
+                return super()._fetch(table, key)
         self.registry.__class__ = CustomRegistry
         self.f.connection.calls.clear()
         self.verify()
-        self.assertEqual(len(self.f.connection.calls), 24)
+        # The first sample also preserves the actual subclass reader instead
+        # of treating a current class attribute as the original batch reader.
+        # Its four source/raw reads precede the unchanged fresh second pass.
+        self.assertEqual(len(self.f.connection.calls), 28)
+        for material in self.before.sources:
+            self.assertGreaterEqual(reads.count((source_readers._SOURCES,
+                self.registry._key("source", material.event.event_id))), 2)
+            self.assertGreaterEqual(reads.count((source_readers._OBJECTS,
+                self.registry._key("raw", material.event.payload_reference))), 2)
 
     def test_reordered_history_is_not_the_registered_phase(self):
         history = replace(self.before, sources=tuple(reversed(self.before.sources)))

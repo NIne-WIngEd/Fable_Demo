@@ -181,18 +181,21 @@ benefit, trained FBM or automatic host transfer is established.
 
 ## Work next and scope check
 
-Extend the existing finite shared source-row nomination collector on the
-same-call metadata sampler. Combine overlapping reads while preserving each
-purpose and domain's parent-closure cap. The collector must not return authority
-or a terminal proof. This is a prerequisite to composing the existing checks,
-and introduces no engine, ledger or new product plane.
+The existing finite shared source-row collector now accepts independently
+capped domains, sharing sampled rows while retaining each complete parent-DAG
+limit. [SHARED_SOURCE_METADATA_CAPS.md](SHARED_SOURCE_METADATA_CAPS.md) records
+the API and custom-reader repair. Ninety targeted contracts passed locally;
+the checkpoint records exact hashes and Windows/Linux qualification limits.
+The collector returns metadata inventory, not authority or a terminal proof.
+No new caller or serving frame is activated. No engine, ledger or product plane
+was introduced.
 
 This helper's source cap counts nominated source DAGs. Raw-only object extras
 consume the combined row budget without inventing grants. A future H contributor
 must separately include the physical manifest in H's own cap and verify its
 custody; the helper alone does not establish that history contract.
 
-Then compose the supported H/C/Claim/state collectors within one fresh protected
+Next compose the supported H/C/Claim/state collectors within one fresh protected
 boundary, including initial assembly; preserve real predicates and independent
 callbacks and use a single joint final observation. Race tests must include
 withdrawal of an **unselected H evaluation grant**, selected C grant, changed

@@ -56,8 +56,38 @@ the complete product. Scope is preserved in a root continuation guide and a
 source-pinned ledger/mission map. Existing useful components remain inventory;
 completing every full-product lane is not a prerequisite.
 
-The next runtime step extends the existing same-call multi-purpose row
-nomination helper with separate source-closure caps. It adds no service, ledger,
-storage engine or full memory platform. It cannot authorize a private read or
-establish a response-latency pass. Its exact implementation and validation
-receipt will be added here once completed.
+The [shared source metadata collector](SHARED_SOURCE_METADATA_CAPS.md) now
+extends the existing same-call nomination helper with separate source-DAG caps,
+including overlapping domains with the same purpose. Existing pair callers
+keep their behavior; no triple caller or shared serving frame is activated.
+Raw-only dependencies invent no grants. The future H contributor must still
+account for its physical manifest independently.
+
+Testing exposed an existing classifier defect: replacing a reader on its class
+could cause batching to skip that callback. Original reader identity/code and
+the exact native owner are now required for batching. Custom readers run the
+fallback, including fresh second-pass source/raw callbacks.
+
+**90 controlled contract tests in five modules passed** on Windows/Python
+3.12.14 with Alice API pin `4f287a48`: 21 shared-source metadata, 14 phase-source
+fence, 25 history fence, 24 selected-history fence and 6 combined-purpose tests.
+An independent reviewer reran all 21 new tests and verified the frozen source
+hashes. Summed suite duration 28.614 s is test execution time, not response
+latency. The [exact local receipt](evidence/2026-10-02_shared_source_caps_local_contracts.json)
+preserves the test selection, source identity and failures/repairs.
+
+| Source | LF SHA-256 |
+| --- | --- |
+| `src/flora/selected/phase_source_fence.py` | `b0829cf3995179b37a0beaf7bf4d42f0f06833b636d52b3231a13962bbb50015` |
+| `tests/test_shared_source_metadata.py` | `8af6bd2399666c7f8f6c13b23cb1b0b23fb0cc32e3941a6cef28907dd2102bfc` |
+| `tests/test_history_fence.py` | `9b4f48dcba18cc69606a05040d2914a064eb629ffc9018ef23442e7267064989` |
+
+The two preregistration modules import Unix-only `fcntl` through the existing
+native worker and could not execute locally; no compatibility shim was used.
+The ordinary Linux gate remains required. No local physical engines were run.
+Shared initial-assembly and H/C/Claim/state frame integration, actual-engine
+response qualification, learned judgment and builder transfer remain pending.
+
+The public procedure ledger now has 96 schema-valid seeds. They describe
+construction methods, not qualified FBM training cases or runtime personal
+memory. Documentation and the helper establish no broader experimental pass.
