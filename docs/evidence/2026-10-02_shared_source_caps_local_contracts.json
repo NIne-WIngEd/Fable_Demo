@@ -1,0 +1,87 @@
+{
+  "schema": "flora-controlled-contract-receipt-v1",
+  "date": "2026-10-02",
+  "baseline_context_commit": "d584f29e622b875220d408240a21a7d8bf661ebd",
+  "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "platform": "Windows",
+  "python": "3.12.14",
+  "scope": "same-call metadata helper, separate source-domain caps, custom-reader callback preservation",
+  "source_sha256": {
+    "src/flora/selected/phase_source_fence.py": "b0829cf3995179b37a0beaf7bf4d42f0f06833b636d52b3231a13962bbb50015",
+    "tests/test_shared_source_metadata.py": "8af6bd2399666c7f8f6c13b23cb1b0b23fb0cc32e3941a6cef28907dd2102bfc",
+    "tests/test_history_fence.py": "9b4f48dcba18cc69606a05040d2914a064eb629ffc9018ef23442e7267064989"
+  },
+  "source_unchanged_during_tests": true,
+  "tests": {
+    "passed": 90,
+    "modules": [
+      {
+        "name": "test_shared_source_metadata",
+        "passed": 21,
+        "seconds": 6.368
+      },
+      {
+        "name": "test_phase_source_fence",
+        "passed": 14,
+        "seconds": 4.843
+      },
+      {
+        "name": "test_history_fence",
+        "passed": 25,
+        "seconds": 7.237
+      },
+      {
+        "name": "test_selected_history_fence",
+        "passed": 24,
+        "seconds": 7.373
+      },
+      {
+        "name": "test_combined_history_purposes",
+        "passed": 6,
+        "seconds": 2.793
+      }
+    ],
+    "summed_suite_seconds": 28.614
+  },
+  "platform_blocked": [
+    {
+      "module": "test_preregistration_metadata_frame",
+      "reason": "Existing native_worker imports Unix-only fcntl before execution; no shim used."
+    },
+    {
+      "module": "test_experiment_preregistration",
+      "reason": "Existing native_worker imports Unix-only fcntl before execution; no shim used."
+    }
+  ],
+  "failure_and_repair": [
+    {
+      "finding": "Cycle tests initially used unsupported evaluation phase labels.",
+      "repair": "Use separately signed fictional metadata purpose; keep evaluation phases before/after."
+    },
+    {
+      "finding": "Class-patched reader callbacks were skipped by native-class comparison (zero calls).",
+      "repair": "Pin original identity/code and exact owner; custom class/subclass/code changes run fallback."
+    },
+    {
+      "finding": "Subclass history fixture's old 24-SQL assertion became stale after explicit fallback.",
+      "repair": "Require 28 intentional calls plus fresh source/raw callback coverage; response budgets unchanged."
+    }
+  ],
+  "checks": {
+    "whitespace_clean": true,
+    "serving_frame_activated": false,
+    "private_reads_authorized_by_collector": false,
+    "physical_engine_tests_run": false,
+    "response_latency_qualified": false,
+    "learned_behavior": false,
+    "builder_transfer": false
+  },
+  "independent_review": {
+    "passed": 21,
+    "module": "test_shared_source_metadata",
+    "seconds": 6.061,
+    "source_hashes_match": true,
+    "actionable_findings": 0
+  },
+  "pending": "Exact Linux standard CI, protected-boundary H/C/Claim/state frame integration and actual-engine response qualification."
+}

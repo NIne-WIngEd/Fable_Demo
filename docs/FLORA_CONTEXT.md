@@ -4,6 +4,20 @@ Updated: 2026-10-02, America/Chicago. Recovery baseline:
 `main@885be57abb582510d27a98177facd2a358c11387`; last runtime change
 `74f42417be37a2fbdc6c603a1ea657b040e0052e`.
 
+## Published continuation
+
+The context recovery was published on `codex/flora-context` at
+`d584f29e622b875220d408240a21a7d8bf661ebd`. The bounded collector extension
+is on `codex/flora-shared-source-caps` at
+`3a6e03cfeb2207a88f555c1fa88d10aad5bd987b`, in
+[draft PR #1](https://github.com/NIne-WIngEd/FloRA/pull/1).
+The context branch records that work; code remains on the development branch
+until reviewed. Do not infer its implementation from the context branch's
+runtime files. The exact local source receipt is in the latest checkpoint.
+Ordinary [Linux/physical run 37041602495](https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495)
+was still running at this publication; inspect its completed jobs before
+updating qualification. The completed baseline failures remain preserved.
+
 ## Owner's current scope
 
 The October 2 continuation instruction is authoritative: FloRA is a prototype
@@ -34,6 +48,9 @@ thresholds and scoring before evaluation. Synthetic wiring and fictional
 producer receipts are not learned results or real-host benefit. Numerical
 thresholds and the final cohort are still pending. Personality and MFM remain
 external workstreams with qualified artifact/invocation receipts required.
+The owner's follow-up explicitly confirms they are built in other chats:
+FloRA builds their integration interfaces and plugs them in when ready; it
+does not implement, train or fine-tune personality or MFM here.
 
 The smallest current native case uses exact Claim evidence and one governed
 owner-state route, with before/after originals. Its essential path is encrypted
@@ -181,18 +198,21 @@ benefit, trained FBM or automatic host transfer is established.
 
 ## Work next and scope check
 
-Extend the existing finite shared source-row nomination collector on the
-same-call metadata sampler. Combine overlapping reads while preserving each
-purpose and domain's parent-closure cap. The collector must not return authority
-or a terminal proof. This is a prerequisite to composing the existing checks,
-and introduces no engine, ledger or new product plane.
+The existing finite shared source-row collector now accepts independently
+capped domains, sharing sampled rows while retaining each complete parent-DAG
+limit. [SHARED_SOURCE_METADATA_CAPS.md](SHARED_SOURCE_METADATA_CAPS.md) records
+the API and custom-reader repair. Ninety targeted contracts passed locally;
+the checkpoint records exact hashes and Windows/Linux qualification limits.
+The collector returns metadata inventory, not authority or a terminal proof.
+No new caller or serving frame is activated. No engine, ledger or product plane
+was introduced.
 
 This helper's source cap counts nominated source DAGs. Raw-only object extras
 consume the combined row budget without inventing grants. A future H contributor
 must separately include the physical manifest in H's own cap and verify its
 custody; the helper alone does not establish that history contract.
 
-Then compose the supported H/C/Claim/state collectors within one fresh protected
+Next compose the supported H/C/Claim/state collectors within one fresh protected
 boundary, including initial assembly; preserve real predicates and independent
 callbacks and use a single joint final observation. Race tests must include
 withdrawal of an **unselected H evaluation grant**, selected C grant, changed
