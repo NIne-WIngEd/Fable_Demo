@@ -440,8 +440,8 @@ class SharedSelectedAuthorityFrame:
             return
         if self.sample is not None:
             _verify_owner(self.sample)
-        self._permission_descriptor.verify()
-        self._event_descriptor.verify()
+        phase_contracts._verify_selected_phase_pair(
+            self._permission_descriptor, self._event_descriptor)
         if (self._permission_descriptor._origin is not self.origin
                 or self._event_descriptor._origin is not self.origin):
             raise PermissionError("shared authority frame lost its exact native origin")
@@ -622,7 +622,8 @@ _EXTERNAL = tuple((function.__name__, function, function.__code__) for function 
     _require_policy_contracts, selected_phase_authority)) + (("_SELECTED_EVENT_PREDICATE", _SELECTED_EVENT_PREDICATE,
                                   _SELECTED_EVENT_PREDICATE.__code__),)
 _PRODUCERS = tuple((module, name, getattr(module, name), getattr(module, name).__code__)
-    for module, names in ((phase_contracts, ("selected_phase_authority", "_require_descriptor_contracts")),
+    for module, names in ((phase_contracts, ("selected_phase_authority", "_require_descriptor_contracts",
+                                          "_verify_selected_phase_pair")),
         (context_contracts, ("_metadata_view", "_require_shared_context_contracts"))) for name in names)
 _BINDING_CODES = tuple(code for function, name in (
     (context_contracts._shared_metadata_frame, "frame_bindings"),
