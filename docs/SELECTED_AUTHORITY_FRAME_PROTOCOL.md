@@ -1,7 +1,7 @@
 # Selected authority frame protocol
 
 Date: 2026-10-01 UTC; implementation update 2026-10-02
-Status: repair published; targeted checks pass, broad local gate failed, full verification pending
+Status: frame repair and measured-origin candidate published; current engine qualification pending
 
 Continuation scope, 2026-10-02: this composes checks already needed by FloRA's
 narrow prototype. It is not a mandate to implement Alice's full memory/mission
@@ -28,6 +28,22 @@ algorithm and skips no existing history, permission, ancestry or private-read
 check. The frame now has a development implementation, described below. Source-pinned
 contract, physical-engine and response verification remain separate gates.
 No latency improvement is claimed.
+
+## Current measured-origin candidate
+
+The connected frame's current candidate is `da370ebc9b089aec430859059cc83af52e623089`,
+tree `5a904dbd310814bf5dbeeaac8832dc4fc53d573c`. A fresh private descriptor
+tree verifies each exact origin body once while independently verifying all
+descriptor, parent, reader, gate and installed-owner seals. Tracking ends on
+return before callbacks; the next call starts fresh. This produces no authority
+lease and changes no H/C source cap, callback, physical reread or terminal fence.
+
+The [exact-source receipt](evidence/2026-10-02_da370ebc_origin_contracts.json)
+has 52 focused passes, preserves the initial scope test-placement failure and
+test-only correction, and records the separate original frame 20 regressions
+as running. [The latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md)
+links current engine/ordinary CI. No latency improvement or learned result is
+claimed. Historical repair and failure descriptions below retain their sources.
 
 ## What the earlier implementation repeats
 

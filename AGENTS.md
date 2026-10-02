@@ -31,7 +31,7 @@ withdrawal behavior, BEFORE/AFTER exclusion, and independent output attribution
 for the implemented slice. Share immutable/sample material within one fresh
 protected boundary; never carry a successful permission answer across boundaries.
 Held-history evaluation and selected-context judgment have separate purposes
-and source caps. The future joint fence must cover both.
+and source caps. The joint terminal fence must cover both.
 
 After material construction or design work, add a compact public procedure
 trace under `docs/fbm-seeds/` and validate it using the existing validator.

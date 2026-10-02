@@ -1,0 +1,2667 @@
+{
+  "schema_version": 1,
+  "receipt_kind": "completed_exact_source_ci",
+  "collected_at_utc": "2026-10-02T22:26:00Z",
+  "source": "Authenticated GitHub connector completed-job logs and root GitHub CLI run metadata/tree lookup",
+  "runtime_sha": "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+  "runtime_tree": "9541734db403ed1931c974a7e2a1bdab0e2b9c1e",
+  "pr_merge_checkout": "6eb543a614be18f3215ad613b5daa280dbae1468",
+  "pr_merge_tree": "9541734db403ed1931c974a7e2a1bdab0e2b9c1e",
+  "alice_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "runs": [
+    {
+      "run_id": 37065697026,
+      "requested_event_label": "pull_request",
+      "run_status_inferred_from_jobs": "completed",
+      "jobs_completed": 13,
+      "jobs_pending": [],
+      "completed_job_receipts": [
+        {
+          "run": 37065697026,
+          "job_id": 111032838687,
+          "name": "contracts",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 8,
+              "seconds": 0.014
+            },
+            {
+              "tests": 13,
+              "seconds": 2.276
+            },
+            {
+              "tests": 3,
+              "seconds": 0.761
+            },
+            {
+              "tests": 18,
+              "seconds": 2.408
+            },
+            {
+              "tests": 13,
+              "seconds": 0.628
+            },
+            {
+              "tests": 15,
+              "seconds": 3.553
+            },
+            {
+              "tests": 10,
+              "seconds": 0.317
+            },
+            {
+              "tests": 6,
+              "seconds": 1.33
+            },
+            {
+              "tests": 6,
+              "seconds": 0.694
+            },
+            {
+              "tests": 19,
+              "seconds": 0.086
+            },
+            {
+              "tests": 6,
+              "seconds": 1.262
+            },
+            {
+              "tests": 14,
+              "seconds": 0.176
+            },
+            {
+              "tests": 16,
+              "seconds": 0.547
+            },
+            {
+              "tests": 29,
+              "seconds": 8.439
+            },
+            {
+              "tests": 4,
+              "seconds": 0.084
+            },
+            {
+              "tests": 2,
+              "seconds": 0.002
+            },
+            {
+              "tests": 21,
+              "seconds": 1.223
+            },
+            {
+              "tests": 38,
+              "seconds": 0.144
+            },
+            {
+              "tests": 20,
+              "seconds": 4.076
+            },
+            {
+              "tests": 27,
+              "seconds": 1.202
+            },
+            {
+              "tests": 23,
+              "seconds": 24.343
+            },
+            {
+              "tests": 3,
+              "seconds": 0.014
+            },
+            {
+              "tests": 8,
+              "seconds": 0.905
+            },
+            {
+              "tests": 6,
+              "seconds": 0.83
+            },
+            {
+              "tests": 11,
+              "seconds": 0.271
+            },
+            {
+              "tests": 24,
+              "seconds": 3.171
+            },
+            {
+              "tests": 4,
+              "seconds": 2.219
+            },
+            {
+              "tests": 25,
+              "seconds": 1.754
+            },
+            {
+              "tests": 10,
+              "seconds": 28.938
+            },
+            {
+              "tests": 21,
+              "seconds": 1.407
+            },
+            {
+              "tests": 2,
+              "seconds": 1.984
+            },
+            {
+              "tests": 11,
+              "seconds": 8.933
+            },
+            {
+              "tests": 11,
+              "seconds": 0.214
+            },
+            {
+              "tests": 21,
+              "seconds": 51.259
+            },
+            {
+              "tests": 13,
+              "seconds": 0.997
+            },
+            {
+              "tests": 12,
+              "seconds": 0.752
+            },
+            {
+              "tests": 13,
+              "seconds": 0.182
+            },
+            {
+              "tests": 2,
+              "seconds": 0.011
+            },
+            {
+              "tests": 11,
+              "seconds": 0.217
+            },
+            {
+              "tests": 4,
+              "seconds": 1.125
+            },
+            {
+              "tests": 31,
+              "seconds": 623.628
+            },
+            {
+              "tests": 14,
+              "seconds": 1.22
+            },
+            {
+              "tests": 1,
+              "seconds": 0.001
+            },
+            {
+              "tests": 7,
+              "seconds": 0.742
+            },
+            {
+              "tests": 6,
+              "seconds": 62.249
+            },
+            {
+              "tests": 14,
+              "seconds": 0.154
+            },
+            {
+              "tests": 8,
+              "seconds": 63.983
+            },
+            {
+              "tests": 6,
+              "seconds": 0.614
+            },
+            {
+              "tests": 4,
+              "seconds": 0.108
+            },
+            {
+              "tests": 8,
+              "seconds": 0.577
+            },
+            {
+              "tests": 7,
+              "seconds": 0.93
+            },
+            {
+              "tests": 12,
+              "seconds": 0.944
+            },
+            {
+              "tests": 23,
+              "seconds": 58.611
+            },
+            {
+              "tests": 11,
+              "seconds": 5.207
+            },
+            {
+              "tests": 3,
+              "seconds": 0.004
+            },
+            {
+              "tests": 13,
+              "seconds": 5.548
+            },
+            {
+              "tests": 7,
+              "seconds": 1.587
+            },
+            {
+              "tests": 12,
+              "seconds": 1.087
+            },
+            {
+              "tests": 3,
+              "seconds": 0.001
+            },
+            {
+              "tests": 1,
+              "seconds": 0.004
+            },
+            {
+              "tests": 5,
+              "seconds": 0.122
+            },
+            {
+              "tests": 5,
+              "seconds": 0.015
+            },
+            {
+              "tests": 7,
+              "seconds": 0.092
+            },
+            {
+              "tests": 1,
+              "seconds": 0.062
+            },
+            {
+              "tests": 19,
+              "seconds": 1.46
+            },
+            {
+              "tests": 24,
+              "seconds": 2.013
+            },
+            {
+              "tests": 5,
+              "seconds": 2.075
+            },
+            {
+              "tests": 11,
+              "seconds": 38.712
+            },
+            {
+              "tests": 2,
+              "seconds": 0.007
+            },
+            {
+              "tests": 18,
+              "seconds": 1.922
+            },
+            {
+              "tests": 31,
+              "seconds": 2.417
+            },
+            {
+              "tests": 15,
+              "seconds": 0.11
+            },
+            {
+              "tests": 7,
+              "seconds": 0.013
+            },
+            {
+              "tests": 20,
+              "seconds": 904.677
+            },
+            {
+              "tests": 21,
+              "seconds": 1.516
+            },
+            {
+              "tests": 29,
+              "seconds": 1.129
+            },
+            {
+              "tests": 1,
+              "seconds": 2.236
+            },
+            {
+              "tests": 12,
+              "seconds": 0.051
+            }
+          ],
+          "test_outcomes": [
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK"
+          ],
+          "discovery": [],
+          "attempt_receipts": [],
+          "component_modules": [
+            {
+              "module": "test_artifact_registry",
+              "tests": 8,
+              "seconds": 0.014
+            },
+            {
+              "module": "test_assessment_custody",
+              "tests": 13,
+              "seconds": 2.276
+            },
+            {
+              "module": "test_assessment_release_fence",
+              "tests": 3,
+              "seconds": 0.761
+            },
+            {
+              "module": "test_authenticated_history",
+              "tests": 18,
+              "seconds": 2.408
+            },
+            {
+              "module": "test_blind_assessment",
+              "tests": 13,
+              "seconds": 0.628
+            },
+            {
+              "module": "test_bounded_embedding_lifecycle",
+              "tests": 15,
+              "seconds": 3.553
+            },
+            {
+              "module": "test_bounded_xtdb_reads",
+              "tests": 10,
+              "seconds": 0.317
+            },
+            {
+              "module": "test_chronology_boundary_profiler",
+              "tests": 6,
+              "seconds": 1.33
+            },
+            {
+              "module": "test_combined_history_guard",
+              "tests": 6,
+              "seconds": 0.694
+            },
+            {
+              "module": "test_comparator",
+              "tests": 19,
+              "seconds": 0.086
+            },
+            {
+              "module": "test_comparator_current_guards",
+              "tests": 6,
+              "seconds": 1.262
+            },
+            {
+              "module": "test_comparison_custody",
+              "tests": 14,
+              "seconds": 0.176
+            },
+            {
+              "module": "test_comparison_run",
+              "tests": 16,
+              "seconds": 0.547
+            },
+            {
+              "module": "test_current_context_guard",
+              "tests": 29,
+              "seconds": 8.439
+            },
+            {
+              "module": "test_development_source_freshness",
+              "tests": 4,
+              "seconds": 0.084
+            },
+            {
+              "module": "test_evaluation_protocol",
+              "tests": 2,
+              "seconds": 0.002
+            },
+            {
+              "module": "test_experience_envelope_reuse",
+              "tests": 21,
+              "seconds": 1.223
+            },
+            {
+              "module": "test_experience_exact_lookup",
+              "tests": 38,
+              "seconds": 0.144
+            },
+            {
+              "module": "test_experiment_coordinator",
+              "tests": 20,
+              "seconds": 4.076
+            },
+            {
+              "module": "test_experiment_manifests",
+              "tests": 27,
+              "seconds": 1.202
+            },
+            {
+              "module": "test_experiment_preregistration",
+              "tests": 23,
+              "seconds": 24.343
+            },
+            {
+              "module": "test_fbm_seed_contract",
+              "tests": 3,
+              "seconds": 0.014
+            },
+            {
+              "module": "test_formation_preflight",
+              "tests": 8,
+              "seconds": 0.905
+            },
+            {
+              "module": "test_governed_claim_quarantine",
+              "tests": 6,
+              "seconds": 0.83
+            },
+            {
+              "module": "test_governed_development",
+              "tests": 11,
+              "seconds": 0.271
+            },
+            {
+              "module": "test_governed_episodes",
+              "tests": 24,
+              "seconds": 3.171
+            },
+            {
+              "module": "test_guarded_object_copies",
+              "tests": 4,
+              "seconds": 2.219
+            },
+            {
+              "module": "test_history_fence",
+              "tests": 25,
+              "seconds": 1.754
+            },
+            {
+              "module": "test_native_arm",
+              "tests": 10,
+              "seconds": 28.938
+            },
+            {
+              "module": "test_native_boundary_profiler",
+              "tests": 21,
+              "seconds": 1.407
+            },
+            {
+              "module": "test_native_comparison_fixture",
+              "tests": 2,
+              "seconds": 1.984
+            },
+            {
+              "module": "test_native_final_seal",
+              "tests": 11,
+              "seconds": 8.933
+            },
+            {
+              "module": "test_native_pilot_lifecycle",
+              "tests": 11,
+              "seconds": 0.214
+            },
+            {
+              "module": "test_native_reads",
+              "tests": 21,
+              "seconds": 51.259
+            },
+            {
+              "module": "test_native_worker",
+              "tests": 13,
+              "seconds": 0.997
+            },
+            {
+              "module": "test_native_writer_guard",
+              "tests": 12,
+              "seconds": 0.752
+            },
+            {
+              "module": "test_openai_responses_transport",
+              "tests": 13,
+              "seconds": 0.182
+            },
+            {
+              "module": "test_owner_authorization",
+              "tests": 2,
+              "seconds": 0.011
+            },
+            {
+              "module": "test_personal_artifact_custody",
+              "tests": 11,
+              "seconds": 0.217
+            },
+            {
+              "module": "test_phase_authorized_reads",
+              "tests": 4,
+              "seconds": 1.125
+            },
+            {
+              "module": "test_phase_snapshots",
+              "tests": 31,
+              "seconds": 623.628
+            },
+            {
+              "module": "test_phase_source_fence",
+              "tests": 14,
+              "seconds": 1.22
+            },
+            {
+              "module": "test_pilot_fixture",
+              "tests": 1,
+              "seconds": 0.001
+            },
+            {
+              "module": "test_preregistration_current_guard",
+              "tests": 7,
+              "seconds": 0.742
+            },
+            {
+              "module": "test_preregistration_metadata_frame",
+              "tests": 6,
+              "seconds": 62.249
+            },
+            {
+              "module": "test_provider_attempt_custody",
+              "tests": 14,
+              "seconds": 0.154
+            },
+            {
+              "module": "test_provider_final_binding",
+              "tests": 8,
+              "seconds": 63.983
+            },
+            {
+              "module": "test_provider_source_fence",
+              "tests": 6,
+              "seconds": 0.614
+            },
+            {
+              "module": "test_registered_judgment_context",
+              "tests": 4,
+              "seconds": 0.108
+            },
+            {
+              "module": "test_runtime_context_domain",
+              "tests": 8,
+              "seconds": 0.577
+            },
+            {
+              "module": "test_runtime_custody_transaction",
+              "tests": 7,
+              "seconds": 0.93
+            },
+            {
+              "module": "test_sealed_analysis",
+              "tests": 12,
+              "seconds": 0.944
+            },
+            {
+              "module": "test_selected_context",
+              "tests": 23,
+              "seconds": 58.611
+            },
+            {
+              "module": "test_selected_context_fence",
+              "tests": 11,
+              "seconds": 5.207
+            },
+            {
+              "module": "test_selected_experience",
+              "tests": 3,
+              "seconds": 0.004
+            },
+            {
+              "module": "test_selected_experiment_runtime",
+              "tests": 13,
+              "seconds": 5.548
+            },
+            {
+              "module": "test_selected_formation_admission",
+              "tests": 7,
+              "seconds": 1.587
+            },
+            {
+              "module": "test_selected_formation_candidates",
+              "tests": 12,
+              "seconds": 1.087
+            },
+            {
+              "module": "test_selected_formation_gate",
+              "tests": 3,
+              "seconds": 0.001
+            },
+            {
+              "module": "test_selected_formation_input",
+              "tests": 1,
+              "seconds": 0.004
+            },
+            {
+              "module": "test_selected_formation_policy",
+              "tests": 5,
+              "seconds": 0.122
+            },
+            {
+              "module": "test_selected_formation_recollection",
+              "tests": 5,
+              "seconds": 0.015
+            },
+            {
+              "module": "test_selected_formation_registry",
+              "tests": 7,
+              "seconds": 0.092
+            },
+            {
+              "module": "test_selected_graph",
+              "tests": 1,
+              "seconds": 0.062
+            },
+            {
+              "module": "test_selected_history_contribution",
+              "tests": 19,
+              "seconds": 1.46
+            },
+            {
+              "module": "test_selected_history_fence",
+              "tests": 24,
+              "seconds": 2.013
+            },
+            {
+              "module": "test_selected_integration_partition",
+              "tests": 5,
+              "seconds": 2.075
+            },
+            {
+              "module": "test_selected_judgment_lineage",
+              "tests": 11,
+              "seconds": 38.712
+            },
+            {
+              "module": "test_selected_object_store",
+              "tests": 2,
+              "seconds": 0.007
+            },
+            {
+              "module": "test_selected_phase_authority",
+              "tests": 18,
+              "seconds": 1.922
+            },
+            {
+              "module": "test_selected_source_closure",
+              "tests": 31,
+              "seconds": 2.417
+            },
+            {
+              "module": "test_selected_source_commitment",
+              "tests": 15,
+              "seconds": 0.11
+            },
+            {
+              "module": "test_selected_source_native",
+              "tests": 7,
+              "seconds": 0.013
+            },
+            {
+              "module": "test_shared_authority_frame",
+              "tests": 20,
+              "seconds": 904.677
+            },
+            {
+              "module": "test_shared_source_metadata",
+              "tests": 21,
+              "seconds": 1.516
+            },
+            {
+              "module": "test_stored_action_codec_reuse",
+              "tests": 29,
+              "seconds": 1.129
+            },
+            {
+              "module": "test_temporal_reconciliation",
+              "tests": 1,
+              "seconds": 2.236
+            },
+            {
+              "module": "test_transport_boundary_profiler",
+              "tests": 12,
+              "seconds": 0.051
+            }
+          ],
+          "partial_case_results": null,
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032838687"
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032838998,
+          "name": "integration-native-comparison",
+          "status": "completed",
+          "conclusion": "failure",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 202.391
+            }
+          ],
+          "test_outcomes": [
+            "FAIL: test_actual_phase_context_execution_parent_and_private_run_custody",
+            "FAILED (failures=1)"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "native-comparison",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [
+            {
+              "phase": "before",
+              "status": "timeout",
+              "elapsed_ms": 60071
+            },
+            {
+              "phase": "after",
+              "status": "timeout",
+              "elapsed_ms": 60132
+            }
+          ],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 0,
+            "failed": 1,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032838998",
+          "response_budget_ms": 60000
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839136,
+          "name": "integration-transport",
+          "status": "completed",
+          "conclusion": "failure",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 2,
+              "seconds": 100.843
+            }
+          ],
+          "test_outcomes": [
+            "FAIL: test_phase_isolated_hybrid_memory_and_separately_authorized_signed_exchange",
+            "FAILED (failures=1)"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "transport",
+              "selected_cases": 2
+            }
+          ],
+          "attempt_receipts": [
+            {
+              "phase": "before",
+              "status": "budget_exceeded",
+              "elapsed_ms": 14707
+            },
+            {
+              "phase": "after",
+              "status": "budget_exceeded",
+              "elapsed_ms": 21102
+            }
+          ],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 2,
+            "passed_by_final_summary": 1,
+            "failed": 1,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839136",
+          "response_budget_ms": 10000
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839148,
+          "name": "integration-native-pilot-outcome-audit",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 1547.986
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "native-pilot-outcome-audit",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 1,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839148"
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839149,
+          "name": "integration-history",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [],
+          "test_outcomes": [],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "history",
+              "selected_cases": 2
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": {
+            "tests": [
+              {
+                "method": "test_registered_sources_to_blocked_control_stages_on_actual_selected_engines",
+                "case": "test_selected_experiment_coordinator.SelectedExperimentCoordinatorIntegrationTest.test_registered_sources_to_blocked_control_stages_on_actual_selected_engines"
+              }
+            ],
+            "completes": [
+              {
+                "case": "test_selected_experiment_coordinator.SelectedExperimentCoordinatorIntegrationTest.test_registered_sources_to_blocked_control_stages_on_actual_selected_engines",
+                "seconds": 93.006
+              }
+            ]
+          },
+          "case_counts": {
+            "completed_by_final_summary": 0,
+            "passed_by_final_summary": 0,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 1,
+            "incomplete": 1
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839149"
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839174,
+          "name": "integration-native-pilot-before-tail",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 1673.022
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "native-pilot-before-tail",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 1,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839174"
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839177,
+          "name": "integration-history-routes-native",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 2209.366
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "history-routes-native",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 1,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839177"
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839271,
+          "name": "integration-native-pilot-withdrawal",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 124.964
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "native-pilot-withdrawal",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 1,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839271"
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839297,
+          "name": "integration-history-routes-retained",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [],
+          "test_outcomes": [],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "history-routes-retained",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": {
+            "tests": [],
+            "completes": []
+          },
+          "case_counts": {
+            "completed_by_final_summary": 0,
+            "passed_by_final_summary": 0,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": 1
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839297"
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839301,
+          "name": "integration-readers",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 2,
+              "seconds": 68.759
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "readers",
+              "selected_cases": 2
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 2,
+            "passed_by_final_summary": 2,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839301"
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839308,
+          "name": "integration-native-pilot-typed-phase",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 2099.537
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "native-pilot-typed-phase",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 1,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839308"
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839343,
+          "name": "integration-lineage",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 2,
+              "seconds": 1955.423
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "lineage",
+              "selected_cases": 2
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 2,
+            "passed_by_final_summary": 2,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839343"
+        },
+        {
+          "run": 37065697026,
+          "job_id": 111032839358,
+          "name": "integration-core",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "6eb543a614be18f3215ad613b5daa280dbae1468",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 38,
+              "seconds": 461.516
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "core",
+              "selected_cases": 38
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 38,
+            "passed_by_final_summary": 38,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026/job/111032839358"
+        }
+      ],
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026",
+      "alice_checkout_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "physical_aggregate": {
+        "passed": 49,
+        "failed": 2,
+        "errors": 0,
+        "incomplete": 2,
+        "coverage": "completed_53_case_partition_with_two_unfinished_cases"
+      },
+      "actual_flora_checkout_sha": "6eb543a614be18f3215ad613b5daa280dbae1468",
+      "published_flora_runtime_sha": "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+      "published_runtime_tree_sha": "9541734db403ed1931c974a7e2a1bdab0e2b9c1e",
+      "merge_tree_equality_verified_by_root": true,
+      "root_verification": "Parent reported GitHub commit/tree verification: PR merge6eb543a and published9b57ed3 share9541734db403ed1931c974a7e2a1bdab0e2b9c1e",
+      "component_aggregate": {
+        "passed": 947,
+        "failed": 0,
+        "errors": 0,
+        "modules": 78
+      },
+      "run_metadata_verified_by_root_GitHub_CLI": {
+        "status": "completed",
+        "conclusion": "failure",
+        "event": "pull_request",
+        "head_sha": "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+        "created_at": "2026-10-02T21:15:06Z",
+        "updated_at": "2026-10-02T22:15:34Z"
+      }
+    },
+    {
+      "run_id": 37065691025,
+      "requested_event_label": "push",
+      "run_status_inferred_from_jobs": "completed",
+      "jobs_completed": 13,
+      "jobs_pending": [],
+      "completed_job_receipts": [
+        {
+          "run": 37065691025,
+          "job_id": 111032819645,
+          "name": "contracts",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 8,
+              "seconds": 0.017
+            },
+            {
+              "tests": 13,
+              "seconds": 2.616
+            },
+            {
+              "tests": 3,
+              "seconds": 1.012
+            },
+            {
+              "tests": 18,
+              "seconds": 2.692
+            },
+            {
+              "tests": 13,
+              "seconds": 0.704
+            },
+            {
+              "tests": 15,
+              "seconds": 3.714
+            },
+            {
+              "tests": 10,
+              "seconds": 0.317
+            },
+            {
+              "tests": 6,
+              "seconds": 1.629
+            },
+            {
+              "tests": 6,
+              "seconds": 0.82
+            },
+            {
+              "tests": 19,
+              "seconds": 0.101
+            },
+            {
+              "tests": 6,
+              "seconds": 1.498
+            },
+            {
+              "tests": 14,
+              "seconds": 0.211
+            },
+            {
+              "tests": 16,
+              "seconds": 0.652
+            },
+            {
+              "tests": 29,
+              "seconds": 9.923
+            },
+            {
+              "tests": 4,
+              "seconds": 0.098
+            },
+            {
+              "tests": 2,
+              "seconds": 0.003
+            },
+            {
+              "tests": 21,
+              "seconds": 1.506
+            },
+            {
+              "tests": 38,
+              "seconds": 0.165
+            },
+            {
+              "tests": 20,
+              "seconds": 4.736
+            },
+            {
+              "tests": 27,
+              "seconds": 1.426
+            },
+            {
+              "tests": 23,
+              "seconds": 28.244
+            },
+            {
+              "tests": 3,
+              "seconds": 0.017
+            },
+            {
+              "tests": 8,
+              "seconds": 1.085
+            },
+            {
+              "tests": 6,
+              "seconds": 1.009
+            },
+            {
+              "tests": 11,
+              "seconds": 0.317
+            },
+            {
+              "tests": 24,
+              "seconds": 3.747
+            },
+            {
+              "tests": 4,
+              "seconds": 2.668
+            },
+            {
+              "tests": 25,
+              "seconds": 2.098
+            },
+            {
+              "tests": 10,
+              "seconds": 34.291
+            },
+            {
+              "tests": 21,
+              "seconds": 1.714
+            },
+            {
+              "tests": 2,
+              "seconds": 2.309
+            },
+            {
+              "tests": 11,
+              "seconds": 10.529
+            },
+            {
+              "tests": 11,
+              "seconds": 0.271
+            },
+            {
+              "tests": 21,
+              "seconds": 60.783
+            },
+            {
+              "tests": 13,
+              "seconds": 1.023
+            },
+            {
+              "tests": 12,
+              "seconds": 0.763
+            },
+            {
+              "tests": 13,
+              "seconds": 0.203
+            },
+            {
+              "tests": 2,
+              "seconds": 0.013
+            },
+            {
+              "tests": 11,
+              "seconds": 0.251
+            },
+            {
+              "tests": 4,
+              "seconds": 1.306
+            },
+            {
+              "tests": 31,
+              "seconds": 734.521
+            },
+            {
+              "tests": 14,
+              "seconds": 1.463
+            },
+            {
+              "tests": 1,
+              "seconds": 0.001
+            },
+            {
+              "tests": 7,
+              "seconds": 0.879
+            },
+            {
+              "tests": 6,
+              "seconds": 74.237
+            },
+            {
+              "tests": 14,
+              "seconds": 0.178
+            },
+            {
+              "tests": 8,
+              "seconds": 74.461
+            },
+            {
+              "tests": 6,
+              "seconds": 0.724
+            },
+            {
+              "tests": 4,
+              "seconds": 0.123
+            },
+            {
+              "tests": 8,
+              "seconds": 0.68
+            },
+            {
+              "tests": 7,
+              "seconds": 1.105
+            },
+            {
+              "tests": 12,
+              "seconds": 1.12
+            },
+            {
+              "tests": 23,
+              "seconds": 68.332
+            },
+            {
+              "tests": 11,
+              "seconds": 6.132
+            },
+            {
+              "tests": 3,
+              "seconds": 0.005
+            },
+            {
+              "tests": 13,
+              "seconds": 6.52
+            },
+            {
+              "tests": 7,
+              "seconds": 1.846
+            },
+            {
+              "tests": 12,
+              "seconds": 1.267
+            },
+            {
+              "tests": 3,
+              "seconds": 0.002
+            },
+            {
+              "tests": 1,
+              "seconds": 0.006
+            },
+            {
+              "tests": 5,
+              "seconds": 0.141
+            },
+            {
+              "tests": 5,
+              "seconds": 0.018
+            },
+            {
+              "tests": 7,
+              "seconds": 0.107
+            },
+            {
+              "tests": 1,
+              "seconds": 0.076
+            },
+            {
+              "tests": 19,
+              "seconds": 1.759
+            },
+            {
+              "tests": 24,
+              "seconds": 2.383
+            },
+            {
+              "tests": 5,
+              "seconds": 2.127
+            },
+            {
+              "tests": 11,
+              "seconds": 45.882
+            },
+            {
+              "tests": 2,
+              "seconds": 0.009
+            },
+            {
+              "tests": 18,
+              "seconds": 2.299
+            },
+            {
+              "tests": 31,
+              "seconds": 2.919
+            },
+            {
+              "tests": 15,
+              "seconds": 0.131
+            },
+            {
+              "tests": 7,
+              "seconds": 0.02
+            },
+            {
+              "tests": 20,
+              "seconds": 1030.223
+            },
+            {
+              "tests": 21,
+              "seconds": 1.767
+            },
+            {
+              "tests": 29,
+              "seconds": 1.306
+            },
+            {
+              "tests": 1,
+              "seconds": 2.293
+            },
+            {
+              "tests": 12,
+              "seconds": 0.058
+            }
+          ],
+          "test_outcomes": [
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK",
+            "OK"
+          ],
+          "discovery": [],
+          "attempt_receipts": [],
+          "component_modules": [
+            {
+              "module": "test_artifact_registry",
+              "tests": 8,
+              "seconds": 0.017
+            },
+            {
+              "module": "test_assessment_custody",
+              "tests": 13,
+              "seconds": 2.616
+            },
+            {
+              "module": "test_assessment_release_fence",
+              "tests": 3,
+              "seconds": 1.012
+            },
+            {
+              "module": "test_authenticated_history",
+              "tests": 18,
+              "seconds": 2.692
+            },
+            {
+              "module": "test_blind_assessment",
+              "tests": 13,
+              "seconds": 0.704
+            },
+            {
+              "module": "test_bounded_embedding_lifecycle",
+              "tests": 15,
+              "seconds": 3.714
+            },
+            {
+              "module": "test_bounded_xtdb_reads",
+              "tests": 10,
+              "seconds": 0.317
+            },
+            {
+              "module": "test_chronology_boundary_profiler",
+              "tests": 6,
+              "seconds": 1.629
+            },
+            {
+              "module": "test_combined_history_guard",
+              "tests": 6,
+              "seconds": 0.82
+            },
+            {
+              "module": "test_comparator",
+              "tests": 19,
+              "seconds": 0.101
+            },
+            {
+              "module": "test_comparator_current_guards",
+              "tests": 6,
+              "seconds": 1.498
+            },
+            {
+              "module": "test_comparison_custody",
+              "tests": 14,
+              "seconds": 0.211
+            },
+            {
+              "module": "test_comparison_run",
+              "tests": 16,
+              "seconds": 0.652
+            },
+            {
+              "module": "test_current_context_guard",
+              "tests": 29,
+              "seconds": 9.923
+            },
+            {
+              "module": "test_development_source_freshness",
+              "tests": 4,
+              "seconds": 0.098
+            },
+            {
+              "module": "test_evaluation_protocol",
+              "tests": 2,
+              "seconds": 0.003
+            },
+            {
+              "module": "test_experience_envelope_reuse",
+              "tests": 21,
+              "seconds": 1.506
+            },
+            {
+              "module": "test_experience_exact_lookup",
+              "tests": 38,
+              "seconds": 0.165
+            },
+            {
+              "module": "test_experiment_coordinator",
+              "tests": 20,
+              "seconds": 4.736
+            },
+            {
+              "module": "test_experiment_manifests",
+              "tests": 27,
+              "seconds": 1.426
+            },
+            {
+              "module": "test_experiment_preregistration",
+              "tests": 23,
+              "seconds": 28.244
+            },
+            {
+              "module": "test_fbm_seed_contract",
+              "tests": 3,
+              "seconds": 0.017
+            },
+            {
+              "module": "test_formation_preflight",
+              "tests": 8,
+              "seconds": 1.085
+            },
+            {
+              "module": "test_governed_claim_quarantine",
+              "tests": 6,
+              "seconds": 1.009
+            },
+            {
+              "module": "test_governed_development",
+              "tests": 11,
+              "seconds": 0.317
+            },
+            {
+              "module": "test_governed_episodes",
+              "tests": 24,
+              "seconds": 3.747
+            },
+            {
+              "module": "test_guarded_object_copies",
+              "tests": 4,
+              "seconds": 2.668
+            },
+            {
+              "module": "test_history_fence",
+              "tests": 25,
+              "seconds": 2.098
+            },
+            {
+              "module": "test_native_arm",
+              "tests": 10,
+              "seconds": 34.291
+            },
+            {
+              "module": "test_native_boundary_profiler",
+              "tests": 21,
+              "seconds": 1.714
+            },
+            {
+              "module": "test_native_comparison_fixture",
+              "tests": 2,
+              "seconds": 2.309
+            },
+            {
+              "module": "test_native_final_seal",
+              "tests": 11,
+              "seconds": 10.529
+            },
+            {
+              "module": "test_native_pilot_lifecycle",
+              "tests": 11,
+              "seconds": 0.271
+            },
+            {
+              "module": "test_native_reads",
+              "tests": 21,
+              "seconds": 60.783
+            },
+            {
+              "module": "test_native_worker",
+              "tests": 13,
+              "seconds": 1.023
+            },
+            {
+              "module": "test_native_writer_guard",
+              "tests": 12,
+              "seconds": 0.763
+            },
+            {
+              "module": "test_openai_responses_transport",
+              "tests": 13,
+              "seconds": 0.203
+            },
+            {
+              "module": "test_owner_authorization",
+              "tests": 2,
+              "seconds": 0.013
+            },
+            {
+              "module": "test_personal_artifact_custody",
+              "tests": 11,
+              "seconds": 0.251
+            },
+            {
+              "module": "test_phase_authorized_reads",
+              "tests": 4,
+              "seconds": 1.306
+            },
+            {
+              "module": "test_phase_snapshots",
+              "tests": 31,
+              "seconds": 734.521
+            },
+            {
+              "module": "test_phase_source_fence",
+              "tests": 14,
+              "seconds": 1.463
+            },
+            {
+              "module": "test_pilot_fixture",
+              "tests": 1,
+              "seconds": 0.001
+            },
+            {
+              "module": "test_preregistration_current_guard",
+              "tests": 7,
+              "seconds": 0.879
+            },
+            {
+              "module": "test_preregistration_metadata_frame",
+              "tests": 6,
+              "seconds": 74.237
+            },
+            {
+              "module": "test_provider_attempt_custody",
+              "tests": 14,
+              "seconds": 0.178
+            },
+            {
+              "module": "test_provider_final_binding",
+              "tests": 8,
+              "seconds": 74.461
+            },
+            {
+              "module": "test_provider_source_fence",
+              "tests": 6,
+              "seconds": 0.724
+            },
+            {
+              "module": "test_registered_judgment_context",
+              "tests": 4,
+              "seconds": 0.123
+            },
+            {
+              "module": "test_runtime_context_domain",
+              "tests": 8,
+              "seconds": 0.68
+            },
+            {
+              "module": "test_runtime_custody_transaction",
+              "tests": 7,
+              "seconds": 1.105
+            },
+            {
+              "module": "test_sealed_analysis",
+              "tests": 12,
+              "seconds": 1.12
+            },
+            {
+              "module": "test_selected_context",
+              "tests": 23,
+              "seconds": 68.332
+            },
+            {
+              "module": "test_selected_context_fence",
+              "tests": 11,
+              "seconds": 6.132
+            },
+            {
+              "module": "test_selected_experience",
+              "tests": 3,
+              "seconds": 0.005
+            },
+            {
+              "module": "test_selected_experiment_runtime",
+              "tests": 13,
+              "seconds": 6.52
+            },
+            {
+              "module": "test_selected_formation_admission",
+              "tests": 7,
+              "seconds": 1.846
+            },
+            {
+              "module": "test_selected_formation_candidates",
+              "tests": 12,
+              "seconds": 1.267
+            },
+            {
+              "module": "test_selected_formation_gate",
+              "tests": 3,
+              "seconds": 0.002
+            },
+            {
+              "module": "test_selected_formation_input",
+              "tests": 1,
+              "seconds": 0.006
+            },
+            {
+              "module": "test_selected_formation_policy",
+              "tests": 5,
+              "seconds": 0.141
+            },
+            {
+              "module": "test_selected_formation_recollection",
+              "tests": 5,
+              "seconds": 0.018
+            },
+            {
+              "module": "test_selected_formation_registry",
+              "tests": 7,
+              "seconds": 0.107
+            },
+            {
+              "module": "test_selected_graph",
+              "tests": 1,
+              "seconds": 0.076
+            },
+            {
+              "module": "test_selected_history_contribution",
+              "tests": 19,
+              "seconds": 1.759
+            },
+            {
+              "module": "test_selected_history_fence",
+              "tests": 24,
+              "seconds": 2.383
+            },
+            {
+              "module": "test_selected_integration_partition",
+              "tests": 5,
+              "seconds": 2.127
+            },
+            {
+              "module": "test_selected_judgment_lineage",
+              "tests": 11,
+              "seconds": 45.882
+            },
+            {
+              "module": "test_selected_object_store",
+              "tests": 2,
+              "seconds": 0.009
+            },
+            {
+              "module": "test_selected_phase_authority",
+              "tests": 18,
+              "seconds": 2.299
+            },
+            {
+              "module": "test_selected_source_closure",
+              "tests": 31,
+              "seconds": 2.919
+            },
+            {
+              "module": "test_selected_source_commitment",
+              "tests": 15,
+              "seconds": 0.131
+            },
+            {
+              "module": "test_selected_source_native",
+              "tests": 7,
+              "seconds": 0.02
+            },
+            {
+              "module": "test_shared_authority_frame",
+              "tests": 20,
+              "seconds": 1030.223
+            },
+            {
+              "module": "test_shared_source_metadata",
+              "tests": 21,
+              "seconds": 1.767
+            },
+            {
+              "module": "test_stored_action_codec_reuse",
+              "tests": 29,
+              "seconds": 1.306
+            },
+            {
+              "module": "test_temporal_reconciliation",
+              "tests": 1,
+              "seconds": 2.293
+            },
+            {
+              "module": "test_transport_boundary_profiler",
+              "tests": 12,
+              "seconds": 0.058
+            }
+          ],
+          "partial_case_results": null,
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032819645"
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032819982,
+          "name": "integration-native-comparison",
+          "status": "completed",
+          "conclusion": "failure",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 211.303
+            }
+          ],
+          "test_outcomes": [
+            "FAIL: test_actual_phase_context_execution_parent_and_private_run_custody",
+            "FAILED (failures=1)"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "native-comparison",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [
+            {
+              "phase": "before",
+              "status": "timeout",
+              "elapsed_ms": 60108
+            },
+            {
+              "phase": "after",
+              "status": "timeout",
+              "elapsed_ms": 60134
+            }
+          ],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 0,
+            "failed": 1,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032819982",
+          "response_budget_ms": 60000
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820043,
+          "name": "integration-history-routes-native",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 2071.575
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "history-routes-native",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 1,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820043"
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820075,
+          "name": "integration-history-routes-retained",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [],
+          "test_outcomes": [],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "history-routes-retained",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": {
+            "tests": [],
+            "completes": []
+          },
+          "case_counts": {
+            "completed_by_final_summary": 0,
+            "passed_by_final_summary": 0,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": 1
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820075"
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820140,
+          "name": "integration-history",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [],
+          "test_outcomes": [],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "history",
+              "selected_cases": 2
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": {
+            "tests": [
+              {
+                "method": "test_registered_sources_to_blocked_control_stages_on_actual_selected_engines",
+                "case": "test_selected_experiment_coordinator.SelectedExperimentCoordinatorIntegrationTest.test_registered_sources_to_blocked_control_stages_on_actual_selected_engines"
+              }
+            ],
+            "completes": [
+              {
+                "case": "test_selected_experiment_coordinator.SelectedExperimentCoordinatorIntegrationTest.test_registered_sources_to_blocked_control_stages_on_actual_selected_engines",
+                "seconds": 73.232
+              }
+            ]
+          },
+          "case_counts": {
+            "completed_by_final_summary": 0,
+            "passed_by_final_summary": 0,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 1,
+            "incomplete": 1
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820140"
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820279,
+          "name": "integration-core",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 38,
+              "seconds": 940.266
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "core",
+              "selected_cases": 38
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 38,
+            "passed_by_final_summary": 38,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820279"
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820287,
+          "name": "integration-transport",
+          "status": "completed",
+          "conclusion": "failure",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 2,
+              "seconds": 177.099
+            }
+          ],
+          "test_outcomes": [
+            "FAIL: test_phase_isolated_hybrid_memory_and_separately_authorized_signed_exchange",
+            "FAILED (failures=1)"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "transport",
+              "selected_cases": 2
+            }
+          ],
+          "attempt_receipts": [
+            {
+              "phase": "before",
+              "status": "budget_exceeded",
+              "elapsed_ms": 23956
+            },
+            {
+              "phase": "after",
+              "status": "budget_exceeded",
+              "elapsed_ms": 38911
+            }
+          ],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 2,
+            "passed_by_final_summary": 1,
+            "failed": 1,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820287",
+          "response_budget_ms": 10000
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820323,
+          "name": "integration-native-pilot-outcome-audit",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 1192.787
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "native-pilot-outcome-audit",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 1,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820323"
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820397,
+          "name": "integration-readers",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 2,
+              "seconds": 66.185
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "readers",
+              "selected_cases": 2
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 2,
+            "passed_by_final_summary": 2,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820397"
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820441,
+          "name": "integration-lineage",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 2,
+              "seconds": 1308.911
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "lineage",
+              "selected_cases": 2
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 2,
+            "passed_by_final_summary": 2,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820441"
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820477,
+          "name": "integration-native-pilot-typed-phase",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 3017.732
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "native-pilot-typed-phase",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 1,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820477"
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820482,
+          "name": "integration-native-pilot-withdrawal",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 137.938
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "native-pilot-withdrawal",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 1,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820482"
+        },
+        {
+          "run": 37065691025,
+          "job_id": 111032820489,
+          "name": "integration-native-pilot-before-tail",
+          "status": "completed",
+          "conclusion": "success",
+          "checkout_sha_values": [
+            "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+            "4f287a488bc908bd04f99255ee01b794bacba50b"
+          ],
+          "test_summaries": [
+            {
+              "tests": 1,
+              "seconds": 2085.993
+            }
+          ],
+          "test_outcomes": [
+            "OK"
+          ],
+          "discovery": [
+            {
+              "all_discovered_tests": 53,
+              "shard": "native-pilot-before-tail",
+              "selected_cases": 1
+            }
+          ],
+          "attempt_receipts": [],
+          "partial_case_results": null,
+          "case_counts": {
+            "completed_by_final_summary": 1,
+            "passed_by_final_summary": 1,
+            "failed": 0,
+            "errors": 0,
+            "additional_passed_before_cancellation": 0,
+            "incomplete": null
+          },
+          "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025/job/111032820489"
+        }
+      ],
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37065691025",
+      "alice_checkout_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "physical_aggregate": {
+        "passed": 49,
+        "failed": 2,
+        "errors": 0,
+        "incomplete": 2,
+        "coverage": "completed_53_case_partition_with_two_unfinished_cases"
+      },
+      "actual_flora_checkout_sha": "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+      "published_flora_runtime_sha": "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+      "published_runtime_tree_sha": "9541734db403ed1931c974a7e2a1bdab0e2b9c1e",
+      "merge_tree_equality_verified_by_root": false,
+      "root_verification": "Parent reported GitHub commit/tree verification: PR merge6eb543a and published9b57ed3 share9541734db403ed1931c974a7e2a1bdab0e2b9c1e",
+      "component_aggregate": {
+        "passed": 947,
+        "failed": 0,
+        "errors": 0,
+        "modules": 78
+      },
+      "run_metadata_verified_by_root_GitHub_CLI": {
+        "status": "completed",
+        "conclusion": "failure",
+        "event": "push",
+        "head_sha": "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+        "created_at": "2026-10-02T21:15:02Z",
+        "updated_at": "2026-10-02T22:15:31Z"
+      }
+    }
+  ],
+  "limits": [
+    "947 component tests in 78 modules pass in both runs; physical status is separate.",
+    "Each physical total is 49 passed, 2 failed, 0 errors and 2 incomplete of 53 discovered cases.",
+    "Final unittest summaries cover 50 cases and 48 passes. Each cancelled history job records one additional coordinator pass, leaving preregistration incomplete; retained history has zero completed cases.",
+    "Cancellation logs establish incomplete cases. Their elapsed times are consistent with the 60-minute cap; no stronger cancellation cause is inferred.",
+    "Both 10,000 ms standalone and 60,000 ms native response budgets fail. Qualification is false.",
+    "Exact PR merge and published runtime trees match. No outcome is transferred to later bf597366 or da370ebc sources."
+  ],
+  "qualification": false,
+  "private_content_retained": false
+}
