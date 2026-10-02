@@ -4,6 +4,54 @@ Source-grounded design review for the narrow prototype. This record changes no
 serving contract and qualifies no model, response latency or behavioral result.
 The source audit and independent proposal review are separate from test execution.
 
+## Refined observation completed
+
+The four-tag diagnostic completed with a failed fixture and qualification
+false. [Its source-verified receipt](evidence/2026-10-02_d0f90655_native_profile_validation.json)
+matches 116 files. Origin seal traversal recorded 10,063 calls / 21.670 s
+exclusive CPU; context binding recorded 245,532 / 13.555 s. The descriptor
+contract scan was 2.341 s and frame contract scan 1.507 s exclusive CPU.
+This refines the remaining preparation cost; added sampling prevents treating
+it as an equal-overhead speedup comparison. Every independent seal remains
+required. [The checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) records the
+conditional shared-dependency representation question and pending ordinary CI;
+no further runtime rewrite or memory/mission plane is added.
+
+### Conditional pure-proof follow-up after ordinary CI
+
+Read-only source review identifies two concrete representations to investigate.
+Neither is implemented or qualified here:
+
+- `_verify_origin_seal` may materialize typed current origin fields/readers/
+  function seals once within one callback-free exact-origin pass. **Every
+  descriptor's independently registered expected seal must still be compared.**
+  Do not share by history digest or cache a successful seal/permission answer.
+- Frame `_verify_binding` traverses nested captures and then calls
+  `_FunctionBinding.verify`, which traverses those nested captures again.
+  Investigate shallow checks at each node with one explicit nested/closure-reader
+  traversal, retaining every owned weak seal, function code, closure/global
+  binding, reader seal and opaque callback code pin.
+
+Before either change, discriminate corrupt second/inherited descriptor seals,
+replaced nested captures, in-place nested mutation after callbacks, installed
+owner changes and later fresh boundaries. Reject replacement objects before
+dereferencing or equality effects. Keep physical and terminal mutation cases.
+Fresh post-callback/terminal verification must remain; this is bounded pure
+dependency processing of the existing slice, not another memory/mission plane.
+The reviewed source is `da370ebc` runtime, unchanged at `d0f90655`; the ordinary
+source-pinned engine/component gates are still separate from this proposal.
+
+A private issued dependency record is source-level feasible because readers
+and function bindings already share exact objects. Bind each registration to
+its own descriptor, exact Origin and exact dependency-record identity; reobserve
+the actual graph at every fresh pure boundary. Record expected structure only,
+with no verified/allow/current-head success bit. Keep owner-held dependencies
+and weak/scalar registry relations: a global `_ISSUED` record must not strongly
+retain Origin/readers/functions and keep closed sessions alive. Preserve the
+existing closed-owner-cycle collection regression. Compare acceptance and
+rejection against the current full seal traversal, including independently
+issued same-history origin swaps and second/inherited descriptor corruption.
+
 ## Current original-code observation
 
 Source `d0f90655` adds only four numeric fixed targets for descriptor tree,

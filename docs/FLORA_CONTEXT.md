@@ -4,6 +4,48 @@ Updated: 2026-10-02, America/Chicago. Recovery baseline:
 `main@885be57abb582510d27a98177facd2a358c11387`; recovery starting runtime
 `74f42417be37a2fbdc6c603a1ea657b040e0052e`.
 
+## Completed refined observation: independent seal traversal is costly
+
+[Four-tag diagnostic 37073820659](https://github.com/NIne-WIngEd/FloRA/actions/runs/37073820659)
+finished collection at 22:45:56 UTC. The fixture **failed**, qualification is
+false, and the original 60,000 ms response budget remains. The
+[original numeric artifact](evidence/2026-10-02_d0f90655_native_profile.json)
+is byte-identical; [validation](evidence/2026-10-02_d0f90655_native_profile_validation.json)
+matches all 116 after-source files (60 FloRA `d0f90655`, 56 Alice `4f287a`)
+and all 115 before files. Job logs confirm both checkouts and workers-only mode.
+
+Six owned jobs used one ledger, 121.014 s wall / 106.410 s thread CPU. Two
+preparation calls total 119.080 s inclusive wall / 105.249 s CPU. No worker
+window capped, no observer error/overflow/hook change occurred, and no active
+or open span remained at close. Parent setup remains unobserved. Added tags
+change sampling overhead; this is attribution within the new observation,
+not a speedup comparison to earlier scopes.
+
+| Original-code tag | Calls | Exclusive CPU seconds | Inclusive CPU seconds |
+| --- | ---: | ---: | ---: |
+| phase.descriptor_tree_verify | 3,469 | 2.424 | 35.861 |
+| phase.descriptor_contracts | 20,451 | 2.341 | 2.341 |
+| phase.origin_seal_verify | 10,063 | 21.670 | 21.670 |
+| shared.frame.contracts | 9,908 | 1.507 | 2.649 |
+| shared.frame.context_binding_verify | 245,532 | 13.555 | 30.056 |
+
+The new tags distinguish **origin seal traversal** from the cheaper module
+contract scans. `_verify_origin_seal` independently checks each registered
+origin's identity, reader identities and recursively captured function-binding
+seals for every descriptor/parent. The earlier origin-body de-duplication
+deliberately retained all those seals. This evidence does not justify skipping
+them or caching a successful authority answer. Context binding verification
+also remains material. Inclusive tree/binding totals contain nested work and
+must not be added to their child totals.
+
+The next design question is how to represent exact immutable origin dependency
+bindings once while still checking every descriptor's private issuance and
+independent seal relation, then rechecking after callbacks and at each new
+protected boundary. Establish that representation and mutation/replacement
+tests before changing runtime. Keep current physical reobservation, independent
+controllers and terminal fences. Ordinary CI for `da370ebc`/`d0f90655` is still
+the separate gate; no further runtime change is made at this checkpoint.
+
 ## Current continuation: bounded contract-cost observation
 
 Observation source `d0f906550ca36a35903702a205d263a8b1b21061`, tree
@@ -570,12 +612,17 @@ The two local worker failures were separately reproduced and repaired; residual
 warnings remain. Current observation mechanics pass 31 cases, while their actual
 engine result and current ordinary gate remain pending.
 
-Next recover d0f90655's four-tag native aggregate and current ordinary CI;
-the da370ebc aggregate and complete original frame contracts are recorded above.
-Verify exact source/checkout identities and reached stages. Resolve relocated
-tree traversal, independent origin seals, descriptor contract scans and frame
-contract scans inside the observed preparation path before another runtime
-change. Older and extended tag sets have different sampling overhead. The
+The d0f90655 four-tag aggregate is recovered and source-verified above.
+Next recover completed ordinary CI for the exact candidate and observer sources.
+Then review typed current origin-seal materialization with every descriptor's
+independent expected seal still compared, and shallow binding-node checks with
+one explicit nested/closure-reader traversal. The middle-layer audit records
+both conditional proposals and their mutation tests. Every private issuance,
+owned seal, code/closure/global binding and fresh post-callback check remains.
+The measured origin-seal cost, rather than cheaper module scans, is material;
+context binding also contains concrete duplicate traversal.
+Require mutation/replacement and physical fence coverage before a further
+runtime change. Older and extended tags have different sampling overhead. The
 pure-origin candidate addresses one repetition; H/C evaluation, context and
 lineage work remain. Preserve independent callbacks, withdrawal, physical and
 terminal ordering and keep all work inside frozen response clocks. Report
@@ -598,8 +645,9 @@ rows under Alice trace schema v0.1. Record observable inputs, choices,
 constraints, method, authority, actual validation, outcome and failure lesson.
 Link a repair to earlier trace IDs; preserve failures. Validate schema and
 unique IDs with `docs/fbm-seeds/validate_traces.py`.
-The latest inventory has **110 schema-valid procedure records**. All three FBM
-contract tests passed against that complete inventory in 0.071 s. These tests
+The latest inventory has **111 schema-valid procedure records**. All three FBM
+contract tests passed at the 110-record checkpoint; the appended refined-cost
+record was separately validated with the complete inventory. These tests
 validate record shape and rejection rules, not learning or linked-case readiness.
 
 These are builder construction-method seeds, not Flora's runtime personal
