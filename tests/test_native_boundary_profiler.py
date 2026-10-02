@@ -40,6 +40,13 @@ class NativeBoundaryProfilerTest(unittest.TestCase):
             ("phase.function_binding_verify", selected_phase_authority._FunctionBinding.verify),
             ("shared.frame.context_binding_verify", selected_authority_frame._verify_binding))
         proof_codes = tuple(function.__code__ for _, function in pure_proofs)
+        contract_targets = (
+            (selected_phase_authority, "_verify_selected_phase_tree", "phase.descriptor_tree_verify"),
+            (selected_phase_authority, "_require_descriptor_contracts", "phase.descriptor_contracts"),
+            (selected_phase_authority, "_verify_origin_seal", "phase.origin_seal_verify"),
+            (selected_authority_frame, "_require_frame_contracts", "shared.frame.contracts"))
+        contract_before = tuple((owner, name, tag, getattr(owner, name), getattr(owner, name).__code__)
+            for owner, name, tag in contract_targets)
         targets, marker = diagnostic.native_targets(module)
         self.assertEqual(targets[before[1]].tag, 'shared.frame.binding')
         self.assertEqual(targets[before[3]].tag, 'shared.history.member')
@@ -54,6 +61,36 @@ class NativeBoundaryProfilerTest(unittest.TestCase):
             self.assertIs(function.__code__, code)
             self.assertEqual(targets[code].tag, tag)
             self.assertFalse(targets[code].rpc)
+        for owner, name, tag, function, code in contract_before:
+            self.assertIs(getattr(owner, name), function)
+            self.assertIs(function.__code__, code)
+            self.assertTrue(any(targeted is code for targeted in targets))
+            self.assertEqual(targets[code].tag, tag)
+            self.assertFalse(targets[code].rpc)
+
+    def test_contract_target_does_not_classify_an_equal_copied_code_object(self):
+        from flora.selected import selected_phase_authority
+        original = selected_phase_authority._require_descriptor_contracts
+        code = original.__code__
+        copied_code = code.replace()
+        self.assertEqual(copied_code, code)
+        self.assertIsNot(copied_code, code)
+        copied = types.FunctionType(copied_code, original.__globals__, original.__name__)
+        def owned():
+            copied()
+            original()
+        observer = self.observer(owned, ("phase.descriptor_contracts", original, False),
+            workers_only=True)
+        self.assertNotIn(id(copied_code), observer.targets)
+        with observer:
+            with self.worker(owned):
+                pass
+        summary = observer.summary()
+        row = self.rows(summary["workers"][0])["phase.descriptor_contracts"]
+        self.assertEqual((row["calls"], row["return_events"]), (1, 1))
+        self.assertEqual(summary["classified_owned_work_entries"], 1)
+        self.assertIs(selected_phase_authority._require_descriptor_contracts, original)
+        self.assertIs(original.__code__, code)
 
     def observer(self, marker, *fixed, **kwargs):
         targets = {marker.__code__: diagnostic.Target("owned")}

@@ -3,6 +3,8 @@
 No selected function is wrapped or replaced. Every classified worker has its
 own numeric stack and thread CPU window. Closing observation never cancels,
 waits for or stops a read, including one that outlives the fixture driver.
+Changing the fixed target set changes sampling overhead; compare scopes
+before interpreting aggregates from different diagnostic versions.
 """
 from __future__ import annotations
 
@@ -378,10 +380,14 @@ def native_targets(module):
         ("context.prepare_current", context_guard.prepare_current_context),
         ("context.metadata_current", context_guard.PreparedCurrentContext.metadata_current),
         ("phase.descriptor_verify", selected_phase_authority.SelectedPhaseAuthorityDescriptor.verify),
+        ("phase.descriptor_tree_verify", selected_phase_authority._verify_selected_phase_tree),
+        ("phase.descriptor_contracts", selected_phase_authority._require_descriptor_contracts),
+        ("phase.origin_seal_verify", selected_phase_authority._verify_origin_seal),
         ("phase.origin_verify", selected_phase_authority._Origin.verify),
         ("phase.function_binding_verify", selected_phase_authority._FunctionBinding.verify),
         ("shared.frame.create", selected_authority_frame.create_shared_selected_frame),
         ("shared.frame.context_binding_verify", selected_authority_frame._verify_binding),
+        ("shared.frame.contracts", selected_authority_frame._require_frame_contracts),
         ("shared.frame.initialize", frame.__init__),
         ("shared.frame.base_bindings", frame._base_bindings),
         ("shared.frame.binding", frame.binding),
@@ -443,6 +449,7 @@ def build_receipt(*, status, result, observer, cap_seconds, before, after, worke
         parent_profile_hook_installed=False if workers_only else observer is not None and observer.end_wall is not None,
         parent_thread_cpu_observed=(False if workers_only else True if summary is not None else None),
         coverage_limits=["observer_overhead_precludes_latency_qualification",
+            "changing_fixed_target_set_changes_observer_sampling_overhead",
             "return_events_include_exception_unwind_and_do_not_attest_authorization_success",
             "preexisting_threads_child_processes_and_unclassified_threads_not_measured",
             "coroutine_and_generator_spans_not_targeted",
