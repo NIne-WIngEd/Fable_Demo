@@ -1,6 +1,8 @@
 # FloRA: selected architecture and build order
 
-This repo qualifies one causal personal-memory claim within the full-scale successor architecture. **A.L.I.C.E. Phase 2 is void and ancient for this implementation.** Stage G/H/I/J are replacing it. Older A.L.I.C.E. documentation may still describe it as canonical during migration; that is not authority for new FloRA code. The former Phase 2-based demo files survive in git history only.
+This repo investigates one causal personal-memory claim using a narrow slice of the successor architecture. **A.L.I.C.E. Phase 2 is void as this implementation's basis.** Stage G/H/I/J are replacing it. Older A.L.I.C.E. documentation may still describe it as canonical during migration; that is not authority for new FloRA code. The former Phase 2-based demo files survive in git history only.
+
+**Owner scope correction — 2026-10-02:** alignment means retaining Alice's current contracts and selected physical adapters for capabilities the experiment actually needs. It does not mean implementing the full Alice memory, experience, mission or consumer release infrastructure. The table and lanes below describe the destination and existing work inventory. They are not mandatory completion targets. Full mission execution, federation, scale-out, every memory plane and complete product lifecycle work are deferred unless a named experimental case requires them. Preserve useful completed modules and their evidence; do not broaden serving merely to exercise every service. [Continuation context](FLORA_CONTEXT.md) and [the interconnected Alice map](ALICE_INFRASTRUCTURE_MAP.md) preserve this boundary.
 
 The [frozen FloRA experiment goal](EXPERIMENT_GOAL.md) controls what counts as a behavioral or builder result.
 
@@ -8,7 +10,7 @@ The [2026-09-29 readiness re-audit](READINESS_REAUDIT_2026-09-29.md) supersedes 
 
 Sources reviewed: A.L.I.C.E. `main@8ea804aa` `docs/ALICE_PHASE2_REPLACEMENT_AND_FABLE_V1_EXECUTION_PLAN_2026-09-27.md`, `docs/STAGE_G_MEMORY_FABRIC_CANDIDATE_QUALIFICATION_MATRIX.md`, `docs/PHASE2_TO_KERNEL_MEMORY_MIGRATION_PLAN.md`, `docs/FRIDAY_ROADMAP.md`, `docs/FRIDAY_ARCHITECTURE.md`, `docs/FABLE_PERSONAL_DEVELOPMENT_ARCHITECTURE.md`; current MFM branch `research/mfm-foundation-20260923@4f287a48` formation contracts, sources, context planner and retrieval router.
 
-## Full-scale path for the claim
+## Alice destination and the prototype boundary
 
 | Role | Selected implementation | Demo boundary |
 | --- | --- | --- |
@@ -22,9 +24,9 @@ Sources reviewed: A.L.I.C.E. `main@8ea804aa` `docs/ALICE_PHASE2_REPLACEMENT_AND_
 | Learning | Outcome event -> governed candidate -> versioned personal state/model | Measure whether a later judgment changes when it should, and does not change when it should not. |
 | Continuity | Temporal workflows, local L1/Valkey, lineage registry, deletion, device reconciliation | Crash, replay, recovery, correction, rollback and influence removal. |
 
-These are selected full-scale components, not a menu of replacements. An internal demo can exercise one narrow capability, but it must preserve the actual roles and use the chosen engines for any claim about their behavior.
+These are the selected full-product components. FloRA exercises only the subset needed by the experiment, preserving the actual roles and chosen engines for any claim about their behavior. Unused destination components need not be built or queried.
 
-## Independent work in this repository
+## Existing implementation lanes and conditional later work
 
 1. **Raw and Experience:** object plane, project-owned event envelope/stream contract, KurrentDB adapter, edge ingress and recovery.
 2. **Authority:** XTDB claim persistence, deterministic formation gate, as-of reading, supersession and deletion lineage.
@@ -33,13 +35,13 @@ These are selected full-scale components, not a menu of replacements. An interna
 5. **Integration:** consume real MFM proposals and qualified personality judgment; freeze held-out synthetic experiment and strong comparator.
 6. **Builder transfer:** once the claim works, train a small FBM to reproduce that qualified slice for another host.
 
-The first four lanes do not require personality or MFM weights. A learned formation result and native behavioral test **do** depend on those separate workstreams. No deterministic rule is to be relabeled as a learned model.
+Relevant parts of the first four lanes do not require personality or MFM weights; completing every lane is not the prototype goal. The current minimum native route is encrypted originals, Kurrent Experience, XTDB accepted/current Claim and governed state, exact selected context and attributed decisions/corrections/outcomes. Optional episodes, graph/vector routes and durable workflows enter only when needed. A learned formation result and native behavioral test **do** depend on the separate workstreams. No deterministic rule is to be relabeled as a learned model.
 
 ## Evidence discipline
 
 - Unit checks for contracts and encryption are component checks. They do not validate KurrentDB/XTDB behavior or the personal judgment claim.
 - The first real-backend gate is green for KurrentDB expected-revision/retry/replay and restart persistence, plus XTDB valid-time correction reads, host isolation and restart persistence. This is a basic integration gate, not complete backend qualification.
-- Full backend qualification still requires the remaining conflict, projection-rebuild, deletion/influence-removal, failure-injection, recovery and scale cases defined by the selected architecture.
+- A claim of full backend qualification would require the remaining conflict, projection-rebuild, deletion/influence-removal, failure-injection, recovery and scale cases defined by the selected architecture. The prototype qualifies only its implemented and exercised slice, retaining current-use, correction, isolation and recovery checks for that slice.
 - The behavioral result requires qualified models, held-out longitudinal histories, a comparator with equal evidence and budget, and assessment of reasons and behavior. Synthetic results are labeled synthetic.
 - The builder result requires a second isolated host. A single hand-configured personality is not evidence of automatic building.
 

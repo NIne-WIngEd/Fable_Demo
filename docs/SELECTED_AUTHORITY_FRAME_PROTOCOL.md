@@ -3,6 +3,12 @@
 Date: 2026-10-01 UTC
 Status: bounded design and descriptor foundation; shared collectors and frame integration pending
 
+Continuation scope, 2026-10-02: this composes checks already needed by FloRA's
+narrow prototype. It is not a mandate to implement Alice's full memory/mission
+platform. The [context record](FLORA_CONTEXT.md) and
+[completed physical receipt](VERIFICATION_CHECKPOINT_2026-10-02.md) supersede
+the older pending CI status. The full serving frame remains unimplemented.
+
 This protocol follows [the latency architecture review](LATENCY_ARCHITECTURE_RECALIBRATION_2026-10-01.md)
 and [explicit selected context/history consumers](SELECTED_CONTEXT_AND_HISTORY.md).
 The next change should compose their checks within each protected boundary.
@@ -171,6 +177,16 @@ authorize pooling live connections or skipping independent execution recovery.
 - Source caps cover required parents and manifest inclusion. The implementation
   must derive a finite row cap that also includes distinct purposes, Claim/state
   dependencies and rollback targets. Every discovered dependency counts.
+- Keep H (including its custody manifest) and C under separate source-closure
+  caps. Each phase-membership ancestry traversal also keeps its H cap. The
+  existing history helper's additional `source_purposes` puts the combined
+  set under H's cap and cannot substitute for these separate domains. The
+  native fixture has H=32 and C=128; a broad C must not enlarge one ancestry's
+  permitted width or shrink into H's aggregate cap.
+- A future frame must cover initial private context assembly through
+  `prepare_current_context`'s `initial_barrier`, as well as later current checks
+  and ciphertext/plaintext boundaries. Composing only `metadata_current`
+  would leave the first private read on the old path.
 - Sampled rows and immutable event material live within one frame. Mutable
   heads, positive permissions and current qualification are not persistent
   caches. Native predicates execute again at every protected boundary.
