@@ -50,6 +50,20 @@
     "No native delegate is wrapped/replaced, no callback/gate is omitted, and no runtime proof is cached."
   ],
   "qualification": false,
-  "actual_engine_result_pending": true,
-  "learned_behavior_run": false
+  "actual_engine_result_pending": false,
+  "learned_behavior_run": false,
+  "actual_engine_fixture_status": "failed",
+  "actual_engine_outcome_counts": {
+    "capped": 0,
+    "errors": 0,
+    "expected_failures": 0,
+    "failures": 1,
+    "passed": 0,
+    "skipped": 0,
+    "tests": 1,
+    "unexpected_successes": 0
+  },
+  "actual_engine_artifact": "2026-10-02_d0f90655_native_profile.json",
+  "actual_engine_source_validation": "2026-10-02_d0f90655_native_profile_validation.json",
+  "ordinary_ci_pending": true
 }

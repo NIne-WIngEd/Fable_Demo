@@ -29,6 +29,19 @@ check. The frame now has a development implementation, described below. Source-p
 contract, physical-engine and response verification remain separate gates.
 No latency improvement is claimed.
 
+## Refined observation completed
+
+The four-tag diagnostic completed with a failed fixture and qualification
+false. [Its source-verified receipt](evidence/2026-10-02_d0f90655_native_profile_validation.json)
+matches 116 files. Origin seal traversal recorded 10,063 calls / 21.670 s
+exclusive CPU; context binding recorded 245,532 / 13.555 s. The descriptor
+contract scan was 2.341 s and frame contract scan 1.507 s exclusive CPU.
+This refines the remaining preparation cost; added sampling prevents treating
+it as an equal-overhead speedup comparison. Every independent seal remains
+required. [The checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) records the
+conditional shared-dependency representation question and pending ordinary CI;
+no further runtime rewrite or memory/mission plane is added.
+
 ## Current original-code observation
 
 Source `d0f90655` adds only four numeric fixed targets for descriptor tree,
