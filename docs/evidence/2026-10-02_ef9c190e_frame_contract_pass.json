@@ -1,0 +1,45 @@
+{
+  "runtime_commit": "ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f",
+  "alice_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "source_files": [
+    {
+      "path": "src/flora/selected/selected_authority_frame.py",
+      "sha256": "73302f5edb934dc536c16ac7554a084ff85f604d8e6ad2f4eae3e0def7c2a197"
+    },
+    {
+      "path": "src/flora/selected/selected_history_contribution.py",
+      "sha256": "12aa389e4b33bd0aa98b5c3d2b7c6435d225386020de38c45ac6b1182894be9b"
+    },
+    {
+      "path": "src/flora/selected/context_guard.py",
+      "sha256": "84877fc0101521f79dabfa9b0f4f787235e980b742d512228cf55ad54e4fa778"
+    },
+    {
+      "path": "src/flora/selected/selected_context.py",
+      "sha256": "c11d75502049966ae1949c2c7f696141b493fd4e7714e799a7ceee1c5d78b243"
+    },
+    {
+      "path": "tests/test_selected_history_contribution.py",
+      "sha256": "5e55d15f68af571ed6e0b50a8034c6606cab59d4ae1ddb49c6adf092eae9e803"
+    },
+    {
+      "path": "tests/test_shared_authority_frame.py",
+      "sha256": "6adaae62780b1fabda5e9e39c041d8849797206f4433822c807de57683300552"
+    }
+  ],
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.41",
+  "python": "3.12.15 (main, Oct  1 2026, 21:52:41) [GCC 14.2.0]",
+  "started_at_utc": "2026-10-02T19:32:58Z",
+  "modules": [
+    {
+      "module": "test_shared_authority_frame.py",
+      "exit_code": 0,
+      "tests": 20,
+      "unittest_seconds": 944.073,
+      "process_seconds": 947.728
+    }
+  ],
+  "physical_engines_run": false,
+  "completed_at_utc": "2026-10-02T19:48:46Z",
+  "total_seconds": 947.729
+}

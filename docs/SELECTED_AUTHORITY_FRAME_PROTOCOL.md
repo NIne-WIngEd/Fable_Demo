@@ -330,7 +330,9 @@ At `ef9c190e`, recursive seals cover known pure context helpers, while native
 immutable `_guard_codes` pairs bind opaque function identity/code and permit
 legitimate internal counter changes. Final C/H withdrawal tests passed 2/2 in
 73.007 s; the new code-swap test passed 1/1 in 10.439 s. The complete 20-case
-frame suite began at 19:32:58 UTC and is pending. The separate existing-module
+frame suite completed at 19:48:46 UTC with 20/20 cases passing in 944.073 s;
+its exact-source receipt is linked from the checkpoint. This is a controlled
+module result. The separate existing-module
 runner halted at 19:37:32 UTC after 35/76 modules: 476 passes, one failure and
 one error across 478 cases; 41 modules remain unrun. The unchanged worker's
 two issues are `worker_rejected` instead of `exit_failure`, and an unexpected

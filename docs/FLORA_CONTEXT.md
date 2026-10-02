@@ -4,6 +4,18 @@ Updated: 2026-10-02, America/Chicago. Recovery baseline:
 `main@885be57abb582510d27a98177facd2a358c11387`; last runtime change
 `74f42417be37a2fbdc6c603a1ea657b040e0052e`.
 
+## Latest completed frame result
+
+At 19:48:46 UTC, the repaired `ef9c190e` native Linux/ARM64 frame module
+completed **20/20 cases passing in 944.073 s**. The
+[exact-source receipt](evidence/2026-10-02_ef9c190e_frame_contract_pass.json)
+preserves all six startup hashes and the runtime/environment identity. This
+supersedes the earlier pending frame observation below. It is a controlled
+module pass, not a complete contract, physical-engine or response-latency pass.
+The two existing-worker issues and 41 unrun modules remain open; the ordinary
+CI result must still be collected. No further serving change is authorized by
+this test duration itself.
+
 ## Published continuation
 
 The context recovery began on `codex/flora-context` at
@@ -27,7 +39,7 @@ The repair binds independent function identity and code while allowing
 legitimate closure-counter state; actual guard calls remain required. These
 targeted results are partial. The complete 20-case frame suite and 76 existing
 module suites began on native ARM64 at **19:32:58 UTC**, using the same image
-and pinned dependencies. The frame suite remains pending. The existing runner
+and pinned dependencies. Its completed frame result is linked above. The existing runner
 halted at **19:37:32 UTC** after **35/76 modules**, with **476 passes, one
 failure and one error across 478 cases**; 41 modules were not run. The
 unchanged worker module's two `worker_rejected` issues and asyncio/transport
