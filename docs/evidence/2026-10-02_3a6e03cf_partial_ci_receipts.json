@@ -1,0 +1,146 @@
+{
+  "schema": "flora-ordinary-ci-partial-receipt-v1",
+  "observed_at_utc": "2026-10-02T17:44:50Z",
+  "repository": "NIne-WIngEd/FloRA",
+  "runtime_commit": "3a6e03cfeb2207a88f555c1fa88d10aad5bd987b",
+  "checkout_commit": "1573eeb47bf804ae7b06b98ffbe0472f04b57d5a",
+  "checkout_and_runtime_tree": "a2ad365699f9c328635bf39acbcbf8019ac6152a",
+  "tree_identity_verified": true,
+  "run_id": 37041602495,
+  "run_url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495",
+  "run_status": "in_progress",
+  "source_sha256": {
+    "src/flora/selected/phase_source_fence.py": "b0829cf3995179b37a0beaf7bf4d42f0f06833b636d52b3231a13962bbb50015",
+    "tests/test_shared_source_metadata.py": "8af6bd2399666c7f8f6c13b23cb1b0b23fb0cc32e3941a6cef28907dd2102bfc",
+    "tests/test_history_fence.py": "9b4f48dcba18cc69606a05040d2914a064eb629ffc9018ef23442e7267064989"
+  },
+  "jobs": [
+    {
+      "name": "contracts",
+      "id": 110952796275,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796275",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "name": "integration-core",
+      "id": 110952796550,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796550",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "name": "integration-native-pilot-before-tail",
+      "id": 110952796628,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796628",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "name": "integration-native-pilot-withdrawal",
+      "id": 110952796769,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796769",
+      "status": "completed",
+      "conclusion": "success",
+      "case_passed": 1,
+      "case_total": 1
+    },
+    {
+      "name": "integration-history-routes-native",
+      "id": 110952796787,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796787",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "name": "integration-transport",
+      "id": 110952796845,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796845",
+      "status": "completed",
+      "conclusion": "failure",
+      "case_passed": 1,
+      "case_total": 2,
+      "response_budget_ms": 10000,
+      "before": {
+        "status": "budget_exceeded",
+        "elapsed_ms": 24377
+      },
+      "after": {
+        "status": "budget_exceeded",
+        "elapsed_ms": 39477
+      }
+    },
+    {
+      "name": "integration-native-comparison",
+      "id": 110952796854,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796854",
+      "status": "completed",
+      "conclusion": "failure",
+      "case_passed": 0,
+      "case_total": 1,
+      "response_budget_ms": 60000,
+      "before": {
+        "status": "timeout",
+        "elapsed_ms": 60074
+      },
+      "after": {
+        "status": "timeout",
+        "elapsed_ms": 60141
+      }
+    },
+    {
+      "name": "integration-history-routes-retained",
+      "id": 110952796880,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796880",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "name": "integration-native-pilot-outcome-audit",
+      "id": 110952796886,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796886",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "name": "integration-readers",
+      "id": 110952796904,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796904",
+      "status": "completed",
+      "conclusion": "success",
+      "case_passed": 2,
+      "case_total": 2
+    },
+    {
+      "name": "integration-lineage",
+      "id": 110952796908,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796908",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "name": "integration-native-pilot-typed-phase",
+      "id": 110952796918,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796918",
+      "status": "in_progress",
+      "conclusion": null
+    },
+    {
+      "name": "integration-history",
+      "id": 110952796968,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495/job/110952796968",
+      "status": "in_progress",
+      "conclusion": null
+    }
+  ],
+  "method": "Read current job records and completed reader, withdrawal, transport and native-comparison logs. Keep only safe method/case summaries. No custom diagnostic was dispatched.",
+  "qualification": {
+    "same_commit_full_gate": false,
+    "component_suite_complete": false,
+    "response_latency": false,
+    "shared_frame_activated": false,
+    "learned_judgment": false,
+    "trained_FBM_or_transfer": false
+  },
+  "pending": "Read the ordinary run's completed contracts and remaining physical jobs. Preserve failures, incomplete cases, original clocks and caps. Integrate the fresh shared frame before claiming its latency effect."
+}
