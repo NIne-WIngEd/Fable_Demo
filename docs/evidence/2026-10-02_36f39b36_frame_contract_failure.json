@@ -1,0 +1,93 @@
+{
+  "schema": "flora-controlled-contract-failure-receipt-v1",
+  "observed_at_utc": "2026-10-02T19:26:27Z",
+  "runtime_commit": "36f39b36d3101a6af4e785fb60d382234db6409f",
+  "runtime_tree": "3ef7a298432d81a08923e264ae36e95a0df9fb72",
+  "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "source_files": [
+    {
+      "path": "src/flora/selected/selected_authority_frame.py",
+      "sha256": "790091cc1589910d5a85b7650e63ab1f2c9046202b353d413b20ea369305a3c4"
+    },
+    {
+      "path": "src/flora/selected/selected_history_contribution.py",
+      "sha256": "12aa389e4b33bd0aa98b5c3d2b7c6435d225386020de38c45ac6b1182894be9b"
+    },
+    {
+      "path": "src/flora/selected/context_guard.py",
+      "sha256": "84877fc0101521f79dabfa9b0f4f787235e980b742d512228cf55ad54e4fa778"
+    },
+    {
+      "path": "src/flora/selected/selected_context.py",
+      "sha256": "c11d75502049966ae1949c2c7f696141b493fd4e7714e799a7ceee1c5d78b243"
+    },
+    {
+      "path": "tests/test_selected_history_contribution.py",
+      "sha256": "5e55d15f68af571ed6e0b50a8034c6606cab59d4ae1ddb49c6adf092eae9e803"
+    },
+    {
+      "path": "tests/test_shared_authority_frame.py",
+      "sha256": "3ede52a8972ab03c52ae14f6b02d9f43038ad2bfead82239ae85f12ffb9ed7e5"
+    }
+  ],
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.41",
+  "python": "3.12.15 (main, Oct  1 2026, 21:52:41) [GCC 14.2.0]",
+  "image_id": "bbb524290db6a69edc7479eec6ee6a2d2b9946d5c0be0af86eb948575b5379e2",
+  "started_at_utc": "2026-10-02T18:54:22Z",
+  "completed_at_utc": "2026-10-02T19:10:05Z",
+  "planned_isolated_contract_modules": 78,
+  "completed_modules": 2,
+  "tests_completed": 38,
+  "tests_passed": 36,
+  "tests_failed": 2,
+  "modules": [
+    {
+      "module": "test_selected_history_contribution.py",
+      "exit_code": 0,
+      "tests": 19,
+      "unittest_seconds": 4.535,
+      "process_seconds": 8.487,
+      "passed": 19,
+      "failed": 0,
+      "failures": []
+    },
+    {
+      "module": "test_shared_authority_frame.py",
+      "exit_code": 1,
+      "tests": 19,
+      "unittest_seconds": 930.594,
+      "process_seconds": 934.978,
+      "passed": 17,
+      "failed": 2,
+      "failures": [
+        {
+          "case": "test_final_callback_withdraws_selected_context_source",
+          "expected_guard_calls": 2,
+          "observed_guard_calls": 1,
+          "source_line": 158
+        },
+        {
+          "case": "test_final_callback_withdraws_unselected_history_evaluation_source",
+          "expected_guard_calls": 2,
+          "observed_guard_calls": 1,
+          "source_line": 144
+        }
+      ]
+    }
+  ],
+  "runner_total_seconds": 943.478,
+  "physical_engines_run": false,
+  "response_latency_tested": false,
+  "qualification": {
+    "full_contract_selection": false,
+    "controlled_frame_module": false,
+    "physical_engine_correctness": false,
+    "response_latency": false,
+    "learned_behavior": false,
+    "builder_transfer": false
+  },
+  "failure_analysis": "Recursive FunctionBinding capture froze a legitimate counter cell in an opaque independent phase guard. The first actual call changed its state while identity and code remained fixed; binding refusal prevented the required second call. This is a failed callback contract, even though the refusal was early.",
+  "repair_requirement": "Limit recursive closure capture to known pure native context binding helpers, separately retain external function identity/code, preserve actual independent calls, and rerun unchanged tests against the repaired exact source. This receipt proves no repair pass.",
+  "method": "Read the local runner JSON and test_shared_authority_frame.py module log. Retain the exact startup source hashes, native environment, safe module/case identities, counts, assertion values and fixture durations. Omit raw logs and supplied content. The runner planned 78 isolated modules but this failed selection completed only the first two.",
+  "timing_interpretation": "Unittest, process and runner durations are controlled fixture execution times, not native response latency."
+}
