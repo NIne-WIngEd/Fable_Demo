@@ -17,6 +17,10 @@ runtime files. The exact local source receipt is in the latest checkpoint.
 Ordinary [Linux/physical run 37041602495](https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495)
 was still running at this publication; inspect its completed jobs before
 updating qualification. The completed baseline failures remain preserved.
+At the later 17:44:50 UTC observation, reader and withdrawal jobs had passed,
+while standalone and native responses still failed their original budgets.
+Contracts and the other physical groups were still running. See the checkpoint's
+partial receipt; no serving optimization or latency qualification is claimed.
 
 ## Owner's current scope
 

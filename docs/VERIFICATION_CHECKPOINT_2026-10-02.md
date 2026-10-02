@@ -89,6 +89,13 @@ physical jobs were still pending completion. This partial observation is not
 a completed same-commit gate, latency pass or behavioral result. Inspect the
 run before replacing pending status with a completed receipt.
 
+A [later partial observation](evidence/2026-10-02_3a6e03cf_partial_ci_receipts.json)
+at 17:44:50 UTC records the completed response failures: standalone BEFORE
+24,377 ms and AFTER 39,477 ms exceed 10,000 ms; native BEFORE 60,074 ms and
+AFTER 60,141 ms time out against 60,000 ms. Reader and withdrawal cases remain
+passed. Contracts and eight other physical jobs were still running. This helper
+does not activate the serving optimization; response latency remains unresolved.
+
 | Source | LF SHA-256 |
 | --- | --- |
 | `src/flora/selected/phase_source_fence.py` | `b0829cf3995179b37a0beaf7bf4d42f0f06833b636d52b3231a13962bbb50015` |
@@ -101,6 +108,6 @@ The ordinary Linux gate remains required. No local physical engines were run.
 Shared initial-assembly and H/C/Claim/state frame integration, actual-engine
 response qualification, learned judgment and builder transfer remain pending.
 
-The public procedure ledger now has 96 schema-valid seeds. They describe
+The public procedure ledger now has 97 schema-valid seeds. They describe
 construction methods, not qualified FBM training cases or runtime personal
 memory. Documentation and the helper establish no broader experimental pass.
