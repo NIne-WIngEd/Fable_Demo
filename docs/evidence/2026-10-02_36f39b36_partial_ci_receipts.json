@@ -1,0 +1,613 @@
+{
+  "schema": "flora-ordinary-ci-partial-receipt-v1",
+  "observed_at_utc": "2026-10-02T19:26:37Z",
+  "repository": "NIne-WIngEd/FloRA",
+  "runtime_commit": "36f39b36d3101a6af4e785fb60d382234db6409f",
+  "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+  "checkout_and_runtime_tree": "3ef7a298432d81a08923e264ae36e95a0df9fb72",
+  "tree_identity_verified": true,
+  "checkout_merge_parents": [
+    "885be57abb582510d27a98177facd2a358c11387",
+    "36f39b36d3101a6af4e785fb60d382234db6409f"
+  ],
+  "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "run_id": 37049792243,
+  "run_url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243",
+  "run_status": "in_progress",
+  "run_conclusion": null,
+  "run_event": "pull_request",
+  "run_attempt": 1,
+  "source_refs": {
+    "runtime_commit": "https://github.com/NIne-WIngEd/FloRA/commit/36f39b36d3101a6af4e785fb60d382234db6409f",
+    "checkout_commit": "https://github.com/NIne-WIngEd/FloRA/commit/268091dade9856c95f37d0ecdf416f6c4fe690bb",
+    "tree": "https://api.github.com/repos/NIne-WIngEd/FloRA/git/trees/3ef7a298432d81a08923e264ae36e95a0df9fb72",
+    "workflow": "https://github.com/NIne-WIngEd/FloRA/blob/36f39b36d3101a6af4e785fb60d382234db6409f/.github/workflows/flora.yml"
+  },
+  "completed_job_count": 10,
+  "total_job_count": 13,
+  "component_tests": null,
+  "component_modules": null,
+  "physical": {
+    "discovered": 53,
+    "completed_cases": 50,
+    "passed": 48,
+    "failed_response_cases": 2,
+    "pending_cases": 3,
+    "standalone_elapsed_ms": {
+      "before": 24268,
+      "after": 39005,
+      "budget": 10000
+    },
+    "native_elapsed_ms": {
+      "before": 60087,
+      "after": 60155,
+      "budget": 60000
+    },
+    "ci_job_cap_minutes": 60
+  },
+  "jobs": [
+    {
+      "name": "contracts",
+      "id": 110980018164,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018164",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T18:47:17Z",
+      "completed_at_utc": null,
+      "case_total": null,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-native-pilot-outcome-audit",
+      "id": 110980018526,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018526",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-10-02T18:47:17Z",
+      "completed_at_utc": "2026-10-02T19:24:41Z",
+      "case_total": 1,
+      "case_passed": 1,
+      "case_failed": 0,
+      "cases": [
+        {
+          "case": "test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_native_outcome_audit_unknown_tail_and_permission_withdrawal",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 2169.365,
+          "completion_receipt": "2026-10-02T19:24:34.8712551Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_native_outcome_audit_unknown_tail_and_permission_withdrawal in 2169.365s]"
+        }
+      ],
+      "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "suite_result_receipts": [
+        "2026-10-02T19:24:34.8713823Z Ran 1 test in 2169.365s",
+        "2026-10-02T19:24:34.8714053Z OK"
+      ]
+    },
+    {
+      "name": "integration-core",
+      "id": 110980018826,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018826",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-10-02T18:47:18Z",
+      "completed_at_utc": "2026-10-02T19:04:29Z",
+      "case_total": 38,
+      "case_passed": 38,
+      "case_failed": 0,
+      "cases": [
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_changed_encrypted_qualification_custody_prevents_runtime_binding",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.842,
+          "completion_receipt": "2026-10-02T18:48:31.6009863Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_changed_encrypted_qualification_custody_prevents_runtime_binding in 0.842s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_custody_and_registry_recover_without_caller_qualification_map",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.164,
+          "completion_receipt": "2026-10-02T18:48:31.7643588Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_custody_and_registry_recover_without_caller_qualification_map in 0.164s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_immutable_receipt_and_artifact_identity_cannot_be_rebound",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.115,
+          "completion_receipt": "2026-10-02T18:48:31.8801859Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_immutable_receipt_and_artifact_identity_cannot_be_rebound in 0.115s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_invalid_or_denied_external_receipts_never_create_current_role",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.016,
+          "completion_receipt": "2026-10-02T18:48:31.8963726Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_invalid_or_denied_external_receipts_never_create_current_role in 0.016s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_racing_writers_cannot_both_activate_the_same_predecessor",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.247,
+          "completion_receipt": "2026-10-02T18:48:32.1440155Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_racing_writers_cannot_both_activate_the_same_predecessor in 0.247s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_runtime_rechecks_independent_qualification_and_missing_checkpoint",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.093,
+          "completion_receipt": "2026-10-02T18:48:32.2370895Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_runtime_rechecks_independent_qualification_and_missing_checkpoint in 0.093s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_scope_namespace_and_expected_contract_fail_closed",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.068,
+          "completion_receipt": "2026-10-02T18:48:32.3041998Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_scope_namespace_and_expected_contract_fail_closed in 0.068s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_second_generation_stale_cas_and_old_retry_preserve_current_head",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.138,
+          "completion_receipt": "2026-10-02T18:48:32.4421377Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_second_generation_stale_cas_and_old_retry_preserve_current_head in 0.138s]"
+        },
+        {
+          "case": "test_comparison_custody.SelectedComparisonCustodyIntegrationTest.test_recovery_failure_matrix_exact_sources_and_separate_review_authority",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 34.371,
+          "completion_receipt": "2026-10-02T18:49:06.8161386Z [completed test_comparison_custody.SelectedComparisonCustodyIntegrationTest.test_recovery_failure_matrix_exact_sources_and_separate_review_authority in 34.371s]"
+        },
+        {
+          "case": "test_formation_admission.FormationAdmissionIntegrationTest.test_real_atomic_authority_correction_idempotency_and_source_revocation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 11.195,
+          "completion_receipt": "2026-10-02T18:49:18.0077889Z [completed test_formation_admission.FormationAdmissionIntegrationTest.test_real_atomic_authority_correction_idempotency_and_source_revocation in 11.195s]"
+        },
+        {
+          "case": "test_selected_assessment_custody.SelectedAssessmentCustodyIntegrationTest.test_real_custody_recovery_signed_seal_and_current_key_release",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 631.446,
+          "completion_receipt": "2026-10-02T18:59:49.4538613Z [completed test_selected_assessment_custody.SelectedAssessmentCustodyIntegrationTest.test_real_custody_recovery_signed_seal_and_current_key_release in 631.446s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_decision_and_observed_outcome_keep_source_lineage",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.023,
+          "completion_receipt": "2026-10-02T18:59:49.4763187Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_decision_and_observed_outcome_keep_source_lineage in 0.023s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_fictional_pilot_has_separate_before_and_after_experience",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.251,
+          "completion_receipt": "2026-10-02T18:59:49.7276084Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_fictional_pilot_has_separate_before_and_after_experience in 0.251s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_kurrent_expected_revision_idempotency_and_replay",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.021,
+          "completion_receipt": "2026-10-02T18:59:49.7486390Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_kurrent_expected_revision_idempotency_and_replay in 0.021s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_nats_edge_intake_commits_only_to_kurrent_authority",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.024,
+          "completion_receipt": "2026-10-02T18:59:49.7731150Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_nats_edge_intake_commits_only_to_kurrent_authority in 0.024s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_raw_experience_replay_binds_mfm_input_without_granting_authority",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.013,
+          "completion_receipt": "2026-10-02T18:59:49.7859674Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_raw_experience_replay_binds_mfm_input_without_granting_authority in 0.013s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_registered_mfm_context_recovers_sources_and_original_closure",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 6.339,
+          "completion_receipt": "2026-10-02T18:59:56.1242911Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_registered_mfm_context_recovers_sources_and_original_closure in 6.339s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_xtdb_bitemporal_current_claim_and_host_isolation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 3.102,
+          "completion_receipt": "2026-10-02T18:59:59.2261488Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_xtdb_bitemporal_current_claim_and_host_isolation in 3.102s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_xtdb_immutable_relation_race_has_one_winner",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.033,
+          "completion_receipt": "2026-10-02T18:59:59.2590906Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_xtdb_immutable_relation_race_has_one_winner in 0.033s]"
+        },
+        {
+          "case": "test_selected_bounded_xtdb_read_faults.SelectedBoundedXTDBFaultTest.test_real_select_blackhole_releases_cancelled_physical_reader_without_late_mutation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.824,
+          "completion_receipt": "2026-10-02T19:00:00.0843648Z [completed test_selected_bounded_xtdb_read_faults.SelectedBoundedXTDBFaultTest.test_real_select_blackhole_releases_cancelled_physical_reader_without_late_mutation in 0.824s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_missing_wrong_position_digest_and_time_fail_against_actual_records",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.067,
+          "completion_receipt": "2026-10-02T19:00:00.1510349Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_missing_wrong_position_digest_and_time_fail_against_actual_records in 0.067s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_persisted_locator_resolves_exact_source_after_unrelated_tail",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.087,
+          "completion_receipt": "2026-10-02T19:00:00.2387124Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_persisted_locator_resolves_exact_source_after_unrelated_tail in 0.087s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_selected_closure_rejects_actual_parent_revocation_during_physical_read",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.283,
+          "completion_receipt": "2026-10-02T19:00:00.5217201Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_selected_closure_rejects_actual_parent_revocation_during_physical_read in 0.283s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_selected_parent_closure_checks_actual_grants_and_later_withdrawal",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.357,
+          "completion_receipt": "2026-10-02T19:00:00.8789588Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_selected_parent_closure_checks_actual_grants_and_later_withdrawal in 0.357s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_soft_delete_and_reappend_reject_stale_position_and_commit_time",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.084,
+          "completion_receipt": "2026-10-02T19:00:00.9626540Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_soft_delete_and_reappend_reject_stale_position_and_commit_time in 0.084s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_well_formed_false_locator_still_needs_independent_physical_proof",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.038,
+          "completion_receipt": "2026-10-02T19:00:01.0004643Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_well_formed_false_locator_still_needs_independent_physical_proof in 0.038s]"
+        },
+        {
+          "case": "test_selected_experiment_manifest_custody.SelectedExperimentManifestIntegrationTest.test_cross_host_metadata_permissions_private_recovery_and_no_auto_builder_case",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 28.587,
+          "completion_receipt": "2026-10-02T19:00:29.5879296Z [completed test_selected_experiment_manifest_custody.SelectedExperimentManifestIntegrationTest.test_cross_host_metadata_permissions_private_recovery_and_no_auto_builder_case in 28.587s]"
+        },
+        {
+          "case": "test_selected_governed_claim_quarantine.GovernedClaimQuarantineIntegrationTest.test_real_atomic_pending_barrier_recreation_and_temporal_derived_cleanup",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 7.095,
+          "completion_receipt": "2026-10-02T19:00:36.6822734Z [completed test_selected_governed_claim_quarantine.GovernedClaimQuarantineIntegrationTest.test_real_atomic_pending_barrier_recreation_and_temporal_derived_cleanup in 7.095s]"
+        },
+        {
+          "case": "test_selected_governed_development.GovernedDevelopmentSelectedBackendTest.test_registered_permissions_govern_activation_restore_and_restart",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 5.617,
+          "completion_receipt": "2026-10-02T19:00:42.3000813Z [completed test_selected_governed_development.GovernedDevelopmentSelectedBackendTest.test_registered_permissions_govern_activation_restore_and_restart in 5.617s]"
+        },
+        {
+          "case": "test_selected_governed_episodes.SelectedGovernedEpisodesTest.test_accepted_episode_and_state_recover_then_current_denial_blocks_private_reads",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 117.008,
+          "completion_receipt": "2026-10-02T19:02:39.3076080Z [completed test_selected_governed_episodes.SelectedGovernedEpisodesTest.test_accepted_episode_and_state_recover_then_current_denial_blocks_private_reads in 117.008s]"
+        },
+        {
+          "case": "test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_manifest_reconstruction_uses_only_bounded_metadata_reads",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 1.17,
+          "completion_receipt": "2026-10-02T19:02:40.4780851Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_manifest_reconstruction_uses_only_bounded_metadata_reads in 1.170s]"
+        },
+        {
+          "case": "test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_phase_membership_uses_original_ids_and_excludes_receipts",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.755,
+          "completion_receipt": "2026-10-02T19:02:41.2346850Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_phase_membership_uses_original_ids_and_excludes_receipts in 0.755s]"
+        },
+        {
+          "case": "test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_signed_late_revocation_is_rejected_by_shared_terminal_fence",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.871,
+          "completion_receipt": "2026-10-02T19:02:42.1041640Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_signed_late_revocation_is_rejected_by_shared_terminal_fence in 0.871s]"
+        },
+        {
+          "case": "test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_explicit_selected_domain_does_not_claim_unrelated_stream_integrity",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.828,
+          "completion_receipt": "2026-10-02T19:02:42.9324913Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_explicit_selected_domain_does_not_claim_unrelated_stream_integrity in 0.828s]"
+        },
+        {
+          "case": "test_selected_personal_artifact_custody.SelectedPersonalArtifactCustodyTest.test_state_approval_permission_and_rollback_recover_without_reference_or_proof_maps",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 6.34,
+          "completion_receipt": "2026-10-02T19:02:49.2723517Z [completed test_selected_personal_artifact_custody.SelectedPersonalArtifactCustodyTest.test_state_approval_permission_and_rollback_recover_without_reference_or_proof_maps in 6.340s]"
+        },
+        {
+          "case": "test_selected_phase_source_fence.SelectedPhaseSourceFenceIntegrationTest.test_actual_finite_source_action_head_claim_query_and_final_callback_withdrawal",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 2.181,
+          "completion_receipt": "2026-10-02T19:02:51.4529221Z [completed test_selected_phase_source_fence.SelectedPhaseSourceFenceIntegrationTest.test_actual_finite_source_action_head_claim_query_and_final_callback_withdrawal in 2.181s]"
+        },
+        {
+          "case": "test_selected_runtime_bridge.SelectedExperimentRuntimeIntegrationTest.test_actual_runtime_admission_governed_context_recovery_and_denial",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 61.524,
+          "completion_receipt": "2026-10-02T19:03:52.9780204Z [completed test_selected_runtime_bridge.SelectedExperimentRuntimeIntegrationTest.test_actual_runtime_admission_governed_context_recovery_and_denial in 61.524s]"
+        },
+        {
+          "case": "test_selected_runtime_custody_transactions.SelectedRuntimeCustodyTransactionIntegrationTest.test_actual_xtdb_dml_batch_and_owner_withdrawal_deny_continuation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.349,
+          "completion_receipt": "2026-10-02T19:03:53.3259867Z [completed test_selected_runtime_custody_transactions.SelectedRuntimeCustodyTransactionIntegrationTest.test_actual_xtdb_dml_batch_and_owner_withdrawal_deny_continuation in 0.349s]"
+        }
+      ],
+      "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "suite_result_receipts": [
+        "2026-10-02T19:03:53.3261853Z Ran 38 tests in 922.568s",
+        "2026-10-02T19:03:53.3262190Z OK"
+      ]
+    },
+    {
+      "name": "integration-readers",
+      "id": 110980018833,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018833",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-10-02T18:47:17Z",
+      "completed_at_utc": "2026-10-02T18:50:09Z",
+      "case_total": 2,
+      "case_passed": 2,
+      "case_failed": 0,
+      "cases": [
+        {
+          "case": "test_selected_native_read_sessions.SelectedNativeReadSessionIntegrationTest.test_fresh_guarded_real_sessions_recover_existing_receipts_and_respect_live_revocation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 93.484,
+          "completion_receipt": "2026-10-02T18:50:02.2642142Z [completed test_selected_native_read_sessions.SelectedNativeReadSessionIntegrationTest.test_fresh_guarded_real_sessions_recover_existing_receipts_and_respect_live_revocation in 93.484s]"
+        },
+        {
+          "case": "test_selected_native_writer_faults.SelectedNativeWriterFaultTest.test_real_blocked_pgconn_exits_on_owner_without_late_sql_continuation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.871,
+          "completion_receipt": "2026-10-02T18:50:03.1357388Z [completed test_selected_native_writer_faults.SelectedNativeWriterFaultTest.test_real_blocked_pgconn_exits_on_owner_without_late_sql_continuation in 0.871s]"
+        }
+      ],
+      "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "suite_result_receipts": [
+        "2026-10-02T18:50:03.1359849Z Ran 2 tests in 94.356s",
+        "2026-10-02T18:50:03.1360118Z OK"
+      ]
+    },
+    {
+      "name": "integration-native-pilot-typed-phase",
+      "id": 110980018849,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018849",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-10-02T18:47:17Z",
+      "completed_at_utc": "2026-10-02T19:16:15Z",
+      "case_total": 1,
+      "case_passed": 1,
+      "case_failed": 0,
+      "cases": [
+        {
+          "case": "test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_typed_phase_snapshot_and_grant_proof_join_before_tail_only",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 1666.189,
+          "completion_receipt": "2026-10-02T19:16:10.1968039Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_typed_phase_snapshot_and_grant_proof_join_before_tail_only in 1666.189s]"
+        }
+      ],
+      "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "suite_result_receipts": [
+        "2026-10-02T19:16:10.1968812Z Ran 1 test in 1666.189s",
+        "2026-10-02T19:16:10.1968941Z OK"
+      ]
+    },
+    {
+      "name": "integration-native-pilot-withdrawal",
+      "id": 110980018853,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018853",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-10-02T18:49:57Z",
+      "completed_at_utc": "2026-10-02T18:53:27Z",
+      "case_total": 1,
+      "case_passed": 1,
+      "case_failed": 0,
+      "cases": [
+        {
+          "case": "test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_phase_withdrawal_at_native_cipher_read_blocks_later_private_reads",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 122.161,
+          "completion_receipt": "2026-10-02T18:53:21.6105534Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_phase_withdrawal_at_native_cipher_read_blocks_later_private_reads in 122.161s]"
+        }
+      ],
+      "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "suite_result_receipts": [
+        "2026-10-02T18:53:21.6107073Z Ran 1 test in 122.161s",
+        "2026-10-02T18:53:21.6107288Z OK"
+      ]
+    },
+    {
+      "name": "integration-native-comparison",
+      "id": 110980018862,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018862",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at_utc": "2026-10-02T18:47:24Z",
+      "completed_at_utc": "2026-10-02T18:52:11Z",
+      "case_total": 1,
+      "case_passed": 0,
+      "case_failed": 1,
+      "cases": [
+        {
+          "case": "test_selected_native_comparison.SelectedNativeComparisonIntegrationTest.test_actual_phase_context_execution_parent_and_private_run_custody",
+          "outcome": "failure",
+          "fixture_elapsed_seconds": 212.594,
+          "completion_receipt": "2026-10-02T18:52:04.1510519Z [completed test_selected_native_comparison.SelectedNativeComparisonIntegrationTest.test_actual_phase_context_execution_parent_and_private_run_custody in 212.594s]"
+        }
+      ],
+      "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "suite_result_receipts": [
+        "2026-10-02T18:52:04.1522803Z Ran 1 test in 212.594s",
+        "2026-10-02T18:52:04.1523046Z FAILED (failures=1)"
+      ],
+      "response_budget_ms": 60000,
+      "before": {
+        "status": "timeout",
+        "elapsed_ms": 60087
+      },
+      "after": {
+        "status": "timeout",
+        "elapsed_ms": 60155
+      }
+    },
+    {
+      "name": "integration-transport",
+      "id": 110980018889,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018889",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at_utc": "2026-10-02T18:47:17Z",
+      "completed_at_utc": "2026-10-02T18:53:45Z",
+      "case_total": 2,
+      "case_passed": 1,
+      "case_failed": 1,
+      "cases": [
+        {
+          "case": "test_selected_comparator_memory.SelectedComparatorIntegrationTest.test_phase_isolated_hybrid_memory_and_separately_authorized_signed_exchange",
+          "outcome": "failure",
+          "fixture_elapsed_seconds": 78.839,
+          "completion_receipt": "2026-10-02T18:49:46.0280497Z [completed test_selected_comparator_memory.SelectedComparatorIntegrationTest.test_phase_isolated_hybrid_memory_and_separately_authorized_signed_exchange in 78.839s]"
+        },
+        {
+          "case": "test_selected_provider_attempt_ledger.SelectedProviderAttemptLedgerIntegrationTest.test_frozen_phase_custody_signed_failures_and_fresh_per_decrypt_authority",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 98.202,
+          "completion_receipt": "2026-10-02T18:51:24.2283795Z [completed test_selected_provider_attempt_ledger.SelectedProviderAttemptLedgerIntegrationTest.test_frozen_phase_custody_signed_failures_and_fresh_per_decrypt_authority in 98.202s]"
+        }
+      ],
+      "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "suite_result_receipts": [
+        "2026-10-02T18:51:24.2299811Z Ran 2 tests in 177.041s",
+        "2026-10-02T18:51:24.2300130Z FAILED (failures=1)"
+      ],
+      "response_budget_ms": 10000,
+      "before": {
+        "status": "budget_exceeded",
+        "elapsed_ms": 24268
+      },
+      "after": {
+        "status": "budget_exceeded",
+        "elapsed_ms": 39005
+      }
+    },
+    {
+      "name": "integration-history",
+      "id": 110980018917,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018917",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T18:47:17Z",
+      "completed_at_utc": null,
+      "case_total": 2,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-history-routes-retained",
+      "id": 110980018921,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018921",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T18:50:11Z",
+      "completed_at_utc": null,
+      "case_total": 1,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-history-routes-native",
+      "id": 110980018923,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018923",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-10-02T18:47:17Z",
+      "completed_at_utc": "2026-10-02T19:16:31Z",
+      "case_total": 1,
+      "case_passed": 1,
+      "case_failed": 0,
+      "cases": [
+        {
+          "case": "test_selected_phase_history_routes.SelectedPhaseHistoryRoutesTest.test_strict_router_recovers_distinct_actual_native_arm_invocations_on_all_phase_routes",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 1681.76,
+          "completion_receipt": "2026-10-02T19:16:25.5566341Z [completed test_selected_phase_history_routes.SelectedPhaseHistoryRoutesTest.test_strict_router_recovers_distinct_actual_native_arm_invocations_on_all_phase_routes in 1681.760s]"
+        }
+      ],
+      "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "suite_result_receipts": [
+        "2026-10-02T19:16:25.5567832Z Ran 1 test in 1681.760s",
+        "2026-10-02T19:16:25.5568084Z OK"
+      ]
+    },
+    {
+      "name": "integration-native-pilot-before-tail",
+      "id": 110980018932,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980018932",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-10-02T18:51:26Z",
+      "completed_at_utc": "2026-10-02T19:26:16Z",
+      "case_total": 1,
+      "case_passed": 1,
+      "case_failed": 0,
+      "cases": [
+        {
+          "case": "test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_native_before_tail_then_correction_without_internal_history",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 2008.656,
+          "completion_receipt": "2026-10-02T19:26:10.0021956Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_native_before_tail_then_correction_without_internal_history in 2008.656s]"
+        }
+      ],
+      "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "suite_result_receipts": [
+        "2026-10-02T19:26:10.0023330Z Ran 1 test in 2008.657s",
+        "2026-10-02T19:26:10.0023595Z OK"
+      ]
+    },
+    {
+      "name": "integration-lineage",
+      "id": 110980019010,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243/job/110980019010",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-10-02T18:52:12Z",
+      "completed_at_utc": "2026-10-02T19:10:32Z",
+      "case_total": 2,
+      "case_passed": 2,
+      "case_failed": 0,
+      "cases": [
+        {
+          "case": "test_selected_native_lineage_backend.SelectedJudgmentLineageIntegrationTest.test_exact_accepted_episode_control_and_native_state_lineage_after_recreation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 941.966,
+          "completion_receipt": "2026-10-02T19:08:58.2173733Z [completed test_selected_native_lineage_backend.SelectedJudgmentLineageIntegrationTest.test_exact_accepted_episode_control_and_native_state_lineage_after_recreation in 941.966s]"
+        },
+        {
+          "case": "test_selected_native_lineage_backend.SelectedJudgmentLineageIntegrationTest.test_exact_approved_native_state_history_output_recreation_and_revocation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 87.986,
+          "completion_receipt": "2026-10-02T19:10:26.2035455Z [completed test_selected_native_lineage_backend.SelectedJudgmentLineageIntegrationTest.test_exact_approved_native_state_history_output_recreation_and_revocation in 87.986s]"
+        }
+      ],
+      "checkout_commit": "268091dade9856c95f37d0ecdf416f6c4fe690bb",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "suite_result_receipts": [
+        "2026-10-02T19:10:26.2036507Z Ran 2 tests in 1029.952s",
+        "2026-10-02T19:10:26.2036715Z OK"
+      ]
+    }
+  ],
+  "method": "Read the current 13 job records and decoded logs for the 10 completed jobs through the GitHub connector. Preserve safe fixed case identities, results and fixture durations, not full logs. All 10 completed logs identify the same merge checkout and Alice dependency. GitHub commit metadata verifies merge parents and exact merge/runtime tree identity. Component totals remain unavailable because its job is pending. No tests, custom diagnostic, cancellation, source edits or dependency substitutions were dispatched for this receipt.",
+  "interpretation": "These results belong only to the published 36f39b36 runtime. Local dirty repair results are separate and are not included. Fixture and workflow times are not response times. The ordinary run is pending and neither completed backend tests nor these failed response attempts qualify response latency, learned behavior or transfer.",
+  "qualification": {
+    "same_commit_full_gate": false,
+    "component_suite_complete": false,
+    "physical_complete": false,
+    "response_latency": false,
+    "learned_judgment": false,
+    "trained_FBM_or_transfer": false,
+    "local_repair_verified_by_this_receipt": false
+  },
+  "pending": "Recover completed contracts, history and retained-history job outcomes later; preserve failures and any cancellation/incomplete cases. Do not treat pending cases as passed."
+}

@@ -6,23 +6,82 @@ Updated: 2026-10-02, America/Chicago. Recovery baseline:
 
 ## Published continuation
 
-The context recovery was published on `codex/flora-context` at
-`d584f29e622b875220d408240a21a7d8bf661ebd`. The bounded collector extension
-is on `codex/flora-shared-source-caps` at
-`3a6e03cfeb2207a88f555c1fa88d10aad5bd987b`, in
+The context recovery began on `codex/flora-context` at
+`d584f29e622b875220d408240a21a7d8bf661ebd`. The fresh shared authority frame
+is now published on `codex/flora-shared-source-caps` at
+`ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f`, tree
+`1f9b955849cbc69ed1f0244366876bbe672fd0c6`, in
 [draft PR #1](https://github.com/NIne-WIngEd/FloRA/pull/1).
 The context branch records that work; code remains on the development branch
 until reviewed. Do not infer its implementation from the context branch's
-runtime files. The exact local source receipt is in the latest checkpoint.
-Ordinary [Linux/physical run 37041602495](https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495)
-was still running at this publication; inspect its completed jobs before
-updating qualification. The completed baseline failures remain preserved.
-At the later 17:44:50 UTC observation, reader and withdrawal jobs had passed,
-while standalone and native responses still failed their original budgets.
-Contracts and the other physical groups were still running. See the checkpoint's
-partial receipt; no serving optimization or latency qualification is claimed.
+runtime files. Final frame SHA-256 is
+`73302f5edb934dc536c16ac7554a084ff85f604d8e6ad2f4eae3e0def7c2a197`;
+frame-test SHA-256 is
+`6adaae62780b1fabda5e9e39c041d8849797206f4433822c807de57683300552`.
+The other four source/test hashes are unchanged from the checkpoint's preserved
+failed revision. All six were independently checked at this publication.
+
+The final-source withdrawal pair passed **2/2 in 73.007 s** on native
+Linux/ARM64. The new opaque-guard code-swap test passed **1/1 in 10.439 s**.
+The repair binds independent function identity and code while allowing
+legitimate closure-counter state; actual guard calls remain required. These
+targeted results are partial. The complete 20-case frame suite and 76 existing
+module suites began on native ARM64 at **19:32:58 UTC**, using the same image
+and pinned dependencies. The frame suite remains pending. The existing runner
+halted at **19:37:32 UTC** after **35/76 modules**, with **476 passes, one
+failure and one error across 478 cases**; 41 modules were not run. The
+unchanged worker module's two `worker_rejected` issues and asyncio/transport
+warnings need investigation. Their cause is unresolved; neither an
+environment-only cause nor a frame regression is established.
+
+Ordinary [run 37054784829](https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829)
+uses merge `2f166a9d745667b200302a404bd04f8def7a83d9`, whose tree exactly
+matches `ef9c190e`. At 19:38:11 UTC, readers 2/2 and withdrawal 1/1 passed,
+but native responses 60,061 / 60,108 ms failed the unchanged 60,000 ms budget.
+Transport, contracts and other jobs remained pending. The
+[current checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) and
+[partial CI receipt](evidence/2026-10-02_ef9c190e_partial_ci_receipts.json)
+preserve these incomplete outcomes without a full qualification claim.
+
+Earlier ordinary
+[run 37049792243](https://github.com/NIne-WIngEd/FloRA/actions/runs/37049792243)
+belongs to `36f39b36`. Its [verified partial receipt](evidence/2026-10-02_36f39b36_partial_ci_receipts.json)
+binds merge `268091dade9856c95f37d0ecdf416f6c4fe690bb` to the same runtime tree.
+At 19:26:37 UTC, 48 completed physical cases passed, two response cases failed
+and three cases remained pending. Native responses were 60,087 / 60,155 ms
+against 60,000 ms. This earlier source does not verify `ef9c190e` or establish
+complete physical or response qualification.
+
+At `36f39b36`, the exact-source native frame suite failed two of 19 cases in
+930.594 s. Binding capture froze legitimate mutable counter state inside an
+opaque independent phase guard, preventing its required second call in the
+selected C and unselected H withdrawal cases. Retain the
+[failed receipt](evidence/2026-10-02_36f39b36_frame_contract_failure.json) and
+unchanged assertions. The earlier local capture repair passed the pair in
+68.205 s at source fingerprint `82c784b`, before the final independent
+function-code pins. That progress belongs to the earlier source; the final
+73.007 s pair result and separate code-swap test above are still subsets.
+
+The prior collector-only runtime `3a6e03cf` completed ordinary
+[Linux/physical run 37041602495](https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495)
+with failure: 905 component cases passed; 50/53 physical cases passed, two
+response budgets failed and one history-preregistration case was incomplete.
+The [completed receipt](evidence/2026-10-02_3a6e03cf_completed_ci_receipts.json)
+preserves exact source identity and clocks. It does not verify the later frame.
 
 ## Owner's current scope
+
+The owner's latest latency instruction is to make further changes from a
+measured explanation. Repeated authority construction is documented, but its
+share of the remaining timeout still needs measurement. Use existing profiles,
+the Flora/Alice research branches, relevant plugins and Graphify navigation
+where useful. Consult relevant frontier research, the actual competing model
+or system, and their primary papers or open-source implementations. Record
+source identity, applicable mechanism and a falsifiable expected effect before
+changing the serving path. Do not adopt an unrelated stack or relax authority
+and experimental gates on the strength of an analogy. Graphify remains a
+development aid; original source pointers govern. No new external research or
+competitor result is claimed by this instruction record.
 
 The October 2 continuation instruction is authoritative: FloRA is a prototype
 to test one Alice/Fable claim. It does **not** need the complete Alice memory,
@@ -37,6 +96,13 @@ Full mission execution, federation, scale-out graph, background lifecycle
 daemons, all memory planes, complete product key management and full-system
 unlearning are not prototype prerequisites. Neither the full Fable release
 gate nor its all-at-once product scope transfers to FloRA.
+
+The owner's latest October 2 compute preference is to use available Kaggle
+and Magnolia for later eligible external-artifact or integration workloads.
+Paid GPU hours are the last fallback if those options fail. Current CPU
+contract validation needs no GPU, and no GPU work is being launched now.
+Personality and MFM stay in their other chats. Do not infer provider details,
+quotas or new infrastructure from these names.
 
 ## What the experiment asks
 
@@ -159,7 +225,7 @@ available tools; do not claim it was fully read. Its smaller design-review chat
 `01a0f98c-9e6d-7071-9cff-d2d7cbd790ff` was recovered, and repo code/history plus
 completed CI were independently inspected. Unknown scratch work is not adopted.
 
-Recovered review constraints for the pending shared frame:
+Recovered review constraints governing the shared frame:
 
 - H means **all held original history**, including its physical manifest for
   custody, with evaluation rights for every original. C means nominated context
@@ -187,7 +253,18 @@ Alice memory platform or a reusable permission lease.
 
 ## Exact latest physical status
 
-Ordinary [run 36828262948](https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948)
+The latest completed ordinary
+[run 37041602495](https://github.com/NIne-WIngEd/FloRA/actions/runs/37041602495)
+belongs to collector-only runtime `3a6e03cf` and completed with failure.
+Its 905 component tests passed in 76 modules. Physical results were 50 passed,
+two failed response cases and one incomplete history-preregistration case.
+Standalone BEFORE/AFTER took 24,377 / 39,477 ms against 10,000 ms; native
+BEFORE/AFTER timed out at 60,074 / 60,141 ms against 60,000 ms. Retained
+history completed, but preregistration hit the unchanged one-hour cap.
+The completed receipt supersedes its partial CI observations.
+
+The earlier baseline
+[run 36828262948](https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948)
 at runtime `74f42417` has **completed with failure**; the earlier checkpoint's
 pending status was stale when this chat started. It passed 884 component cases
 in 75 modules and 49/53 physical cases. Standalone BEFORE/AFTER took 17,471 /
@@ -202,28 +279,52 @@ benefit, trained FBM or automatic host transfer is established.
 
 ## Work next and scope check
 
-The existing finite shared source-row collector now accepts independently
+The finite shared source-row collector accepts independently
 capped domains, sharing sampled rows while retaining each complete parent-DAG
 limit. [SHARED_SOURCE_METADATA_CAPS.md](SHARED_SOURCE_METADATA_CAPS.md) records
-the API and custom-reader repair. Ninety targeted contracts passed locally;
-the checkpoint records exact hashes and Windows/Linux qualification limits.
+the API and custom-reader repair. Its earlier 90 targeted contracts passed
+locally; the collector-only ordinary run later passed 905 component cases.
 The collector returns metadata inventory, not authority or a terminal proof.
-No new caller or serving frame is activated. No engine, ledger or product plane
-was introduced.
+The new runtime connects it to a fresh H/C/Claim/state frame. No new engine,
+ledger or product plane was introduced.
 
 This helper's source cap counts nominated source DAGs. Raw-only object extras
-consume the combined row budget without inventing grants. A future H contributor
-must separately include the physical manifest in H's own cap and verify its
-custody; the helper alone does not establish that history contract.
+consume the combined row budget without inventing grants. The new data-only H
+contributor separately includes the physical manifest in H's own cap and
+verifies custody; the helper alone does not establish that history contract.
 
-Next compose the supported H/C/Claim/state collectors within one fresh protected
-boundary, including initial assembly; preserve real predicates and independent
-callbacks and use a single joint final observation. Race tests must include
-withdrawal of an **unselected H evaluation grant**, selected C grant, changed
-Claim/state head, locator/time/physical event, held values, owner/qualification
-or descriptor binding. Keep unknown/custom paths explicit. Only after correctness
-passes run the original exact-engine cases with unchanged clocks and caps.
+The [frame protocol](SELECTED_AUTHORITY_FRAME_PROTOCOL.md) now has a serving
+implementation: separate frames protect initial nomination, every initial
+assembly barrier, prepared metadata checks and post-assembly capture. Actual
+gated policy ownership, independent authority callbacks, source predicates,
+signed owner proofs and four fresh private byte boundaries remain governing.
+Callbacks precede manifest/physical rereads and one joint H/C/Claim/state XTDB
+terminal observation; only sealed native comparisons follow.
+
+Original `assemble_context` services, opaque independent guards and some
+immutable-row sampling still repeat work. These are explicit remaining costs.
+The earlier native runner at `36f39b36` passed 19 H tests in 4.535 s but failed
+the frame at 17/19 in 930.594 s. The repaired `ef9c190e` binds native helper
+closures and independent function identity/code separately; its targeted
+withdrawal pair and code-swap case pass. Current broad existing-contract
+validation halted at two unresolved worker issues after 35/76 modules; the
+20-case frame suite and ordinary complete source qualification remain pending.
+Earlier QEMU candidate frame/context tests stopped incomplete when superseded;
+two candidate CI runs were intentionally canceled, not qualified. Verify the
+new withdrawal, head, physical, descriptor, helper, reader,
+held-value and qualification race selection in ordinary CI. Fully unissued
+paths retain their existing behavior; unsupported partial issuance rejects.
+Only after correctness passes interpret original exact-engine responses
+against unchanged clocks and caps.
 Report construction, response, propagation and recovery separately.
+
+Next collect `work/frame-contracts-repaired-frame/receipt.json` and
+`work/frame-contracts-repaired-existing/receipt.json` from this continuation
+workspace, plus completed jobs from ordinary run 37054784829. Original tool
+sessions were 25400/67177 if still available. Investigate the worker failure
+and error before treating the 41 unrun modules as covered; a final-source H
+19-case run is optional if needed. This checkpoint intentionally ends the
+turn while results remain pending; it is not a full pass.
 
 Use a frozen explicit context route first. An adaptive learned planner, complete
 episode subsystem or mission platform is not required to fix this proof

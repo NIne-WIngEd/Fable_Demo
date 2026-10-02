@@ -1,0 +1,317 @@
+{
+  "runtime_commit": "ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f",
+  "alice_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "source_files": [
+    {
+      "path": "src/flora/selected/selected_authority_frame.py",
+      "sha256": "73302f5edb934dc536c16ac7554a084ff85f604d8e6ad2f4eae3e0def7c2a197"
+    },
+    {
+      "path": "src/flora/selected/selected_history_contribution.py",
+      "sha256": "12aa389e4b33bd0aa98b5c3d2b7c6435d225386020de38c45ac6b1182894be9b"
+    },
+    {
+      "path": "src/flora/selected/context_guard.py",
+      "sha256": "84877fc0101521f79dabfa9b0f4f787235e980b742d512228cf55ad54e4fa778"
+    },
+    {
+      "path": "src/flora/selected/selected_context.py",
+      "sha256": "c11d75502049966ae1949c2c7f696141b493fd4e7714e799a7ceee1c5d78b243"
+    },
+    {
+      "path": "tests/test_selected_history_contribution.py",
+      "sha256": "5e55d15f68af571ed6e0b50a8034c6606cab59d4ae1ddb49c6adf092eae9e803"
+    },
+    {
+      "path": "tests/test_shared_authority_frame.py",
+      "sha256": "6adaae62780b1fabda5e9e39c041d8849797206f4433822c807de57683300552"
+    }
+  ],
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.41",
+  "python": "3.12.15 (main, Oct  1 2026, 21:52:41) [GCC 14.2.0]",
+  "started_at_utc": "2026-10-02T19:32:58Z",
+  "physical_engines_run": false,
+  "completed_at_utc": "2026-10-02T19:37:32Z",
+  "total_seconds": 273.202,
+  "schema": "flora-controlled-existing-contract-failure-receipt-v1",
+  "runtime_tree": "1f9b955849cbc69ed1f0244366876bbe672fd0c6",
+  "planned_modules": 76,
+  "completed_modules": 35,
+  "unrun_modules": 41,
+  "tests_completed": 478,
+  "tests_passed": 476,
+  "tests_failed": 1,
+  "tests_errored": 1,
+  "response_latency_tested": false,
+  "modules": [
+    {
+      "module": "test_artifact_registry.py",
+      "exit_code": 0,
+      "tests": 8,
+      "unittest_seconds": 0.023,
+      "process_seconds": 1.514
+    },
+    {
+      "module": "test_assessment_custody.py",
+      "exit_code": 0,
+      "tests": 13,
+      "unittest_seconds": 3.4,
+      "process_seconds": 6.462
+    },
+    {
+      "module": "test_assessment_release_fence.py",
+      "exit_code": 0,
+      "tests": 3,
+      "unittest_seconds": 1.516,
+      "process_seconds": 4.502
+    },
+    {
+      "module": "test_authenticated_history.py",
+      "exit_code": 0,
+      "tests": 18,
+      "unittest_seconds": 3.562,
+      "process_seconds": 6.822
+    },
+    {
+      "module": "test_blind_assessment.py",
+      "exit_code": 0,
+      "tests": 13,
+      "unittest_seconds": 0.623,
+      "process_seconds": 3.236
+    },
+    {
+      "module": "test_bounded_embedding_lifecycle.py",
+      "exit_code": 0,
+      "tests": 15,
+      "unittest_seconds": 8.206,
+      "process_seconds": 10.857
+    },
+    {
+      "module": "test_bounded_xtdb_reads.py",
+      "exit_code": 0,
+      "tests": 10,
+      "unittest_seconds": 0.345,
+      "process_seconds": 1.84
+    },
+    {
+      "module": "test_chronology_boundary_profiler.py",
+      "exit_code": 0,
+      "tests": 6,
+      "unittest_seconds": 3.251,
+      "process_seconds": 3.978
+    },
+    {
+      "module": "test_combined_history_guard.py",
+      "exit_code": 0,
+      "tests": 6,
+      "unittest_seconds": 1.228,
+      "process_seconds": 4.35
+    },
+    {
+      "module": "test_comparator.py",
+      "exit_code": 0,
+      "tests": 19,
+      "unittest_seconds": 0.074,
+      "process_seconds": 2.904
+    },
+    {
+      "module": "test_comparator_current_guards.py",
+      "exit_code": 0,
+      "tests": 6,
+      "unittest_seconds": 1.998,
+      "process_seconds": 4.795
+    },
+    {
+      "module": "test_comparison_custody.py",
+      "exit_code": 0,
+      "tests": 14,
+      "unittest_seconds": 0.756,
+      "process_seconds": 3.738
+    },
+    {
+      "module": "test_comparison_run.py",
+      "exit_code": 0,
+      "tests": 16,
+      "unittest_seconds": 2.705,
+      "process_seconds": 5.288
+    },
+    {
+      "module": "test_current_context_guard.py",
+      "exit_code": 0,
+      "tests": 29,
+      "unittest_seconds": 8.896,
+      "process_seconds": 12.455
+    },
+    {
+      "module": "test_development_source_freshness.py",
+      "exit_code": 0,
+      "tests": 4,
+      "unittest_seconds": 0.375,
+      "process_seconds": 2.032
+    },
+    {
+      "module": "test_evaluation_protocol.py",
+      "exit_code": 0,
+      "tests": 2,
+      "unittest_seconds": 0.002,
+      "process_seconds": 0.517
+    },
+    {
+      "module": "test_experience_envelope_reuse.py",
+      "exit_code": 0,
+      "tests": 21,
+      "unittest_seconds": 1.788,
+      "process_seconds": 3.379
+    },
+    {
+      "module": "test_experience_exact_lookup.py",
+      "exit_code": 0,
+      "tests": 38,
+      "unittest_seconds": 0.123,
+      "process_seconds": 1.464
+    },
+    {
+      "module": "test_experiment_coordinator.py",
+      "exit_code": 0,
+      "tests": 20,
+      "unittest_seconds": 6.144,
+      "process_seconds": 9.423
+    },
+    {
+      "module": "test_experiment_manifests.py",
+      "exit_code": 0,
+      "tests": 27,
+      "unittest_seconds": 2.973,
+      "process_seconds": 6.351
+    },
+    {
+      "module": "test_experiment_preregistration.py",
+      "exit_code": 0,
+      "tests": 23,
+      "unittest_seconds": 24.695,
+      "process_seconds": 28.479
+    },
+    {
+      "module": "test_fbm_seed_contract.py",
+      "exit_code": 0,
+      "tests": 3,
+      "unittest_seconds": 1.048,
+      "process_seconds": 1.438
+    },
+    {
+      "module": "test_formation_preflight.py",
+      "exit_code": 0,
+      "tests": 8,
+      "unittest_seconds": 1.686,
+      "process_seconds": 4.89
+    },
+    {
+      "module": "test_governed_claim_quarantine.py",
+      "exit_code": 0,
+      "tests": 6,
+      "unittest_seconds": 1.002,
+      "process_seconds": 4.241
+    },
+    {
+      "module": "test_governed_development.py",
+      "exit_code": 0,
+      "tests": 11,
+      "unittest_seconds": 0.951,
+      "process_seconds": 2.588
+    },
+    {
+      "module": "test_governed_episodes.py",
+      "exit_code": 0,
+      "tests": 24,
+      "unittest_seconds": 4.26,
+      "process_seconds": 5.888
+    },
+    {
+      "module": "test_guarded_object_copies.py",
+      "exit_code": 0,
+      "tests": 4,
+      "unittest_seconds": 2.257,
+      "process_seconds": 5.418
+    },
+    {
+      "module": "test_history_fence.py",
+      "exit_code": 0,
+      "tests": 25,
+      "unittest_seconds": 3.69,
+      "process_seconds": 6.795
+    },
+    {
+      "module": "test_native_arm.py",
+      "exit_code": 0,
+      "tests": 10,
+      "unittest_seconds": 29.81,
+      "process_seconds": 33.133
+    },
+    {
+      "module": "test_native_boundary_profiler.py",
+      "exit_code": 0,
+      "tests": 20,
+      "unittest_seconds": 0.239,
+      "process_seconds": 0.766
+    },
+    {
+      "module": "test_native_comparison_fixture.py",
+      "exit_code": 0,
+      "tests": 2,
+      "unittest_seconds": 1.964,
+      "process_seconds": 5.429
+    },
+    {
+      "module": "test_native_final_seal.py",
+      "exit_code": 0,
+      "tests": 11,
+      "unittest_seconds": 8.899,
+      "process_seconds": 11.944
+    },
+    {
+      "module": "test_native_pilot_lifecycle.py",
+      "exit_code": 0,
+      "tests": 11,
+      "unittest_seconds": 1.103,
+      "process_seconds": 4.125
+    },
+    {
+      "module": "test_native_reads.py",
+      "exit_code": 0,
+      "tests": 21,
+      "unittest_seconds": 54.493,
+      "process_seconds": 58.761
+    },
+    {
+      "module": "test_native_worker.py",
+      "exit_code": 1,
+      "tests": 11,
+      "unittest_seconds": 1.765,
+      "process_seconds": 3.242
+    }
+  ],
+  "safe_worker_failure_summary": {
+    "module": "test_native_worker.py",
+    "tests": 11,
+    "passed": 9,
+    "failed": 1,
+    "errored": 1,
+    "unittest_seconds": 1.765,
+    "failure": {
+      "case": "test_output_cap_and_exit_failure_have_safe_receipts",
+      "expected_reason": "exit_failure",
+      "observed_reason": "worker_rejected"
+    },
+    "error": {
+      "case": "test_stderr_limit_and_no_inherited_environment",
+      "exception": "NativeWorkerFailure",
+      "safe_reason": "worker_rejected"
+    },
+    "additional_safe_diagnostics": [
+      "asyncio InvalidStateError",
+      "unclosed subprocess/pipe transport ResourceWarning"
+    ]
+  },
+  "interpretation": "The existing-module runner halted at the worker module. The broad local gate failed; 41 modules were not run. Worker code/tests are unchanged, but neither an environment-only cause nor a frame regression has been established. Investigation remains pending. The separate 20-case frame suite remains pending; no full correctness, physical, latency or learned pass follows.",
+  "method": "Read the final-source local runner JSON and safe fixed assertion/error labels from the worker module log; retain source hashes, environment, module counts and fixture durations without raw fixture content or raw logs."
+}
