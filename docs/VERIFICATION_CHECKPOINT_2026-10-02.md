@@ -332,3 +332,20 @@ Graphify where useful, and consult relevant frontier/competing-system primary
 research and open-source implementations. Record the applicable mechanism and
 predicted effect, then test it against the same physical clocks and authority
 contracts. This is a next-step requirement, not a completed research receipt.
+
+## Completed repaired frame module, 19:48:46 UTC
+
+The exact-source native Linux/ARM64 frame selection completed **20/20 tests
+passing in 944.073 s**, process duration 947.728 s. Its
+[receipt](evidence/2026-10-02_ef9c190e_frame_contract_pass.json) preserves
+`ef9c190e`, Alice `4f287a48`, all six startup hashes and the environment.
+This supersedes the pending frame status in the earlier partial checkpoint.
+The final code-swap regression and both original withdrawal assertions are
+included. The old failed 17/19 selection remains visible and linked.
+
+The broader local gate still failed on the two worker issues above, with 41
+modules unrun. Ordinary CI remains incomplete at the last collected snapshot,
+and its native response budget has failed. Do not infer a full contract,
+physical, response-latency, learned-judgment or transfer pass. The linked
+completed-frame method trace adds one procedure-only record: all **102**
+traces are schema-valid, and three FBM contract tests pass.
