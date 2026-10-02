@@ -1,4 +1,66 @@
-# FloRA verification checkpoint — 2026-10-02
+# FloRA verification checkpoint â€” 2026-10-02
+
+## Published measured-origin candidate
+
+Runtime `da370ebc9b089aec430859059cc83af52e623089`, tree
+`5a904dbd310814bf5dbeeaac8832dc4fc53d573c`, applies the smallest measured
+dependency change in [draft PR #1](https://github.com/NIne-WIngEd/FloRA/pull/1).
+One fresh descriptor-tree pass verifies each exact native origin body once.
+Every root and inherited parent still checks its own private issuance, class,
+token, descriptor/gate/reader/origin seals and installed gate owner. The local
+identity map holds exact objects and ends before returning to frame callbacks;
+later checks start fresh. This is pure dependency work, with no saved permission
+answer, source-head result or cross-boundary proof.
+
+The [source-pinned component receipt](evidence/2026-10-02_da370ebc_origin_contracts.json)
+records **52 focused passes** on native Linux/ARM64: phase 25 in 3.573 s, H 19
+in 2.656 s and consumer/frame 8 in 64.170 s. The first consumer run had seven
+passes and one test-placement failure: the prepared wrapper rejected changed
+scope before the intended origin assertion. The corrected test mutates scope
+inside the real frame callback and requires origin-specific rejection. Runtime
+bytes stayed unchanged. Original frame 20 regressions are running separately;
+no completed result is assigned to them at this checkpoint.
+
+[Ordinary PR CI 37072008699](https://github.com/NIne-WIngEd/FloRA/actions/runs/37072008699),
+push CI 37072002344 and the once-dispatched
+[engine diagnostic 37072026458](https://github.com/NIne-WIngEd/FloRA/actions/runs/37072026458)
+are pending for this source. Component passes do not inherit older physical
+results or establish response improvement. The original 10,000 ms standalone,
+60,000 ms native and 60-minute CI limits remain. No learned model is run.
+
+The observer is unchanged: private pair traversal now appears within
+`shared.frame.base_bindings` instead of calling the public
+`phase.descriptor_verify` entry. A drop in that entry's count or CPU alone cannot
+show removed cost. Compare whole observed worker/preparation CPU and wall,
+original origin-body counts, reached stages and overlapping fixed-tag spans.
+Retain setup coverage limits and observation overhead.
+
+The necessary Alice-aligned loop remains source Experience â†’ external proposal
+â†’ deterministic Claim admission â†’ governed current state â†’ exact context â†’
+native judgment/decision â†’ linked outcome â†’ externally proposed successor â†’
+separate activation. [The middle-layer audit](ALICE_MIDDLE_LAYER_DESIGN_AUDIT_2026-10-02.md)
+binds that loop to Alice's architecture and revised comic. The remaining full-H
+reconstruction, HÃ—C evaluation and lineage/context reconstruction are measured
+follow-up candidates, not permission to add a full mission platform or skip
+authority. Personality and MFM remain external integration inputs.
+
+## Completed worker-repair CI at 9b57ed3
+
+Both earlier ordinary runs completed with failure at 22:15 UTC:
+[PR 37065697026](https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026)
+and push 37065691025. Each passed **947 component tests in 78 modules**.
+Physical results are **49 passed, two failed and two incomplete of 53**,
+including one explicit history coordinator pass before cancellation. History
+preregistration and retained history remain incomplete. PR merge `6eb543a6`
+has the exact published `9b57ed3` tree `9541734d`; Alice is pinned at `4f287a`.
+
+Standalone BEFORE/AFTER were **14,707 / 21,102 ms** in PR CI and
+**23,956 / 38,911 ms** in push CI, all above 10,000 ms. Native attempts were
+**60,071 / 60,132 ms** and **60,108 / 60,134 ms** respectively, all timeout
+under 60,000 ms. The [completed exact-source receipts](evidence/2026-10-02_9b57ed3_completed_ci_receipts.json)
+retain per-job summaries and cancellation progress. Component correctness
+does not qualify those responses; these outcomes apply to 9b57ed3, not the
+current candidate. Pending references to these runs below are historical.
 
 ## Measured owned work at bf597366
 
@@ -261,7 +323,7 @@ Standalone BEFORE/AFTER responses were 24,377 / 39,477 ms against 10,000 ms;
 native responses timed out at 60,074 / 60,141 ms against 60,000 ms. Passing
 contracts and more completed fixtures do not qualify these failed budgets.
 
-## Fresh shared authority frame at 36f39b36 — failed candidate
+## Fresh shared authority frame at 36f39b36 â€” failed candidate
 
 The owner authorized integration of the fresh frame within FloRA's existing
 narrow experimental slice. The development change now joins held-history H,

@@ -12,6 +12,30 @@ receipts and timeout/budget settings. No runtime delegate is wrapped or replaced
 No model or substitute is built. Every timing is **nonqualifying** because
 observation adds overhead.
 
+## Current candidate and comparable observation
+
+Measured runtime `bf597366` reached six owned jobs: 121.382 s wall and
+110.109 s thread CPU. Four exclusive pure-verification tags account for
+62.459 s, including observer overhead; overlapping inclusive totals cannot be
+added. Its failed fixture is preserved in the
+[source-verified artifact](evidence/2026-10-02_bf597366_native_profile.json).
+
+Candidate `da370ebc9b089aec430859059cc83af52e623089` shares only the exact
+native origin body within one fresh descriptor-tree invocation. The observer
+and its workers-only 180 s per-thread window are unchanged. The private pair
+entry moves traversal work into `shared.frame.base_bindings` instead of the
+public `phase.descriptor_verify` entry. Fewer public descriptor entries alone
+cannot show removed cost: compare whole observed worker/preparation wall and
+CPU, original origin-body counts, reached stages and overlap. Parent setup
+stays unobserved; the diagnostic does not qualify response latency.
+
+[Diagnostic 37072026458](https://github.com/NIne-WIngEd/FloRA/actions/runs/37072026458)
+was dispatched once at this exact source and remains pending. The
+[checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) retains controlled tests,
+prior capped/failed observations and the unchanged 60,000 ms response clock.
+Earlier default CLI/global-cap descriptions below are historical or explicitly
+the default mode, not the current workers-only workflow.
+
 ## First actual result and bounded follow-up
 
 The exact published-head run `36801543475` on `58d6966c494d7bff10badc68e24e83c084846bfc`

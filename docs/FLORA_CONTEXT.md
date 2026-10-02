@@ -4,6 +4,70 @@ Updated: 2026-10-02, America/Chicago. Recovery baseline:
 `main@885be57abb582510d27a98177facd2a358c11387`; recovery starting runtime
 `74f42417be37a2fbdc6c603a1ea657b040e0052e`.
 
+## Published measured-origin candidate
+
+Runtime `da370ebc9b089aec430859059cc83af52e623089`, tree
+`5a904dbd310814bf5dbeeaac8832dc4fc53d573c`, applies the smallest measured
+dependency change in [draft PR #1](https://github.com/NIne-WIngEd/FloRA/pull/1).
+Runtime code lives on `codex/flora-shared-source-caps`; `codex/flora-context`
+is the documentation handoff and retains older runtime files.
+One fresh descriptor-tree pass verifies each exact native origin body once.
+Every root and inherited parent still checks its own private issuance, class,
+token, descriptor/gate/reader/origin seals and installed gate owner. The local
+identity map holds exact objects and ends before returning to frame callbacks;
+later checks start fresh. This is pure dependency work, with no saved permission
+answer, source-head result or cross-boundary proof.
+
+The [source-pinned component receipt](evidence/2026-10-02_da370ebc_origin_contracts.json)
+records **52 focused passes** on native Linux/ARM64: phase 25 in 3.573 s, H 19
+in 2.656 s and consumer/frame 8 in 64.170 s. The first consumer run had seven
+passes and one test-placement failure: the prepared wrapper rejected changed
+scope before the intended origin assertion. The corrected test mutates scope
+inside the real frame callback and requires origin-specific rejection. Runtime
+bytes stayed unchanged. Original frame 20 regressions are running separately;
+no completed result is assigned to them at this checkpoint.
+
+[Ordinary PR CI 37072008699](https://github.com/NIne-WIngEd/FloRA/actions/runs/37072008699),
+push CI 37072002344 and the once-dispatched
+[engine diagnostic 37072026458](https://github.com/NIne-WIngEd/FloRA/actions/runs/37072026458)
+are pending for this source. Component passes do not inherit older physical
+results or establish response improvement. The original 10,000 ms standalone,
+60,000 ms native and 60-minute CI limits remain. No learned model is run.
+
+The observer is unchanged: private pair traversal now appears within
+`shared.frame.base_bindings` instead of calling the public
+`phase.descriptor_verify` entry. A drop in that entry's count or CPU alone cannot
+show removed cost. Compare whole observed worker/preparation CPU and wall,
+original origin-body counts, reached stages and overlapping fixed-tag spans.
+Retain setup coverage limits and observation overhead.
+
+The necessary Alice-aligned loop remains source Experience Ã¢â€ â€™ external proposal
+Ã¢â€ â€™ deterministic Claim admission Ã¢â€ â€™ governed current state Ã¢â€ â€™ exact context Ã¢â€ â€™
+native judgment/decision Ã¢â€ â€™ linked outcome Ã¢â€ â€™ externally proposed successor Ã¢â€ â€™
+separate activation. [The middle-layer audit](ALICE_MIDDLE_LAYER_DESIGN_AUDIT_2026-10-02.md)
+binds that loop to Alice's architecture and revised comic. The remaining full-H
+reconstruction, HÃƒâ€”C evaluation and lineage/context reconstruction are measured
+follow-up candidates, not permission to add a full mission platform or skip
+authority. Personality and MFM remain external integration inputs.
+
+## Completed worker-repair CI at 9b57ed3
+
+Both earlier ordinary runs completed with failure at 22:15 UTC:
+[PR 37065697026](https://github.com/NIne-WIngEd/FloRA/actions/runs/37065697026)
+and push 37065691025. Each passed **947 component tests in 78 modules**.
+Physical results are **49 passed, two failed and two incomplete of 53**,
+including one explicit history coordinator pass before cancellation. History
+preregistration and retained history remain incomplete. PR merge `6eb543a6`
+has the exact published `9b57ed3` tree `9541734d`; Alice is pinned at `4f287a`.
+
+Standalone BEFORE/AFTER were **14,707 / 21,102 ms** in PR CI and
+**23,956 / 38,911 ms** in push CI, all above 10,000 ms. Native attempts were
+**60,071 / 60,132 ms** and **60,108 / 60,134 ms** respectively, all timeout
+under 60,000 ms. The [completed exact-source receipts](evidence/2026-10-02_9b57ed3_completed_ci_receipts.json)
+retain per-job summaries and cancellation progress. Component correctness
+does not qualify those responses; these outcomes apply to 9b57ed3, not the
+current candidate. Pending references to these runs below are historical.
+
 ## Measured owned work at bf597366
 
 [Native diagnostic 37068588428](https://github.com/NIne-WIngEd/FloRA/actions/runs/37068588428)
@@ -46,8 +110,8 @@ tracking ends before callbacks and later checks start fresh. Removing repeated
 origin bodies cannot remove all descriptor, seal, binding, H/C or context work.
 No serving improvement,60-second pass or learned result is claimed. The original
 standalone10,000ms/native60,000ms response and 60-minute CI limits still govern.
-Current ordinary CI remains pending; the candidate's source and controlled
-results must be recorded separately before publishing a runtime claim.
+The measured candidate is now published and source-pinned in the latest section
+above. Its engine and ordinary CI results remain pending.
 
 ## Preserved recovery and observation checkpoint
 
@@ -132,11 +196,12 @@ is now published on `codex/flora-shared-source-caps` at
 `ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f`, tree
 `1f9b955849cbc69ed1f0244366876bbe672fd0c6`, in
 [draft PR #1](https://github.com/NIne-WIngEd/FloRA/pull/1).
-Frame identity above remains `ef9c190e`; worker repair is at `9b57ed3`; current observation source is
-`bf59736673d4f054ff85636ca80a1983d14d7cd5`. The context branch records that work;
+Historical frame identity above is `ef9c190e`; worker repair is at `9b57ed3`;
+the unchanged observer is published at `bf597366`. Current runtime is `da370ebc`
+as recorded in the latest section. The context branch records that work;
 code remains on the development branch
 until reviewed. Do not infer its implementation from the context branch's
-runtime files. Final frame SHA-256 is
+runtime files. Frame SHA-256 at the historical ef9c190e checkpoint is
 `73302f5edb934dc536c16ac7554a084ff85f604d8e6ad2f4eae3e0def7c2a197`;
 frame-test SHA-256 is
 `6adaae62780b1fabda5e9e39c041d8849797206f4433822c807de57683300552`.
@@ -432,14 +497,16 @@ The two local worker failures were separately reproduced and repaired; residual
 warnings remain. Current observation mechanics pass 31 cases, while their actual
 engine result and current ordinary gate remain pending.
 
-Next collect the exact bf597366 native aggregate, verify source hashes and owned
-coverage, and compare pure binding, H/C evaluation, context preparation, lineage
-and RPC cost. Use the middle-layer audit's smallest falsifiable proposal if the
-observations support it. Keep independent callback, withdrawal, physical and
-terminal ordering cases; do not move old work out of frozen clocks. Then compare
-the original exact-engine responses under unchanged caps. Report construction,
-response, correction propagation and recovery separately. Stop while only runs
-are pending, then resume when the owner returns.
+Next recover the original frame regression receipt, the da370ebc ordinary CI
+and its actual-engine aggregate. Verify their exact checkouts/source hashes and
+reached stages before comparing cost. The pure-origin candidate addresses one
+measured repetition; original descriptor seals, H/C evaluation, context and
+lineage work remain. Preserve independent callback, withdrawal, physical and
+terminal ordering checks; keep all work inside the frozen response clocks.
+Report construction, response, correction propagation and recovery separately.
+If the result still exceeds budget, localize the remaining stage before changing
+hydration/reconstruction. Stop while only runs are pending and resume when the
+owner returns; do not burn tokens waiting.
 
 Use a frozen explicit context route first. An adaptive learned planner, complete
 episode subsystem or mission platform is not required to fix this proof
@@ -456,6 +523,9 @@ rows under Alice trace schema v0.1. Record observable inputs, choices,
 constraints, method, authority, actual validation, outcome and failure lesson.
 Link a repair to earlier trace IDs; preserve failures. Validate schema and
 unique IDs with `docs/fbm-seeds/validate_traces.py`.
+The latest inventory has **108 schema-valid procedure records**. Three FBM
+contract tests passed at the 107-record checkpoint; the appended completion
+record was separately validated with the complete 108-record inventory.
 
 These are builder construction-method seeds, not Flora's runtime personal
 memory. They are not weights or automatically eligible training/evaluation
