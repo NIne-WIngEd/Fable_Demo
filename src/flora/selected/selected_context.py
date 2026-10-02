@@ -272,6 +272,11 @@ def prepare_selected_current_context(*, plan: ContextPlan, claims, state, log,
             raise PermissionError("selected context original policy owner changed")
 
     policy_binding_guard()
+    # A partially issued or detached phase cannot reach the independent guard
+    # or the initial metadata nomination. Fully unissued policies keep their
+    # original callback route.
+    from .selected_authority_frame import shared_phase_origin
+    shared_phase_origin(permissions, policy)
     # Validate/transfer the original source port before nomination or private
     # I/O. The temporary target already owns the real services; its log is
     # replaced by the explicit facade before it can serve context.

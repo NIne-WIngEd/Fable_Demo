@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from copy import copy, deepcopy
 import hashlib
 import json
-from types import FunctionType
+from types import FunctionType, MethodType
 from typing import Any, Callable
 
 from cognitive_kernel.canonical import canonical_json_bytes, canonical_sha256
@@ -163,6 +163,14 @@ def _invoke_guard(guard):
         raise PermissionError("independent context authority guard refused")
 
 
+def _same_native_reader(current, captured):
+    """Compare ports without invoking equality on an opaque replacement."""
+    if type(captured) is MethodType:
+        return (type(current) is MethodType and current.__self__ is captured.__self__
+            and current.__func__ is captured.__func__)
+    return current is captured
+
+
 def _binding_guard(*, claims, state, log, objects, policy, purpose):
     """Keep exact registered services/configuration live, never an allow result."""
     from .selected_context import SelectedContextLogView
@@ -254,7 +262,7 @@ def _selected_binding_guard(*, claims, state, log, objects, policy, purpose):
     return current
 
 
-def _metadata_view(*, claims, state, log, policy, source_sample=None):
+def _metadata_view(*, claims, state, log, policy, source_sample=None, captured_events=None):
     """One guard's sampled actual rows; every view is discarded before a fence.
 
     Only metadata readers are memoized. No connection, plaintext reader, owner
@@ -275,7 +283,7 @@ def _metadata_view(*, claims, state, log, policy, source_sample=None):
                 return deepcopy(_cache[key])
             setattr(result, name, read)
         return result
-    captured_events = log.replay()
+    captured_events = log.replay() if captured_events is None else captured_events
     local_log = copy(log)
     local_log.replay = lambda: list(captured_events)
     if callable(getattr(claims, "_fetch_record", None)):
@@ -301,6 +309,19 @@ def _metadata_view(*, claims, state, log, policy, source_sample=None):
     local_policy.claims, local_policy.state, local_policy.log = local_claims, local_state, local_log
     local_policy.registry, local_policy.permissions = registry, permissions
     return local_claims, local_state, local_log, local_policy
+
+
+def _shared_metadata_frame(*, claims, state, log, policy, binding_guard):
+    from .selected_context import SelectedContextLogView
+    if type(log) is not SelectedContextLogView:
+        return None
+    _require_shared_context_contracts()
+    def frame_bindings():
+        _require_shared_context_contracts()
+        binding_guard()
+    from .selected_authority_frame import create_shared_selected_frame
+    return create_shared_selected_frame(claims=claims, state=state, log=log,
+        policy=policy, binding_guard=frame_bindings)
 
 
 def _nomination_record(*, plan, claims, state, log, policy):
@@ -482,16 +503,29 @@ class PreparedCurrentContext:
         phase_guard, actual_bindings = self.authority_guard, self._bindings_current
         selected_context_snapshot = self._selected_context_snapshot
         context_snapshot_reader, context_snapshot_code = _native_context_snapshot, _native_context_snapshot.__code__
+        from .selected_context import SelectedContextLogView
+        authority_reader = self._verify_authorities
+        if type(self.log) is SelectedContextLogView:
+            _require_shared_context_contracts()
+            if (type(authority_reader) is not MethodType or authority_reader.__self__ is not self
+                    or authority_reader.__func__ is not _SHARED_AUTHORITY_READER):
+                raise PermissionError("selected current-context authority helper changed")
         methods = [(self.policy, name, getattr(self.policy, name))
             for name in ("allow_event", "allow_claim", "allow_state")]
         methods += [(self.log, name, getattr(self.log, name, None))
             for name in ("replay", "replay_committed")]
         def bindings():
+            current_authority_reader = self._verify_authorities
             if (any(getattr(self, name) is not value for name, value in zip(
                     ("claims", "state", "log", "objects", "references", "policy"), controllers))
-                    or self.authority_guard != phase_guard or self._bindings_current != actual_bindings
+                    or self.authority_guard is not phase_guard or self._bindings_current is not actual_bindings
                     or selected_context_snapshot is not None and self._selected_context_snapshot is not selected_context_snapshot
-                    or any(getattr(service, name, None) != method for service, name, method in methods)):
+                    or type(self.log) is SelectedContextLogView and (
+                        type(current_authority_reader) is not MethodType
+                        or current_authority_reader.__self__ is not self
+                        or current_authority_reader.__func__ is not authority_reader.__func__)
+                    or any(not _same_native_reader(getattr(service, name, None), method)
+                           for service, name, method in methods)):
                 raise PermissionError("prepared current-context controller/callback binding changed")
             actual_bindings()
             if selected_context_snapshot is not None:
@@ -500,10 +534,19 @@ class PreparedCurrentContext:
                         or context_snapshot_reader(self.context) != selected_context_snapshot):
                     raise PermissionError("selected held private context changed during authority verification")
         bindings()
+        frame = _shared_metadata_frame(claims=self.claims, state=self.state,
+            log=self.log, policy=self.policy, binding_guard=bindings)
         self._phase()
         bindings()
         if canonical_json_bytes(self.context.receipt_record()) != self._context_record:
             raise ValueError("prepared private context was changed")
+        if frame is not None:
+            frame.observe_authorities(self)
+            claims, state, log, policy = frame.metadata_view()
+            self._verify_authorities(claims=claims, state=state, log=log, policy=policy)
+            frame.finish(authority_guard=self._phase)
+            bindings()
+            return
         source_sample = None
         if (isinstance(self.policy.registry, XTDBFormationSourceRegistry)
                 and isinstance(self.policy.permissions, XTDBFormationPermissionPolicy)
@@ -533,6 +576,24 @@ class PreparedCurrentContext:
                     raise ValueError("prepared Claim changed before terminal metadata observation")
         claims, state, log, policy = _metadata_view(claims=self.claims, state=self.state,
             log=self.log, policy=self.policy, source_sample=source_sample)
+        self._verify_authorities(claims=claims, state=state, log=log, policy=policy)
+        self._phase()
+        self._metadata_fence(source_sample=source_sample)
+        self._phase()
+        # A final external phase callback may perform slow metadata work.
+        # Current original/control consent must still follow that work, before
+        # the caller's inner ciphertext result can reach decryption.
+        self._source_fence(source_sample=source_sample)
+        bindings()
+        if source_sample is not None:
+            # Last grant/phase callbacks can withdraw an earlier source or
+            # quarantine an already checked Claim. One actual selected basis
+            # observes every sampled source/raw/action/head/current-Claim row
+            # together after those callbacks, before private bytes can return.
+            source_sample.verify_final_current_rows()
+        bindings()
+
+    def _verify_authorities(self, *, claims, state, log, policy) -> None:
         events = {event.event_id: event for event in log.replay()}
         for captured in self.claim_authorities:
             current = claims.load_current(captured.claim_id)
@@ -583,21 +644,6 @@ class PreparedCurrentContext:
         for captured in self.claim_authorities:
             if policy.allow_claim(captured.claim_id, self.context.plan.purpose) is not True:
                 raise PermissionError("prepared Claim use was withdrawn")
-        self._phase()
-        self._metadata_fence(source_sample=source_sample)
-        self._phase()
-        # A final external phase callback may perform slow metadata work.
-        # Current original/control consent must still follow that work, before
-        # the caller's inner ciphertext result can reach decryption.
-        self._source_fence(source_sample=source_sample)
-        bindings()
-        if source_sample is not None:
-            # Last grant/phase callbacks can withdraw an earlier source or
-            # quarantine an already checked Claim. One actual selected basis
-            # observes every sampled source/raw/action/head/current-Claim row
-            # together after those callbacks, before private bytes can return.
-            source_sample.verify_final_current_rows()
-        bindings()
 
     def _metadata_fence(self, *, source_sample=None) -> None:
         """Final narrow exact fence after potentially slow policy lookups."""
@@ -682,87 +728,8 @@ class PreparedCurrentContext:
         self.metadata_current()
 
 
-def prepare_current_context(*, plan: ContextPlan, claims, state, log, objects, references,
-        policy: RegisteredJudgmentContextPolicy,
-        approval_verifier_factory: Callable[[Callable[[], None]], Any],
-        authority_guard: Callable[[], None] | None = None,
-        before_private_assembly: Callable[[Callable[[], None]], None] | None = None,
-        vector=None, graph=None) -> PreparedCurrentContext:
-    """Assemble selected plaintext once and capture exact current finite authority.
-
-    This first implementation accepts exact Claim and state routes only. A live
-    accelerator nomination can change independently; it must be explicitly
-    frozen into exact routes before preparing this invocation. No caller context,
-    cached approval, fixture source or self-certified snapshot is accepted.
-    """
-    plan.validate()
-    if plan.query_vector is not None or plan.graph_source_event_ids or vector is not None or graph is not None:
-        raise ValueError("current-context guard requires explicitly frozen exact nominations")
-    if (not isinstance(policy, RegisteredJudgmentContextPolicy)
-            or not isinstance(state, XTDBGovernedPersonalDevelopment)
-            or policy.claims is not claims or policy.state is not state or policy.log is not log
-            or not callable(approval_verifier_factory)):
-        raise TypeError("current-context guard needs the actual registered governed authority services")
-    from .experiment_runtime import _AuthorizedRuntimeReads
-    bindings_current = _binding_guard(claims=claims, state=state, log=log,
-        objects=objects, policy=policy, purpose=plan.purpose)
-    def phase():
-        _invoke_guard(authority_guard)
-        bindings_current()
-    phase()
-    sampled_claims, sampled_state, sampled_log, sampled_policy = _metadata_view(
-        claims=claims, state=state, log=log, policy=policy)
-    baseline_material = _nomination_record(plan=plan, claims=sampled_claims, state=sampled_state,
-        log=sampled_log, policy=sampled_policy)
-    assembled_context, assembled_snapshot = None, None
-    def initial_barrier():
-        phase()
-        source_sample = None
-        from .selected_context import SelectedContextLogView
-        if type(log) is SelectedContextLogView:
-            from .selected_context_fence import SelectedContextMetadataSample
-            source_sample = SelectedContextMetadataSample(state=state,
-                binding_guard=bindings_current, registry=policy.registry,
-                permissions=policy.permissions, claims=claims)
-            source_sample.prime_sources(tuple(key for key, _ in baseline_material["sources"]), plan.purpose)
-            for claim_id, expected in baseline_material["claims"]:
-                current = source_sample.local_claims.load_current(claim_id)
-                _require_available(current, claim_id)
-                if canonical_json_bytes(current) != canonical_json_bytes(expected["current"]):
-                    raise ValueError("selected initial Claim changed before terminal observation")
-            source_sample.observe_state_nominations(state, baseline_material["states"])
-            source_sample.observe_claim_nominations(baseline_material["claims"])
-        # The one actual nomination pass already validated the complete graph.
-        # Exact original readers keep every captured dependency current without
-        # re-running that whole traversal on each nested private proof fetch.
-        _nomination_fence(material=baseline_material, plan=plan, claims=claims,
-            state=state, log=log, policy=policy)
-        phase()
-        _nomination_source_fence(material=baseline_material, plan=plan, log=log, policy=policy)
-        bindings_current()
-        if source_sample is not None:
-            source_sample.verify_final_current_rows()
-            bindings_current()
-            if (assembled_context is not None
-                    and _native_context_snapshot(assembled_context) != assembled_snapshot):
-                raise PermissionError("selected assembled private context changed after its terminal fence")
-    initial_barrier()
-    if before_private_assembly is not None:
-        if not callable(before_private_assembly):
-            raise TypeError("before-private assembly gate must be callable")
-        # Source/control denial is checked before any private qualification
-        # proof. Role qualification must also precede source/owner plaintext.
-        if before_private_assembly(initial_barrier) is not None:
-            raise PermissionError("before-private assembly gate refused")
-        initial_barrier()
-    guarded = _AuthorizedRuntimeReads(objects, initial_barrier)
-    verifier = approval_verifier_factory(initial_barrier)
-    context = assemble_context(plan=plan, claims=claims, state=state, log=log, objects=guarded,
-        references=references, policy=policy, approval_verifier=verifier)
-    from .selected_context import SelectedContextLogView
-    if type(log) is SelectedContextLogView:
-        assembled_context, assembled_snapshot = context, _native_context_snapshot(context)
-    initial_barrier()
+def _capture_context_authorities(*, context, plan, claims, state, log, policy):
+    """Capture exact observed material before its enclosing frame is finalized."""
     claims_by_id, states, episodes_by_id = {}, [], {}
     source_ids = set(context.source_event_ids)
     events = {event.event_id: event for event in log.replay()}
@@ -866,12 +833,171 @@ def prepare_current_context(*, plan: ContextPlan, claims, state, log, objects, r
             canonical_json_bytes(policy.registry.raw_metadata(source.object_ref)),
             None if grant is None else canonical_json_bytes(grant.metadata_record()))
         pending.extend(source.evidence.parent_refs)
+    return (tuple(claims_by_id[key] for key in sorted(claims_by_id)), tuple(states),
+        tuple(sources[key] for key in sorted(sources)),
+        tuple(episodes_by_id[key] for key in sorted(episodes_by_id)))
+
+
+def prepare_current_context(*, plan: ContextPlan, claims, state, log, objects, references,
+        policy: RegisteredJudgmentContextPolicy,
+        approval_verifier_factory: Callable[[Callable[[], None]], Any],
+        authority_guard: Callable[[], None] | None = None,
+        before_private_assembly: Callable[[Callable[[], None]], None] | None = None,
+        vector=None, graph=None) -> PreparedCurrentContext:
+    """Assemble selected plaintext once and capture exact current finite authority.
+
+    This first implementation accepts exact Claim and state routes only. A live
+    accelerator nomination can change independently; it must be explicitly
+    frozen into exact routes before preparing this invocation. No caller context,
+    cached approval, fixture source or self-certified snapshot is accepted.
+    """
+    plan.validate()
+    if plan.query_vector is not None or plan.graph_source_event_ids or vector is not None or graph is not None:
+        raise ValueError("current-context guard requires explicitly frozen exact nominations")
+    if (not isinstance(policy, RegisteredJudgmentContextPolicy)
+            or not isinstance(state, XTDBGovernedPersonalDevelopment)
+            or policy.claims is not claims or policy.state is not state or policy.log is not log
+            or not callable(approval_verifier_factory)):
+        raise TypeError("current-context guard needs the actual registered governed authority services")
+    from .experiment_runtime import _AuthorizedRuntimeReads
+    bindings_current = _binding_guard(claims=claims, state=state, log=log,
+        objects=objects, policy=policy, purpose=plan.purpose)
+    def phase():
+        _invoke_guard(authority_guard)
+        bindings_current()
+    baseline_frame = _shared_metadata_frame(claims=claims, state=state, log=log,
+        policy=policy, binding_guard=bindings_current)
+    phase()
+    if baseline_frame is None:
+        sampled_claims, sampled_state, sampled_log, sampled_policy = _metadata_view(
+            claims=claims, state=state, log=log, policy=policy)
+    else:
+        sampled_claims, sampled_state, sampled_log, sampled_policy = baseline_frame.metadata_view()
+    baseline_material = _nomination_record(plan=plan, claims=sampled_claims, state=sampled_state,
+        log=sampled_log, policy=sampled_policy)
+    if baseline_frame is not None:
+        baseline_frame.observe_nominations(baseline_material)
+        baseline_frame.finish(authority_guard=phase)
+        bindings_current()
+    assembled_context, assembled_snapshot = None, None
+    def initial_bindings():
+        bindings_current()
+        if (assembled_context is not None
+                and _native_context_snapshot(assembled_context) != assembled_snapshot):
+            raise PermissionError("selected assembled private context changed during authority verification")
+    def initial_barrier():
+        frame = _shared_metadata_frame(claims=claims, state=state, log=log,
+            policy=policy, binding_guard=initial_bindings)
+        phase()
+        if frame is not None:
+            frame.observe_nominations(baseline_material)
+            current_claims, current_state, current_log, current_policy = frame.metadata_view()
+            current_material = _nomination_record(plan=plan, claims=current_claims,
+                state=current_state, log=current_log, policy=current_policy)
+            if canonical_json_bytes(current_material) != canonical_json_bytes(baseline_material):
+                raise ValueError("context nomination changed during initial metadata verification")
+            frame.finish(authority_guard=phase)
+            initial_bindings()
+            return
+        source_sample = None
+        from .selected_context import SelectedContextLogView
+        if type(log) is SelectedContextLogView:
+            from .selected_context_fence import SelectedContextMetadataSample
+            source_sample = SelectedContextMetadataSample(state=state,
+                binding_guard=bindings_current, registry=policy.registry,
+                permissions=policy.permissions, claims=claims)
+            source_sample.prime_sources(tuple(key for key, _ in baseline_material["sources"]), plan.purpose)
+            for claim_id, expected in baseline_material["claims"]:
+                current = source_sample.local_claims.load_current(claim_id)
+                _require_available(current, claim_id)
+                if canonical_json_bytes(current) != canonical_json_bytes(expected["current"]):
+                    raise ValueError("selected initial Claim changed before terminal observation")
+            source_sample.observe_state_nominations(state, baseline_material["states"])
+            source_sample.observe_claim_nominations(baseline_material["claims"])
+        # The one actual nomination pass already validated the complete graph.
+        # Exact original readers keep every captured dependency current without
+        # re-running that whole traversal on each nested private proof fetch.
+        _nomination_fence(material=baseline_material, plan=plan, claims=claims,
+            state=state, log=log, policy=policy)
+        phase()
+        _nomination_source_fence(material=baseline_material, plan=plan, log=log, policy=policy)
+        bindings_current()
+        if source_sample is not None:
+            source_sample.verify_final_current_rows()
+            bindings_current()
+            if (assembled_context is not None
+                    and _native_context_snapshot(assembled_context) != assembled_snapshot):
+                raise PermissionError("selected assembled private context changed after its terminal fence")
+    initial_barrier()
+    if before_private_assembly is not None:
+        if not callable(before_private_assembly):
+            raise TypeError("before-private assembly gate must be callable")
+        # Source/control denial is checked before any private qualification
+        # proof. Role qualification must also precede source/owner plaintext.
+        if before_private_assembly(initial_barrier) is not None:
+            raise PermissionError("before-private assembly gate refused")
+        initial_barrier()
+    guarded = _AuthorizedRuntimeReads(objects, initial_barrier)
+    verifier = approval_verifier_factory(initial_barrier)
+    context = assemble_context(plan=plan, claims=claims, state=state, log=log, objects=guarded,
+        references=references, policy=policy, approval_verifier=verifier)
+    from .selected_context import SelectedContextLogView
+    if type(log) is SelectedContextLogView:
+        assembled_context, assembled_snapshot = context, _native_context_snapshot(context)
+    initial_barrier()
+    capture_frame = _shared_metadata_frame(claims=claims, state=state, log=log,
+        policy=policy, binding_guard=initial_bindings)
+    if capture_frame is None:
+        capture_claims, capture_state, capture_log, capture_policy = claims, state, log, policy
+    else:
+        phase()
+        capture_frame.observe_nominations(baseline_material)
+        capture_claims, capture_state, capture_log, capture_policy = capture_frame.metadata_view()
+    claim_snapshots, state_snapshots, source_snapshots, episode_snapshots = _capture_context_authorities(
+        context=context, plan=plan, claims=capture_claims, state=capture_state,
+        log=capture_log, policy=capture_policy)
     prepared = PreparedCurrentContext(_CONSTRUCTION, context=context, claims=claims, state=state, log=log,
         objects=objects, references=references, policy=policy, approval_verifier_factory=approval_verifier_factory,
-        authority_guard=authority_guard, claim_snapshots=tuple(claims_by_id[key] for key in sorted(claims_by_id)),
-        state_snapshots=tuple(states), source_snapshots=tuple(sources[key] for key in sorted(sources)),
-        episode_snapshots=tuple(episodes_by_id[key] for key in sorted(episodes_by_id)))
+        authority_guard=authority_guard, claim_snapshots=claim_snapshots,
+        state_snapshots=state_snapshots, source_snapshots=source_snapshots,
+        episode_snapshots=episode_snapshots)
+    if capture_frame is not None:
+        capture_frame.observe_authorities(prepared)
+        capture_frame.finish(authority_guard=phase)
+        initial_bindings()
     initial_barrier()
     prepared.revalidate()
     initial_barrier()
     return prepared
+
+
+def _require_shared_context_contracts():
+    """Pin delegated native metadata algorithms for the issued frame path."""
+    if PreparedCurrentContext is not _SHARED_PREPARED_CLASS:
+        raise PermissionError("selected current-context prepared owner class changed")
+    current = vars(_SHARED_PREPARED_CLASS)
+    extra = "__slotnames__" not in dict(_SHARED_PREPARED_SHAPE) and "__slotnames__" in current
+    if (len(current) != len(_SHARED_PREPARED_SHAPE) + int(extra)
+            or any(current.get(name) is not value for name, value in _SHARED_PREPARED_SHAPE)
+            or extra and (type(current["__slotnames__"]) is not list or current["__slotnames__"])):
+        raise PermissionError("selected current-context prepared owner native shape changed")
+    if any(function.__code__ is not code for function, code in _SHARED_PREPARED_CODES):
+        raise PermissionError("selected current-context prepared owner native code changed")
+    for name, function, code in _SHARED_CONTEXT_FUNCTIONS:
+        if globals().get(name) is not function or function.__code__ is not code:
+            raise PermissionError("selected current-context metadata helper changed")
+    if (PreparedCurrentContext._verify_authorities is not _SHARED_AUTHORITY_READER
+            or _SHARED_AUTHORITY_READER.__code__ is not _SHARED_AUTHORITY_READER_CODE):
+        raise PermissionError("selected current-context authority helper changed")
+
+
+_SHARED_AUTHORITY_READER = PreparedCurrentContext._verify_authorities
+_SHARED_AUTHORITY_READER_CODE = _SHARED_AUTHORITY_READER.__code__
+_SHARED_PREPARED_CLASS = PreparedCurrentContext
+_SHARED_PREPARED_SHAPE = tuple(vars(PreparedCurrentContext).items())
+_SHARED_PREPARED_CODES = tuple((function, function.__code__)
+    for _, function in _SHARED_PREPARED_SHAPE if type(function) is FunctionType)
+_SHARED_CONTEXT_FUNCTIONS = tuple((function.__name__, function, function.__code__) for function in (
+    _same_native_reader, _shared_metadata_frame, _metadata_view, _nomination_record, _capture_context_authorities,
+    _binding_guard, _selected_binding_guard, _native_context_snapshot, _require_context_snapshot_contracts,
+    _context_snapshot_value, prepare_current_context, _require_shared_context_contracts))
