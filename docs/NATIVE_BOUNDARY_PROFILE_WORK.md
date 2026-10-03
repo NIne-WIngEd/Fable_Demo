@@ -1,5 +1,10 @@
 # Original native worker aggregate diagnostic
 
+October 3: [the latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md)
+supersedes older pending ordinary-CI notices below. The completed four-tag
+profile supports a bounded context-binding candidate. Observer code, original
+targets and budgets remain unchanged; no new physical run is claimed yet.
+
 The completed native comparison still exceeds its unchanged **60,000 ms** phase
 budget while preparation awaits owned context authorization. Existing transport
 and chronology observations measure the parent thread. They cannot attribute

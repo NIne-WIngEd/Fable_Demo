@@ -5,6 +5,11 @@ the documents for the code being changed. Later direct user instructions take
 precedence over this handoff. Check current repository heads and completed CI
 before treating a pending or historical receipt as current.
 
+Latest continuation: `docs/VERIFICATION_CHECKPOINT_2026-10-03.md`. It separates
+completed ordinary CI from the uncommitted context-binding candidate and its
+source-hash receipt/patch. Recover the full component result before publication;
+retain the original local worker failure and source-identical module repeat.
+
 FloRA is a narrow prototype for the frozen causal personal-judgment experiment.
 It does not require the full Alice/Fable memory, mission, experience or consumer
 release infrastructure. For a capability the experiment actually needs, retain
