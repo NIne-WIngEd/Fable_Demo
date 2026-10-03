@@ -91,9 +91,13 @@ def _verify_binding(binding):
             if type(value) is tuple and all(type(item) is _ReaderBinding for item in value):
                 for reader in value:
                     _verify_binding(reader)
+        # This walk already checks every nested capture and closure reader.
+        # A recursive function verify here would check descendants again.
+        binding._verify_shallow()
     elif type(binding) is not _ReaderBinding:
         raise PermissionError("shared frame captured binding is not native")
-    binding.verify()
+    else:
+        binding.verify()
 
 
 def _native_context_binding(function):

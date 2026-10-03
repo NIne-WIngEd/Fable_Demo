@@ -80,13 +80,17 @@ class _FunctionBinding:
             tuple(cls.capture(cell.cell_contents) for cell in function.__closure__ or ()
                   if type(cell.cell_contents) is FunctionType and cell.cell_contents is not function))
 
-    def verify(self):
+    def _verify_shallow(self):
+        """Check this capture; traversal belongs to the current verifier."""
         if (self.function.__code__ is not self.code
                 or tuple(self.function.__closure__ or ()) != tuple(cell for cell, _ in self.closure)
                 or any(cell.cell_contents is not value for cell, value in self.closure)
                 or any(self.function.__globals__.get(name, _ABSENT) is not value
                        for name, value in self.globals)):
             raise PermissionError("selected phase actual callback binding changed")
+
+    def verify(self):
+        self._verify_shallow()
         for nested in self.nested:
             nested.verify()
 
