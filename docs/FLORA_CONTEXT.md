@@ -4,35 +4,38 @@ Updated: 2026-10-03, America/Chicago. Recovery baseline:
 `main@885be57abb582510d27a98177facd2a358c11387`; recovery starting runtime
 `74f42417be37a2fbdc6c603a1ea657b040e0052e`.
 
-## Latest continuation: completed CI and one bounded dependency repair
+## Latest continuation: published dependency repair and failed diagnostic
 
-The full local continuation finished and runtime `4b88946f` is now published.
-Its complete native receipt verifies 978 final cases across 80 modules, including
-the original 20 frame cases. Preserve the initial worker fixture failure and
-16 warning occurrences in its successful repeat. Exact eight-file tested/published
-blob hashes match. PR CI 37109136216, push CI 37109132198 and once-dispatched
-native diagnostic 37109188927 are pending for this source. The checkpoint's
-published-continuation section supersedes the earlier uncommitted snapshot below.
-No end-to-end latency or learned result is qualified.
+Runtime `4b88946f` is published. Its full local native receipt verifies 978 final
+cases/80 modules, retaining the initial unchanged worker failure and warning-bearing
+repeat. Eight tested/published source blobs match. Current push CI independently
+reports 978 component cases/80 modules, all final statuses OK.
 
-Read [the October 3 checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md) first.
-The d0 ordinary runs completed: all 973 component cases pass, but physical
-49/2/2 outcomes and response-budget failures remain. The four-tag profile still
-locates preparation cost. Source review discriminates a duplicate frame binding
-walk; the candidate gives each capture one own check in the existing traversal.
-Full phase verification remains recursive; origin/descriptor seals, readers,
-callbacks and all fences stay intact.
+Once-dispatched native diagnostic 37109188927 is complete: **collection succeeds,
+fixture fails, qualification false**. All 116 after/115 before source hashes match
+exact FloRA/Alice pins. Its 121.672 s owned worker wall window remains concentrated
+in preparation; origin seals cost 26.225 s exclusive CPU. The new shallow method
+changes tag attribution, so fewer tagged calls do not prove a speedup.
 
-The uncommitted candidate is based on development `976b847f`; exact tested hashes
-and a recoverable patch are linked in the checkpoint. All 70 focused cases pass
-and fresh review finds no issues. The full local loop initially failed an
-unchanged 120 ms worker PID-marker test. Its isolated case and one module repeat
-pass; remaining modules are running. Preserve that failure and warnings.
-No complete-suite or latency success is claimed. Recover the full result before
-runtime publication and physical dispatch.
+Read [the October 3 checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md) first for
+numeric artifacts, exact source validation and current partial CI. Ordinary PR
+37109136216 and push 37109132198 still have running jobs in the saved snapshot.
+Both retain standalone budget failures and native timeouts. Push core reports
+38 tests OK, then its Temporal restart verification process segfaults with exit
+139; do not replace this failed process gate with the preceding success summary.
+Recover complete ordinary results before another measured runtime candidate.
 
+The dependency repair preserves fresh code/closure/global and owned reader checks,
+recursive phase verification, origin/descriptor seals, callbacks and all fences.
+Origin-seal representation remains deferred. FloRA remains the narrow causal
+prototype aligned with Alice's needed logical contracts. Personality/MFM are
+external integrations; no full memory or mission platform is being added here.
+
+[FBM's visible update index](fbm-seeds/README.md) now links 116 validated public
+procedure traces, including this failed result. Trace shape is separate from
+training eligibility; no FBM training, response or learned result is claimed.
 The context branch is documentation authority, not current runtime source.
-Older pending notices below are historical snapshots superseded by this section.
+Older pending and candidate notices below are historical snapshots superseded here.
 
 ## Completed refined observation: independent seal traversal is costly
 

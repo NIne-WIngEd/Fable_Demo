@@ -1,5 +1,16 @@
 # Selected authority frame protocol
 
+Latest result, October 3: the once-dispatched `4b88946f` native diagnostic is
+complete, with a failed fixture and qualification false. All 116 after/115 before
+source hashes match pinned blobs. Preparation still dominates; fewer tagged calls
+do not establish a speedup because shallow own checks change call-graph attribution.
+Ordinary PR/push gates remain incomplete, with response failures and one push
+Temporal restart-probe exit 139 preserved. See the
+[current checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md) and
+[numeric review](evidence/2026-10-03_4b88946f_native_profile_review.json).
+Origin-seal representation stays conditional. Older pending notices below are
+historical snapshots; they do not describe the completed diagnostic.
+
 Date: 2026-10-01 UTC; implementation update 2026-10-02
 Status: frame repair and measured-origin candidate published; current engine qualification pending
 
