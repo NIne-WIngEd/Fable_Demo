@@ -1,40 +1,72 @@
 # FloRA verification checkpoint — 2026-10-03
 
-## Published continuation after the full component loop
+## Current result: published repair, failed response observation, partial ordinary CI
 
 Runtime **`4b88946f404d7359943b5edb2504a2f0c2e96320`**, tree
 `ab5cdfc37ef6a4187be62cad673e37d58a43e624`, publishes the single context
 binding-walk repair and five real capture/reader mutation tests. All eight named
 tested source files match their exact published blobs and current checkout.
-No runtime changes were made after the read-only review.
-The [publication and dispatch receipt](evidence/2026-10-03_4b88946f_runtime_publication.json)
-binds those exact blobs to the three follow-up runs.
+No runtime changes followed the read-only review. The
+[publication receipt](evidence/2026-10-03_4b88946f_runtime_publication.json)
+binds this source to the three follow-up runs.
 
-The [full native component receipt](evidence/2026-10-03_context_binding_walk_full_contracts.json)
-verifies all 80 final module logs: **978 cases, zero skips or final module failures**.
-The original frame's 20 cases pass in 885.554 s. The first loop's unchanged worker
-PID-marker failure remains preserved; its successful 13-case repeat has 16
-resource-warning occurrences, in addition to eight in the failed attempt.
-This is a completed component gate after one repeat, not a pristine initial
-run, cleanup qualification, speedup comparison or learned result.
+The [full local component receipt](evidence/2026-10-03_context_binding_walk_full_contracts.json)
+verifies **978 final cases across 80 modules, zero skips or final module failures**.
+Preserve the first unchanged worker PID-marker failure, its successful module
+repeat and the eight/16 resource-warning occurrences. This completed component
+gate is not cleanup qualification, a pristine first attempt or a learned result.
+The current push CI independently reports 978 component cases/80 modules, all
+final statuses OK. The PR component job is still running at the saved snapshot.
 
-Source-pinned follow-up runs are now in progress:
+### Completed once-dispatched native diagnostic
 
-- [Ordinary PR CI 37109136216](https://github.com/NIne-WIngEd/FloRA/actions/runs/37109136216)
-- [Ordinary push CI 37109132198](https://github.com/NIne-WIngEd/FloRA/actions/runs/37109132198)
-- [Native diagnostic 37109188927](https://github.com/NIne-WIngEd/FloRA/actions/runs/37109188927),
-  job 111163631845, dispatched once for the same `4b88946f` source.
+[Run 37109188927](https://github.com/NIne-WIngEd/FloRA/actions/runs/37109188927)
+collected its artifact successfully, but **the fixture failed; qualification is false**.
+The [source validation](evidence/2026-10-03_4b88946f_native_profile_validation.json)
+matches all 116 after files (60 FloRA at `4b88946f`, 56 Alice at `4f287a`) and
+all 115 before files to exact pinned blobs. Logs confirm both checkouts and
+workers-only mode. The [numeric review](evidence/2026-10-03_4b88946f_native_profile_review.json)
+preserves the original artifact digest and the source-verified d0 baseline.
 
-Observer code, all fixed tags, workers-only mode, 180-second observation windows
-and the 10,000/60,000 ms response and 60-minute CI limits remain unchanged. Do not
-dispatch a duplicate or infer success from collection. Recover exact logs,
-source hashes and the diagnostic artifact before deciding any further repair.
-Origin-seal materialization remains a conditional question, not implemented work.
+Six owned jobs measured **121.672 s wall / 111.227 s thread CPU**. Two preparation
+calls contain 118.913 s inclusive wall. Origin seal verification has 7,457 calls /
+26.225 s exclusive CPU; frame context binding has 182,187 / 16.483 s exclusive CPU.
+Downstream native/lineage authorization is unreached. Parent setup is unobserved.
+Do not sum overlapping inclusive spans or attribute these numbers to a model.
+
+Fewer tagged recursive calls are not a measured speedup. The new untagged shallow
+method moves own-check work into frame spans; reached work volume and sampled
+call graph differ. All observer tags/code remain unchanged, but this is not an
+equal-work or equal-overhead comparison. No response improvement is qualified.
+
+### Ordinary CI remains incomplete, with completed failures preserved
+
+The [partial receipt](evidence/2026-10-03_4b88946f_partial_ci_receipts.json) records
+one bounded snapshot and six completed job logs. Every recovered job's actual
+checkout tree matches runtime `4b88946f`; the logged PR merge is `ddacbd78`.
+These are partial results, not a full-run verdict:
+
+| Run | Standalone BEFORE / AFTER | Native BEFORE / AFTER |
+| --- | ---: | ---: |
+| PR 37109136216 | 26,083 / 41,131 ms, budget exceeded | 60,073 / 60,142 ms, timeout |
+| Push 37109132198 | 17,830 / 27,797 ms, budget exceeded | 60,078 / 60,162 ms, timeout |
+
+Push core reports 38 tests OK, then `temporal_restart_probe.py verify` prints
+successful recovery messages and crashes with **segmentation fault / exit 139**.
+The failed process gate remains failed; its cause is unresolved. Do not rerun or
+patch it blindly. Ordinary PR/push runs still have running jobs at this snapshot.
+Recover their complete source-bound receipts before choosing another runtime repair.
+
+Observer code, fixed tags, workers-only mode, 180-second observation windows and
+10,000/60,000 ms response and 60-minute CI limits remain unchanged. No duplicate
+diagnostic is dispatched. Origin-seal materialization remains conditional and
+deferred under the current mutation, independent-seal and weak-ownership contracts.
 
 The context branch is documentation authority; its runtime files remain historical.
-The construction state recorded below predates publication and is retained for
-failure/procedure provenance. Two further seeds now bring
-the validated public method corpus to 115; no FBM training has occurred.
+The [FBM update index](fbm-seeds/README.md) links the current failed diagnostic
+method to publication and component seeds: **116 procedure traces validate**.
+These are construction records, not weights, admitted examples or builder transfer.
+Older construction and pending snapshots below remain for failure/procedure provenance.
 
 ## Completed ordinary CI
 

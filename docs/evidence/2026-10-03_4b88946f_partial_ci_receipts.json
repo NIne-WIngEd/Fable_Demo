@@ -1,0 +1,847 @@
+{
+  "observed_at_utc": "2026-10-03T08:42:36.716735Z",
+  "scope": "Partial ordinary CI: completed failure jobs and available completed contracts only; no full-run verdict",
+  "runtime_source": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+  "runtime_tree": "ab5cdfc37ef6a4187be62cad673e37d58a43e624",
+  "commits": {
+    "4b88946f404d7359943b5edb2504a2f0c2e96320": {
+      "sha": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+      "tree": "ab5cdfc37ef6a4187be62cad673e37d58a43e624",
+      "parents": [
+        "55229f1d5a68ece8e4257e9b0a1301d5cbf5192e"
+      ]
+    },
+    "ddacbd788ebf5d69aafc9510bca403dff2c4e0da": {
+      "sha": "ddacbd788ebf5d69aafc9510bca403dff2c4e0da",
+      "tree": "ab5cdfc37ef6a4187be62cad673e37d58a43e624",
+      "parents": [
+        "885be57abb582510d27a98177facd2a358c11387",
+        "4b88946f404d7359943b5edb2504a2f0c2e96320"
+      ]
+    }
+  },
+  "runs": [
+    {
+      "run_id": 37109136216,
+      "event": "pull_request",
+      "status": "in_progress",
+      "conclusion": "",
+      "run_head_sha": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37109136216",
+      "jobs": [
+        {
+          "job_id": 111163480084,
+          "name": "contracts",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163480188,
+          "name": "integration-native-pilot-before-tail",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163480311,
+          "name": "integration-native-pilot-typed-phase",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163480328,
+          "name": "integration-transport",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "job_id": 111163480334,
+          "name": "integration-history-routes-native",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163480356,
+          "name": "integration-native-pilot-withdrawal",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 111163480393,
+          "name": "integration-history",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163480396,
+          "name": "integration-core",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 111163480409,
+          "name": "integration-readers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 111163480449,
+          "name": "integration-native-comparison",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "job_id": 111163480451,
+          "name": "integration-history-routes-retained",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163480575,
+          "name": "integration-lineage",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 111163480609,
+          "name": "integration-native-pilot-outcome-audit",
+          "status": "in_progress",
+          "conclusion": ""
+        }
+      ]
+    },
+    {
+      "run_id": 37109132198,
+      "event": "push",
+      "status": "in_progress",
+      "conclusion": "",
+      "run_head_sha": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37109132198",
+      "jobs": [
+        {
+          "job_id": 111163468973,
+          "name": "contracts",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 111163469144,
+          "name": "integration-native-pilot-outcome-audit",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163469211,
+          "name": "integration-history-routes-native",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163469222,
+          "name": "integration-native-pilot-before-tail",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 111163469251,
+          "name": "integration-history-routes-retained",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163469272,
+          "name": "integration-native-pilot-typed-phase",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163469278,
+          "name": "integration-native-comparison",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "job_id": 111163469290,
+          "name": "integration-lineage",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 111163469298,
+          "name": "integration-readers",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 111163469299,
+          "name": "integration-transport",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "job_id": 111163469309,
+          "name": "integration-native-pilot-withdrawal",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "job_id": 111163469313,
+          "name": "integration-history",
+          "status": "in_progress",
+          "conclusion": ""
+        },
+        {
+          "job_id": 111163469316,
+          "name": "integration-core",
+          "status": "completed",
+          "conclusion": "failure"
+        }
+      ]
+    }
+  ],
+  "recovered_jobs": [
+    {
+      "run_id": 37109136216,
+      "job_id": 111163480328,
+      "name": "integration-transport",
+      "conclusion": "failure",
+      "checkout_sha": "ddacbd788ebf5d69aafc9510bca403dff2c4e0da",
+      "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "final_summaries": [
+        {
+          "tests": 2,
+          "seconds": 189.403
+        }
+      ],
+      "final_failure_counts": [
+        "failures=1"
+      ],
+      "failed_test_names": [
+        "test_phase_isolated_hybrid_memory_and_separately_authorized_signed_exchange"
+      ],
+      "response_attempts": [
+        {
+          "phase": "before",
+          "status": "budget_exceeded",
+          "elapsed_ms": 26083
+        },
+        {
+          "phase": "after",
+          "status": "budget_exceeded",
+          "elapsed_ms": 41131
+        }
+      ],
+      "log_sha256": "157a799cc1d45ae7e32183e1eff359849c6080d942d6bf37d16fce4bc2ac671e",
+      "error_marker_counts": {
+        "AssertionError": 2,
+        "FAILED": 1
+      },
+      "checkout_tree": "ab5cdfc37ef6a4187be62cad673e37d58a43e624",
+      "checkout_tree_matches_runtime": true,
+      "unittest_final_statuses": [
+        "FAILED (failures=1)"
+      ],
+      "process_exit_codes": [
+        1,
+        1
+      ]
+    },
+    {
+      "run_id": 37109136216,
+      "job_id": 111163480449,
+      "name": "integration-native-comparison",
+      "conclusion": "failure",
+      "checkout_sha": "ddacbd788ebf5d69aafc9510bca403dff2c4e0da",
+      "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "final_summaries": [
+        {
+          "tests": 1,
+          "seconds": 210.63
+        }
+      ],
+      "final_failure_counts": [
+        "failures=1"
+      ],
+      "failed_test_names": [
+        "test_actual_phase_context_execution_parent_and_private_run_custody"
+      ],
+      "response_attempts": [
+        {
+          "phase": "before",
+          "status": "timeout",
+          "elapsed_ms": 60073
+        },
+        {
+          "phase": "after",
+          "status": "timeout",
+          "elapsed_ms": 60142
+        }
+      ],
+      "log_sha256": "9b73449271fd8f94a12e72b6bb4efcf86b2aa90855ac7875cffe675629d2575e",
+      "error_marker_counts": {
+        "AssertionError": 2,
+        "FAILED": 1
+      },
+      "checkout_tree": "ab5cdfc37ef6a4187be62cad673e37d58a43e624",
+      "checkout_tree_matches_runtime": true,
+      "unittest_final_statuses": [
+        "FAILED (failures=1)"
+      ],
+      "process_exit_codes": [
+        1
+      ]
+    },
+    {
+      "run_id": 37109132198,
+      "job_id": 111163468973,
+      "name": "contracts",
+      "conclusion": "success",
+      "checkout_sha": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+      "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "final_summaries": [
+        {
+          "tests": 8,
+          "seconds": 0.011
+        },
+        {
+          "tests": 13,
+          "seconds": 1.603
+        },
+        {
+          "tests": 3,
+          "seconds": 0.918
+        },
+        {
+          "tests": 18,
+          "seconds": 1.621
+        },
+        {
+          "tests": 13,
+          "seconds": 0.502
+        },
+        {
+          "tests": 15,
+          "seconds": 3.149
+        },
+        {
+          "tests": 10,
+          "seconds": 0.315
+        },
+        {
+          "tests": 6,
+          "seconds": 0.954
+        },
+        {
+          "tests": 6,
+          "seconds": 0.53
+        },
+        {
+          "tests": 19,
+          "seconds": 0.057
+        },
+        {
+          "tests": 6,
+          "seconds": 0.885
+        },
+        {
+          "tests": 14,
+          "seconds": 0.138
+        },
+        {
+          "tests": 16,
+          "seconds": 0.617
+        },
+        {
+          "tests": 29,
+          "seconds": 5.753
+        },
+        {
+          "tests": 4,
+          "seconds": 0.07
+        },
+        {
+          "tests": 2,
+          "seconds": 0.001
+        },
+        {
+          "tests": 21,
+          "seconds": 0.897
+        },
+        {
+          "tests": 38,
+          "seconds": 0.091
+        },
+        {
+          "tests": 20,
+          "seconds": 3.286
+        },
+        {
+          "tests": 27,
+          "seconds": 0.836
+        },
+        {
+          "tests": 23,
+          "seconds": 15.737
+        },
+        {
+          "tests": 3,
+          "seconds": 0.01
+        },
+        {
+          "tests": 8,
+          "seconds": 0.683
+        },
+        {
+          "tests": 6,
+          "seconds": 0.558
+        },
+        {
+          "tests": 11,
+          "seconds": 0.229
+        },
+        {
+          "tests": 24,
+          "seconds": 2.196
+        },
+        {
+          "tests": 4,
+          "seconds": 1.499
+        },
+        {
+          "tests": 25,
+          "seconds": 1.361
+        },
+        {
+          "tests": 10,
+          "seconds": 19.449
+        },
+        {
+          "tests": 32,
+          "seconds": 0.975
+        },
+        {
+          "tests": 2,
+          "seconds": 1.296
+        },
+        {
+          "tests": 11,
+          "seconds": 6.0
+        },
+        {
+          "tests": 11,
+          "seconds": 0.245
+        },
+        {
+          "tests": 21,
+          "seconds": 33.992
+        },
+        {
+          "tests": 13,
+          "seconds": 0.782
+        },
+        {
+          "tests": 12,
+          "seconds": 0.727
+        },
+        {
+          "tests": 13,
+          "seconds": 0.217
+        },
+        {
+          "tests": 2,
+          "seconds": 0.008
+        },
+        {
+          "tests": 11,
+          "seconds": 0.178
+        },
+        {
+          "tests": 4,
+          "seconds": 0.767
+        },
+        {
+          "tests": 31,
+          "seconds": 413.493
+        },
+        {
+          "tests": 14,
+          "seconds": 0.929
+        },
+        {
+          "tests": 1,
+          "seconds": 0.001
+        },
+        {
+          "tests": 7,
+          "seconds": 0.572
+        },
+        {
+          "tests": 6,
+          "seconds": 41.001
+        },
+        {
+          "tests": 14,
+          "seconds": 0.102
+        },
+        {
+          "tests": 8,
+          "seconds": 40.717
+        },
+        {
+          "tests": 6,
+          "seconds": 0.492
+        },
+        {
+          "tests": 4,
+          "seconds": 0.094
+        },
+        {
+          "tests": 8,
+          "seconds": 0.405
+        },
+        {
+          "tests": 7,
+          "seconds": 0.626
+        },
+        {
+          "tests": 12,
+          "seconds": 0.625
+        },
+        {
+          "tests": 23,
+          "seconds": 39.437
+        },
+        {
+          "tests": 11,
+          "seconds": 3.55
+        },
+        {
+          "tests": 3,
+          "seconds": 0.003
+        },
+        {
+          "tests": 13,
+          "seconds": 3.597
+        },
+        {
+          "tests": 7,
+          "seconds": 1.034
+        },
+        {
+          "tests": 12,
+          "seconds": 0.719
+        },
+        {
+          "tests": 3,
+          "seconds": 0.001
+        },
+        {
+          "tests": 1,
+          "seconds": 0.004
+        },
+        {
+          "tests": 5,
+          "seconds": 0.106
+        },
+        {
+          "tests": 5,
+          "seconds": 0.021
+        },
+        {
+          "tests": 7,
+          "seconds": 0.079
+        },
+        {
+          "tests": 1,
+          "seconds": 0.065
+        },
+        {
+          "tests": 19,
+          "seconds": 1.167
+        },
+        {
+          "tests": 24,
+          "seconds": 1.495
+        },
+        {
+          "tests": 5,
+          "seconds": 1.413
+        },
+        {
+          "tests": 11,
+          "seconds": 26.228
+        },
+        {
+          "tests": 2,
+          "seconds": 0.008
+        },
+        {
+          "tests": 25,
+          "seconds": 2.0
+        },
+        {
+          "tests": 31,
+          "seconds": 1.872
+        },
+        {
+          "tests": 15,
+          "seconds": 0.09
+        },
+        {
+          "tests": 7,
+          "seconds": 0.014
+        },
+        {
+          "tests": 20,
+          "seconds": 509.19
+        },
+        {
+          "tests": 5,
+          "seconds": 0.002
+        },
+        {
+          "tests": 8,
+          "seconds": 38.812
+        },
+        {
+          "tests": 21,
+          "seconds": 1.322
+        },
+        {
+          "tests": 29,
+          "seconds": 0.989
+        },
+        {
+          "tests": 1,
+          "seconds": 2.012
+        },
+        {
+          "tests": 12,
+          "seconds": 0.04
+        }
+      ],
+      "final_failure_counts": [],
+      "failed_test_names": [],
+      "response_attempts": [],
+      "log_sha256": "fc6d75460c0b5a275780080f052617c37f0d4f8da4a52928c711c174bf7db197",
+      "error_marker_counts": {},
+      "checkout_tree": "ab5cdfc37ef6a4187be62cad673e37d58a43e624",
+      "checkout_tree_matches_runtime": true,
+      "unittest_final_statuses": [
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK",
+        "OK"
+      ],
+      "process_exit_codes": []
+    },
+    {
+      "run_id": 37109132198,
+      "job_id": 111163469278,
+      "name": "integration-native-comparison",
+      "conclusion": "failure",
+      "checkout_sha": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+      "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "final_summaries": [
+        {
+          "tests": 1,
+          "seconds": 213.362
+        }
+      ],
+      "final_failure_counts": [
+        "failures=1"
+      ],
+      "failed_test_names": [
+        "test_actual_phase_context_execution_parent_and_private_run_custody"
+      ],
+      "response_attempts": [
+        {
+          "phase": "before",
+          "status": "timeout",
+          "elapsed_ms": 60078
+        },
+        {
+          "phase": "after",
+          "status": "timeout",
+          "elapsed_ms": 60162
+        }
+      ],
+      "log_sha256": "78631c15f6980bfc0cedd9d0b57996d3780cca56bbf2b8ca2c9bf3605555cf01",
+      "error_marker_counts": {
+        "AssertionError": 2,
+        "FAILED": 1
+      },
+      "checkout_tree": "ab5cdfc37ef6a4187be62cad673e37d58a43e624",
+      "checkout_tree_matches_runtime": true,
+      "unittest_final_statuses": [
+        "FAILED (failures=1)"
+      ],
+      "process_exit_codes": [
+        1
+      ]
+    },
+    {
+      "run_id": 37109132198,
+      "job_id": 111163469299,
+      "name": "integration-transport",
+      "conclusion": "failure",
+      "checkout_sha": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+      "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "final_summaries": [
+        {
+          "tests": 2,
+          "seconds": 126.585
+        }
+      ],
+      "final_failure_counts": [
+        "failures=1"
+      ],
+      "failed_test_names": [
+        "test_phase_isolated_hybrid_memory_and_separately_authorized_signed_exchange"
+      ],
+      "response_attempts": [
+        {
+          "phase": "before",
+          "status": "budget_exceeded",
+          "elapsed_ms": 17830
+        },
+        {
+          "phase": "after",
+          "status": "budget_exceeded",
+          "elapsed_ms": 27797
+        }
+      ],
+      "log_sha256": "8b2b4600f7fb519381143286382e8c500fcd141ef6d641df62d5fd4614b6effa",
+      "error_marker_counts": {
+        "AssertionError": 2,
+        "FAILED": 1
+      },
+      "checkout_tree": "ab5cdfc37ef6a4187be62cad673e37d58a43e624",
+      "checkout_tree_matches_runtime": true,
+      "unittest_final_statuses": [
+        "FAILED (failures=1)"
+      ],
+      "process_exit_codes": [
+        1,
+        1
+      ]
+    },
+    {
+      "run_id": 37109132198,
+      "job_id": 111163469316,
+      "name": "integration-core",
+      "conclusion": "failure",
+      "checkout_sha": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+      "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "final_summaries": [
+        {
+          "tests": 38,
+          "seconds": 916.369
+        }
+      ],
+      "final_failure_counts": [],
+      "failed_test_names": [],
+      "response_attempts": [],
+      "log_sha256": "280b82d3b98da89ab696ee2b118c6e579c1929f4fa82b765ce003d3de3b620d7",
+      "error_marker_counts": {},
+      "checkout_tree": "ab5cdfc37ef6a4187be62cad673e37d58a43e624",
+      "checkout_tree_matches_runtime": true,
+      "unittest_final_statuses": [
+        "OK"
+      ],
+      "process_exit_codes": [
+        139
+      ],
+      "failed_process_stage": "python scripts/temporal_restart_probe.py verify",
+      "restart_probe_success_messages_before_process_failure": [
+        "Persistent Temporal server and namespace ready",
+        "Persistent Temporal workflow recovered and resumed without repeating the completed activity"
+      ],
+      "process_failure": "Segmentation fault; exit code 139 after reported restart-probe success"
+    }
+  ],
+  "qualification": false,
+  "learned_behavior_run": false,
+  "limits": [
+    "Metadata snapshots do not finish still-running jobs.",
+    "Exact logged PR merge tree is compared to runtime source, rather than using the current draft PR merge.",
+    "Only numeric receipts, test names, fixed error markers and source identities are public; raw logs stay in scratch.",
+    "Error marker counts are symptoms, not a demonstrated cause or repair.",
+    "Component passes do not qualify response latency or cleanup; frozen budgets remain."
+  ]
+}

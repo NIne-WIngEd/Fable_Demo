@@ -5,11 +5,14 @@ the documents for the code being changed. Later direct user instructions take
 precedence over this handoff. Check current repository heads and completed CI
 before treating a pending or historical receipt as current.
 
-Latest continuation: `docs/VERIFICATION_CHECKPOINT_2026-10-03.md`. It separates
-completed older CI from published runtime `4b88946f`, its 978-case final-module
-receipt, and new pending PR/push/native runs. The local component gate is done;
-retain its initial worker failure and source-identical repeat with warnings.
-Recover the three current physical/diagnostic results before another repair.
+Latest continuation: `docs/VERIFICATION_CHECKPOINT_2026-10-03.md`. Runtime
+`4b88946f` has 978 final local component cases and source-identical published blobs.
+Its once-dispatched native diagnostic is complete but the fixture failed; all
+116 after/115 before hashes verify. Ordinary PR/push CI is still partial, with
+response failures and a push Temporal restart-probe process exit 139 preserved.
+Recover complete source-bound results before another repair. The visible FBM
+index links 116 validated construction records; no FBM training is claimed.
+Retain the initial local worker failure and its warning-bearing repeat.
 
 FloRA is a narrow prototype for the frozen causal personal-judgment experiment.
 It does not require the full Alice/Fable memory, mission, experience or consumer
