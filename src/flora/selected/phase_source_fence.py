@@ -25,6 +25,18 @@ from .source_native import _require_available
 from .native_phase_gate import copy_native_phase_view
 
 
+# Only these original reader algorithms may be replaced by direct row batching.
+# Looking up the current class attribute would also recognize a custom patch.
+_BATCH_READERS = {
+    "registry": (XTDBFormationSourceRegistry, "_fetch", XTDBFormationSourceRegistry._fetch,
+                 XTDBFormationSourceRegistry._fetch.__code__),
+    "permission": (XTDBFormationPermissionPolicy, "_fetch", XTDBFormationPermissionPolicy._fetch,
+                   XTDBFormationPermissionPolicy._fetch.__code__),
+    "claim": (XTDBClaimAuthority, "_fetch_record", XTDBClaimAuthority._fetch_record,
+              XTDBClaimAuthority._fetch_record.__code__),
+}
+
+
 @dataclass(frozen=True)
 class _Row:
     kind: str
@@ -198,15 +210,15 @@ class OneGuardSelectedMetadata:
         # than hiding their denial or side effects behind a direct batch query.
         # Native selected class readers are exactly the algorithms whose row
         # requests this finite batch replaces.
-        native_classes = {"registry": XTDBFormationSourceRegistry,
-            "permission": XTDBFormationPermissionPolicy, "claim": XTDBClaimAuthority}
         for group in tuple(grouped):
             kind, table, immutable = group
             service = services[kind]
-            name = "_fetch_record" if kind == "claim" else "_fetch"
+            native_class, name, native_reader, native_code = _BATCH_READERS[kind]
             reader = getattr(service, name)
-            if (isinstance(reader, MethodType) and reader.__self__ is service
-                    and reader.__func__ is getattr(native_classes[kind], name)):
+            if (type(service) is native_class and name not in vars(service)
+                    and type(reader) is MethodType and reader.__self__ is service
+                    and reader.__func__ is native_reader and native_reader.__code__ is native_code
+                    and getattr(native_class, name) is native_reader):
                 continue
             local = {"registry": self.local_registry, "permission": self.local_permissions,
                 "claim": self.local_claims}[kind]
@@ -296,27 +308,76 @@ class OneGuardSelectedMetadata:
         return tuple(sorted(seen))
 
     def prime_source_purposes(self, source_purposes, *, raw_object_ids=()):
-        """Batch distinct purpose rows within this one freshly created guard."""
-        if not isinstance(source_purposes, tuple) or not source_purposes:
+        """Collect overlapping source metadata for separate scoped purposes.
+
+        Existing ``(IDs, purpose)`` nominations retain their merged-purpose
+        behavior. Explicit ``(IDs, purpose, source_cap)`` nominations count each
+        domain's complete registered parent closure independently, even when
+        domains share a purpose. The row cap bounds their combined metadata.
+        Raw-only references nominate no purpose or permission head.
+
+        The returned inventory is metadata only. Callers still owe canonical
+        event checks, actual authority predicates and the final current fence;
+        this helper returns neither an authorization result nor a source proof.
+        """
+        if type(source_purposes) is not tuple or not source_purposes:
             raise PermissionError("metadata purpose batch must be finite and nonempty")
-        pending = {}
-        for source_ids, purpose in source_purposes:
-            if (not isinstance(source_ids, tuple) or not source_ids
-                    or len(set(source_ids)) != len(source_ids)
-                    or require_identifier(purpose, "metadata purpose") != purpose):
+        # Validate the complete native shape before hashing, sorting, callbacks
+        # or I/O. Subclassed tuples/strings can execute effectful user code.
+        def identifiers(values, label, *, nonempty):
+            if type(values) is not tuple or (nonempty and not values):
+                raise PermissionError("metadata purpose batch has invalid " + label)
+            for identifier in values:
+                if (type(identifier) is not str
+                        or require_identifier(identifier, label) != identifier):
+                    raise PermissionError("metadata purpose batch has noncanonical " + label)
+            if len(set(values)) != len(values):
+                raise PermissionError("metadata purpose batch has duplicate " + label)
+
+        nominations, widths = [], set()
+        for nomination in source_purposes:
+            if type(nomination) is not tuple or len(nomination) not in (2, 3):
                 raise PermissionError("metadata purpose batch has invalid nominations")
-            pending.setdefault(purpose, set()).update(source_ids)
-        if (not isinstance(raw_object_ids, tuple) or len(set(raw_object_ids)) != len(raw_object_ids)):
-            raise PermissionError("metadata purpose batch raw references are invalid")
-        seen = {purpose: set() for purpose in pending}
+            source_ids, purpose = nomination[:2]
+            identifiers(source_ids, "source ID", nonempty=True)
+            if type(purpose) is not str or require_identifier(purpose, "metadata purpose") != purpose:
+                raise PermissionError("metadata purpose batch has invalid purpose")
+            cap = nomination[2] if len(nomination) == 3 else None
+            if cap is not None and (type(cap) is not int or cap < 1 or len(source_ids) > cap):
+                raise PermissionError("metadata purpose batch exceeds its domain source cap")
+            if len(nomination) == 3 and cap is None:
+                raise PermissionError("metadata purpose batch needs a positive domain source cap")
+            widths.add(len(nomination))
+            nominations.append((source_ids, purpose, cap))
+        identifiers(raw_object_ids, "raw reference", nonempty=False)
+        if len(widths) != 1:
+            raise PermissionError("metadata purpose batch cannot mix capped and legacy domains")
+        bounded = 3 in widths
+        if bounded:
+            if len(nominations) > self.maximum_rows:
+                raise PermissionError("metadata purpose batch exceeds its finite domain count")
+            identities = [(frozenset(ids), purpose, cap) for ids, purpose, cap in nominations]
+            if len(set(identities)) != len(identities):
+                raise PermissionError("metadata purpose batch has duplicate domains")
+        else:
+            merged = {}
+            for ids, purpose, _ in nominations:
+                merged.setdefault(purpose, set()).update(ids)
+            nominations = [(tuple(sorted(ids)), purpose, None) for purpose, ids in merged.items()]
+
+        pending_domains = [set(ids) for ids, _, _ in nominations]
+        seen_domains = [set() for _ in nominations]
+        seen, parents = {}, {}
         extra_raw = tuple(("registry", source_tables._OBJECTS,
             self.registry._key("raw", identifier), True) for identifier in raw_object_ids)
-        while pending:
+        while any(pending_domains):
+            pending = {}
+            for (_, purpose, _), ids in zip(nominations, pending_domains):
+                pending.setdefault(purpose, set()).update(ids)
+            pending = {purpose: ids for purpose, ids in pending.items() if ids}
             requests = []
             for purpose, ids in pending.items():
                 for event_id in sorted(ids):
-                    if require_identifier(event_id, "metadata source ID") != event_id:
-                        raise PermissionError("metadata purpose batch source ID is noncanonical")
                     requests.extend((("registry", source_tables._SOURCES,
                         self.registry._key("source", event_id), True),
                         ("permission", permission_tables._CURRENT,
@@ -336,19 +397,50 @@ class OneGuardSelectedMetadata:
                             or head.get("schema") != "flora-current-formation-permission-v1"
                             or head["source_ref_id"] != event_id or head["purpose"] != purpose):
                         raise PermissionError("metadata purpose batch lookup changed")
+                    identifiers((source["object_ref"],), "raw reference", nonempty=True)
+                    identifiers((head["action_id"],), "action ID", nonempty=True)
                     dependencies.extend((("registry", source_tables._OBJECTS,
                         self.registry._key("raw", source["object_ref"]), True),
                         ("permission", permission_tables._ACTIONS,
                         self.permissions._key("action", head["action_id"]), True)))
             self._prime_rows(dependencies)
-            later = {}
             for purpose, ids in pending.items():
                 for event_id in sorted(ids):
+                    # Preserve one actual callback per distinct source/purpose
+                    # in this collector, including custom reader behavior.
+                    if event_id in seen.get(purpose, ()):
+                        continue
                     source, _ = self.observe_source(event_id, purpose)
-                    seen[purpose].add(event_id)
-                    later.setdefault(purpose, set()).update(source.evidence.parent_refs)
-            pending = {purpose: ids - seen[purpose] for purpose, ids in later.items()
-                if ids - seen[purpose]}
+                    identifiers(source.evidence.parent_refs, "parent ID", nonempty=False)
+                    parents[(purpose, event_id)] = source.evidence.parent_refs
+                    seen.setdefault(purpose, set()).add(event_id)
+            for index, ((_, purpose, cap), ids) in enumerate(zip(nominations, pending_domains)):
+                seen_domains[index].update(ids)
+                ancestors = {parent for event_id in ids for parent in parents[(purpose, event_id)]}
+                later = ancestors - seen_domains[index]
+                if cap is not None and len(seen_domains[index] | later) > cap:
+                    raise PermissionError("metadata purpose batch parent closure exceeds its domain source cap")
+                pending_domains[index] = later
+
+        if bounded:
+            # Seen-set traversal is finite but alone would accept a cycle. Check
+            # the collected graph iteratively so a large allowed cap does not
+            # turn a corrupt chain into Python recursion exhaustion.
+            for (_, purpose, _), domain in zip(nominations, seen_domains):
+                complete, active = set(), set()
+                for root in sorted(domain):
+                    stack = [(root, False)]
+                    while stack:
+                        event_id, exiting = stack.pop()
+                        if exiting:
+                            active.remove(event_id)
+                            complete.add(event_id)
+                        elif event_id not in complete:
+                            if event_id in active:
+                                raise PermissionError("metadata purpose batch parent closure contains a cycle")
+                            active.add(event_id)
+                            stack.append((event_id, True))
+                            stack.extend((parent, False) for parent in reversed(parents[(purpose, event_id)]))
         return tuple((purpose, tuple(sorted(ids))) for purpose, ids in sorted(seen.items()))
 
     def prime_raw_references(self, object_ids):

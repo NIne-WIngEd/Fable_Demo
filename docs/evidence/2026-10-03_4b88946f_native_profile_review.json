@@ -1,0 +1,290 @@
+{
+  "runtime_source": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+  "run_id": 37109188927,
+  "artifact": "docs/evidence/2026-10-03_4b88946f_native_profile.json",
+  "artifact_sha256": "a2c3c0d1c98a17c6cabdcd865282940fff0b0a923d2f811fbd41746a03e9a7da",
+  "source_validation": "2026-10-03_4b88946f_native_profile_validation.json",
+  "observed_at_utc": "2026-10-03T08:34:09Z",
+  "outcome_counts": {
+    "capped": 0,
+    "errors": 0,
+    "expected_failures": 0,
+    "failures": 1,
+    "passed": 0,
+    "skipped": 0,
+    "tests": 1,
+    "unexpected_successes": 0
+  },
+  "baseline": {
+    "source": "d0f906550ca36a35903702a205d263a8b1b21061",
+    "fixture_status": "failed",
+    "worker_wall_seconds": 121.01376349,
+    "worker_thread_cpu_seconds": 106.41046636,
+    "first_owned_entry_offset_seconds": 81.997522829,
+    "whole_observation_elapsed_seconds": 203.255800601,
+    "rows": [
+      {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 0.165301746,
+        "exclusive_wall_seconds": 0.169388262,
+        "return_events": 2,
+        "tag": "context.prepare_current",
+        "thread_cpu_seconds": 105.248637328,
+        "wall_minus_thread_cpu_seconds": 13.831652844,
+        "wall_seconds": 119.080290172
+      },
+      {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 6.8196e-05,
+        "exclusive_wall_seconds": 7.2502e-05,
+        "return_events": 2,
+        "tag": "native.prepare_context",
+        "thread_cpu_seconds": 106.362705734,
+        "wall_minus_thread_cpu_seconds": 14.226905374,
+        "wall_seconds": 120.589611108
+      },
+      {
+        "calls": 10063,
+        "exclusive_thread_cpu_seconds": 21.670113166,
+        "exclusive_wall_seconds": 21.807858974,
+        "return_events": 10063,
+        "tag": "phase.origin_seal_verify",
+        "thread_cpu_seconds": 21.670113166,
+        "wall_minus_thread_cpu_seconds": 0.137745808,
+        "wall_seconds": 21.807858974
+      },
+      {
+        "calls": 135359,
+        "exclusive_thread_cpu_seconds": 4.24152017,
+        "exclusive_wall_seconds": 4.271246711,
+        "return_events": 135359,
+        "tag": "phase.function_binding_verify",
+        "thread_cpu_seconds": 10.505273225,
+        "wall_minus_thread_cpu_seconds": 0.068222943,
+        "wall_seconds": 10.573496168
+      },
+      {
+        "calls": 245532,
+        "exclusive_thread_cpu_seconds": 13.555113179,
+        "exclusive_wall_seconds": 13.630015114,
+        "return_events": 245532,
+        "tag": "shared.frame.context_binding_verify",
+        "thread_cpu_seconds": 30.055918793,
+        "wall_minus_thread_cpu_seconds": 0.166788676,
+        "wall_seconds": 30.222707469
+      },
+      {
+        "calls": 20451,
+        "exclusive_thread_cpu_seconds": 2.341165549,
+        "exclusive_wall_seconds": 2.353417883,
+        "return_events": 20451,
+        "tag": "phase.descriptor_contracts",
+        "thread_cpu_seconds": 2.341165549,
+        "wall_minus_thread_cpu_seconds": 0.012252334,
+        "wall_seconds": 2.353417883
+      },
+      {
+        "calls": 9908,
+        "exclusive_thread_cpu_seconds": 1.507119237,
+        "exclusive_wall_seconds": 1.517259582,
+        "return_events": 9908,
+        "tag": "shared.frame.contracts",
+        "thread_cpu_seconds": 2.649126758,
+        "wall_minus_thread_cpu_seconds": 0.015565212,
+        "wall_seconds": 2.66469197
+      },
+      {
+        "calls": 14,
+        "exclusive_thread_cpu_seconds": 0.000808295,
+        "exclusive_wall_seconds": 0.000821604,
+        "return_events": 14,
+        "tag": "shared.frame.create",
+        "thread_cpu_seconds": 21.803969694,
+        "wall_minus_thread_cpu_seconds": 0.444856041,
+        "wall_seconds": 22.248825735
+      },
+      {
+        "calls": 1803,
+        "exclusive_thread_cpu_seconds": 1.429704728,
+        "exclusive_wall_seconds": 3.361478994,
+        "return_events": 1803,
+        "tag": "rpc.kurrent_get_stream",
+        "thread_cpu_seconds": 1.429704728,
+        "wall_minus_thread_cpu_seconds": 1.931774266,
+        "wall_seconds": 3.361478994
+      },
+      {
+        "calls": 18436,
+        "exclusive_thread_cpu_seconds": 3.244995811,
+        "exclusive_wall_seconds": 14.114995317,
+        "return_events": 18436,
+        "tag": "rpc.psycopg_execute",
+        "thread_cpu_seconds": 3.244995811,
+        "wall_minus_thread_cpu_seconds": 10.869999506,
+        "wall_seconds": 14.114995317
+      },
+      {
+        "calls": 0,
+        "exclusive_thread_cpu_seconds": 0.0,
+        "exclusive_wall_seconds": 0.0,
+        "return_events": 0,
+        "tag": "native.authorize_context",
+        "thread_cpu_seconds": 0.0,
+        "wall_minus_thread_cpu_seconds": 0.0,
+        "wall_seconds": 0.0
+      },
+      {
+        "calls": 0,
+        "exclusive_thread_cpu_seconds": 0.0,
+        "exclusive_wall_seconds": 0.0,
+        "return_events": 0,
+        "tag": "lineage.authorize_context",
+        "thread_cpu_seconds": 0.0,
+        "wall_minus_thread_cpu_seconds": 0.0,
+        "wall_seconds": 0.0
+      }
+    ],
+    "artifact_sha256": "65e350ebf6dc90bc35d8bc73d1e99b782aa5f8410685851fe8b45a1a8eaba357"
+  },
+  "current": {
+    "source": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+    "fixture_status": "failed",
+    "worker_wall_seconds": 121.671547323,
+    "worker_thread_cpu_seconds": 111.226706489,
+    "first_owned_entry_offset_seconds": 110.231438726,
+    "whole_observation_elapsed_seconds": 232.239133634,
+    "rows": [
+      {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 0.240311958,
+        "exclusive_wall_seconds": 0.24541886,
+        "return_events": 2,
+        "tag": "context.prepare_current",
+        "thread_cpu_seconds": 109.421915632,
+        "wall_minus_thread_cpu_seconds": 9.491234521,
+        "wall_seconds": 118.913150153
+      },
+      {
+        "calls": 2,
+        "exclusive_thread_cpu_seconds": 8.7958e-05,
+        "exclusive_wall_seconds": 9.3789e-05,
+        "return_events": 2,
+        "tag": "native.prepare_context",
+        "thread_cpu_seconds": 111.153361218,
+        "wall_minus_thread_cpu_seconds": 9.988265083,
+        "wall_seconds": 121.141626301
+      },
+      {
+        "calls": 7457,
+        "exclusive_thread_cpu_seconds": 26.224780655,
+        "exclusive_wall_seconds": 26.426321831,
+        "return_events": 7457,
+        "tag": "phase.origin_seal_verify",
+        "thread_cpu_seconds": 26.224780655,
+        "wall_minus_thread_cpu_seconds": 0.201541176,
+        "wall_seconds": 26.426321831
+      },
+      {
+        "calls": 86193,
+        "exclusive_thread_cpu_seconds": 4.529896631,
+        "exclusive_wall_seconds": 4.571921819,
+        "return_events": 86193,
+        "tag": "phase.function_binding_verify",
+        "thread_cpu_seconds": 11.826071182,
+        "wall_minus_thread_cpu_seconds": 0.105785287,
+        "wall_seconds": 11.931856469
+      },
+      {
+        "calls": 182187,
+        "exclusive_thread_cpu_seconds": 16.483285682,
+        "exclusive_wall_seconds": 16.604582433,
+        "return_events": 182187,
+        "tag": "shared.frame.context_binding_verify",
+        "thread_cpu_seconds": 35.090966307,
+        "wall_minus_thread_cpu_seconds": 0.260591937,
+        "wall_seconds": 35.351558244
+      },
+      {
+        "calls": 15071,
+        "exclusive_thread_cpu_seconds": 2.830588722,
+        "exclusive_wall_seconds": 2.848023308,
+        "return_events": 15071,
+        "tag": "phase.descriptor_contracts",
+        "thread_cpu_seconds": 2.830588722,
+        "wall_minus_thread_cpu_seconds": 0.017434586,
+        "wall_seconds": 2.848023308
+      },
+      {
+        "calls": 7285,
+        "exclusive_thread_cpu_seconds": 1.769712014,
+        "exclusive_wall_seconds": 1.782671044,
+        "return_events": 7285,
+        "tag": "shared.frame.contracts",
+        "thread_cpu_seconds": 3.150009133,
+        "wall_minus_thread_cpu_seconds": 0.021031644,
+        "wall_seconds": 3.171040777
+      },
+      {
+        "calls": 11,
+        "exclusive_thread_cpu_seconds": 0.000904828,
+        "exclusive_wall_seconds": 0.000975068,
+        "return_events": 11,
+        "tag": "shared.frame.create",
+        "thread_cpu_seconds": 27.456856467,
+        "wall_minus_thread_cpu_seconds": 0.523295789,
+        "wall_seconds": 27.980152256
+      },
+      {
+        "calls": 952,
+        "exclusive_thread_cpu_seconds": 1.018468215,
+        "exclusive_wall_seconds": 2.068753547,
+        "return_events": 952,
+        "tag": "rpc.kurrent_get_stream",
+        "thread_cpu_seconds": 1.018468215,
+        "wall_minus_thread_cpu_seconds": 1.050285332,
+        "wall_seconds": 2.068753547
+      },
+      {
+        "calls": 9852,
+        "exclusive_thread_cpu_seconds": 2.322681181,
+        "exclusive_wall_seconds": 9.934190115,
+        "return_events": 9852,
+        "tag": "rpc.psycopg_execute",
+        "thread_cpu_seconds": 2.322681181,
+        "wall_minus_thread_cpu_seconds": 7.611508934,
+        "wall_seconds": 9.934190115
+      },
+      {
+        "calls": 0,
+        "exclusive_thread_cpu_seconds": 0.0,
+        "exclusive_wall_seconds": 0.0,
+        "return_events": 0,
+        "tag": "native.authorize_context",
+        "thread_cpu_seconds": 0.0,
+        "wall_minus_thread_cpu_seconds": 0.0,
+        "wall_seconds": 0.0
+      },
+      {
+        "calls": 0,
+        "exclusive_thread_cpu_seconds": 0.0,
+        "exclusive_wall_seconds": 0.0,
+        "return_events": 0,
+        "tag": "lineage.authorize_context",
+        "thread_cpu_seconds": 0.0,
+        "wall_minus_thread_cpu_seconds": 0.0,
+        "wall_seconds": 0.0
+      }
+    ]
+  },
+  "qualification": false,
+  "learned_behavior_run": false,
+  "interpretation": [
+    "Failed current response fixture; bounded component correctness did not resolve its response budget.",
+    "Preparation still accounts for almost the complete owned worker window; downstream native/lineage authorization is unreached.",
+    "Origin seal checks remain 26.225s exclusive CPU and must not be omitted or made into reusable positive proof.",
+    "The new untagged shallow method moves own-check work from phase.function_binding_verify into frame context-binding spans. Fewer recursive tagged entries are not proof of eliminated authority work.",
+    "Fixed tag names/observer code remain, but sampled call graph, reached work and tagged method bodies differ. Timing includes observer overhead; it is not an equal-work or equal-overhead speedup comparison.",
+    "Do not sum overlapping inclusive spans, infer connection opens from RPC counts, or attribute unobserved setup to the adapter/model."
+  ],
+  "next_gate": "Recover remaining ordinary PR/push CI at the exact source before selecting another runtime candidate. Origin-seal representation stays conditional under the existing mutation/weak-ownership requirements."
+}

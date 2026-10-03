@@ -1,0 +1,72 @@
+{
+  "runtime_commit": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+  "runtime_tree": "ab5cdfc37ef6a4187be62cad673e37d58a43e624",
+  "publication_parent": "55229f1d5a68ece8e4257e9b0a1301d5cbf5192e",
+  "recorded_at_utc": "2026-10-03T08:23:24Z",
+  "source_sha256": {
+    "src/flora/selected/selected_phase_authority.py": "6589bce9051bcc410282b5aba7fc3259bc0ef57105aeb98966e0fa50aaa9542a",
+    "src/flora/selected/selected_authority_frame.py": "599d996805c8c197a3bdd102df3fc5fb6d8500f12a613c81565c903ec76947d6",
+    "tests/test_shared_context_bindings.py": "07c9b08ec27b745a74292226ce92fd694a213d05e21e69cc6a976820391bbea2",
+    "tests/test_selected_phase_authority.py": "fba8e8b69d9b05e858a0fbcf3d9ff8ad9769225149425e50acbad4d567b55e11",
+    "tests/test_shared_phase_authority.py": "f473f346e8bc5686d03da12bae4fc253a10feef05c9ee766978c2e02552d69b4",
+    "tests/test_shared_authority_frame.py": "6adaae62780b1fabda5e9e39c041d8849797206f4433822c807de57683300552",
+    "scripts/profile_selected_native_boundaries.py": "56e3000009353d1ca96e89a39a15a87bb5110ea757281cad49256cdf33ba31fe",
+    "tests/test_native_boundary_profiler.py": "131f3488c0164e771a8f2d24a33a2198695499f0c23efd69bd72765f7394797e"
+  },
+  "exact_published_source_blobs_verified": 8,
+  "full_component_receipt": "docs/evidence/2026-10-03_context_binding_walk_full_contracts.json",
+  "full_component_receipt_sha256": "aa517c76ce6624b64699d823c3e5f6b0385133a48b2112b6ec297b054cfa8cc6",
+  "full_component_receipt_commit": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+  "final_component_cases": 978,
+  "final_component_modules": 80,
+  "initial_full_loop_failure_preserved": true,
+  "final_worker_module_resource_warning_occurrences": 16,
+  "original_failed_worker_module_resource_warning_occurrences": 8,
+  "fresh_read_only_review": {
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "runs": [
+    {
+      "run_id": 37109188927,
+      "event": "workflow_dispatch",
+      "head_sha": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+      "status_at_dispatch_recovery": "in_progress",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37109188927",
+      "job_id": 111163631845
+    },
+    {
+      "run_id": 37109136216,
+      "event": "pull_request",
+      "head_sha": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+      "status_at_dispatch_recovery": "in_progress",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37109136216"
+    },
+    {
+      "run_id": 37109132198,
+      "event": "push",
+      "head_sha": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+      "status_at_dispatch_recovery": "in_progress",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37109132198"
+    }
+  ],
+  "diagnostic_dispatch": "one manual dispatch after runtime source publication; observer/workflow sources unchanged",
+  "caps": {
+    "standalone_response_ms": 10000,
+    "native_response_ms": 60000,
+    "CI_minutes": 60,
+    "worker_observation_seconds": 180
+  },
+  "qualification": false,
+  "learned_behavior_run": false,
+  "physical_result_pending": true,
+  "limits": [
+    "Full component success describes final module executions after one repeat; original failure/warnings remain.",
+    "All eight named source blobs match tested bytes; this does not attest unrecorded environment or dependencies.",
+    "PR actual logged merge checkout and diagnostic source tables remain to be recovered from their completed results.",
+    "Context branch has documentation updates only; serving source remains historical there.",
+    "No inferred response improvement, cleanup fix or model behavior qualification."
+  ]
+}

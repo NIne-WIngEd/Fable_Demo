@@ -421,10 +421,17 @@ class QualifiedNativeProcessWorker:
                 if await authorize_dispatch() is not None:
                     raise NativeWorkerDispatchDenied("refused")
                 async def send():
-                    proc.stdin.write(request)
-                    await proc.stdin.drain()
-                    proc.stdin.close()
-                    await proc.stdin.wait_closed()
+                    try:
+                        proc.stdin.write(request)
+                        await proc.stdin.drain()
+                    except (BrokenPipeError, ConnectionResetError):
+                        # Match asyncio.communicate when the child exits before
+                        # consuming stdin; bounded readers and exit status decide.
+                        pass
+                    finally:
+                        # Like communicate, do not await the protocol-owned close
+                        # future: sender cancellation must not cancel that future.
+                        proc.stdin.close()
                 tasks = [asyncio.create_task(drain(proc.stdout, self.manifest.maximum_output_bytes, True)),
                          asyncio.create_task(drain(proc.stderr, self.manifest.maximum_stderr_bytes, False)),
                          asyncio.create_task(send()), asyncio.create_task(proc.wait())]

@@ -3,6 +3,8 @@
 No selected function is wrapped or replaced. Every classified worker has its
 own numeric stack and thread CPU window. Closing observation never cancels,
 waits for or stops a read, including one that outlives the fixture driver.
+Changing the fixed target set changes sampling overhead; compare scopes
+before interpreting aggregates from different diagnostic versions.
 """
 from __future__ import annotations
 
@@ -53,6 +55,8 @@ class NumericLedger:
         self.rpc_depth = self.owned_depth = 0
         self.stack_overflow = 0
         self.observation_disabled = False
+        self.cap_crossing_elapsed_ns = None
+        self.open_spans_at_cap = self.active_rpcs_at_cap = self.owned_depth_at_cap = 0
 
     def finish(self, wall, cpu, *, returned):
         index, start_wall, start_cpu, child_wall, child_cpu, rpc = self.stack.pop()
@@ -112,13 +116,17 @@ class OwnedThreadObserver:
     def __init__(self, targets, *, owned_work_code, cap_seconds=180,
                  wall_clock=time.perf_counter_ns, cpu_clock=time.thread_time_ns,
                  maximum_worker_ledgers=MAX_WORKER_LEDGERS,
-                 parent_rpc_only_before_owned=False):
+                 parent_rpc_only_before_owned=False, workers_only=False):
         if cap_seconds is not None and (not math.isfinite(cap_seconds) or not 0 < cap_seconds <= 180):
             raise ValueError("cap must be positive, finite and at most 180 seconds")
         if type(maximum_worker_ledgers) is not int or not 1 <= maximum_worker_ledgers <= MAX_WORKER_LEDGERS:
             raise ValueError("bounded worker ledger count required")
         if type(parent_rpc_only_before_owned) is not bool:
             raise ValueError("parent setup scope must be an explicit boolean")
+        if type(workers_only) is not bool:
+            raise ValueError("worker-only scope must be an explicit boolean")
+        if workers_only and (parent_rpc_only_before_owned or cap_seconds is None):
+            raise ValueError("worker-only scope requires a bounded window and no parent scope")
         if any(code.co_flags & (inspect.CO_GENERATOR | inspect.CO_COROUTINE | inspect.CO_ASYNC_GENERATOR)
                 for code in targets):
             raise ValueError("only ordinary synchronous original code objects")
@@ -134,6 +142,7 @@ class OwnedThreadObserver:
         self.wall_clock, self.cpu_clock = wall_clock, cpu_clock
         self.maximum_worker_ledgers = maximum_worker_ledgers
         self.parent_rpc_only_before_owned = parent_rpc_only_before_owned
+        self.workers_only = workers_only
         self.local = threading.local()
         self.lock = threading.Lock()
         self.workers = []
@@ -163,14 +172,16 @@ class OwnedThreadObserver:
         if sys.getprofile() is not None or threading.getprofile() is not None or self.monitoring_occupied():
             raise ProfileHookUnavailable("existing current/future profile or monitoring tool")
         self.previous_parent_hook, self.previous_future_hook = sys.getprofile(), threading.getprofile()
-        wall, cpu = self.wall_clock(), self.cpu_clock()
-        self.start_wall, self.parent = wall, NumericLedger(self.tags, wall, cpu)
+        self.start_wall = self.wall_clock()
+        if not self.workers_only:
+            self.parent = NumericLedger(self.tags, self.start_wall, self.cpu_clock())
         try:
             threading.setprofile(self.worker_hook)
-            sys.setprofile(self.parent_hook)
+            if not self.workers_only:
+                sys.setprofile(self.parent_hook)
             self.installed = True
         except BaseException:
-            if sys.getprofile() is self.parent_hook:
+            if not self.workers_only and sys.getprofile() is self.parent_hook:
                 sys.setprofile(self.previous_parent_hook)
             if threading.getprofile() is self.worker_hook:
                 threading.setprofile(self.previous_future_hook)
@@ -182,16 +193,18 @@ class OwnedThreadObserver:
         with self.lock:
             self.closed = True
             self.end_wall = self.wall_clock()
-            self.parent.last_wall, self.parent.last_cpu = self.end_wall, self.cpu_clock()
+            if self.parent is not None:
+                self.parent.last_wall, self.parent.last_cpu = self.end_wall, self.cpu_clock()
             self.active_owned_work_at_close = self.active_owned_work
-            for ledger in (self.parent, *self.workers):
+            for ledger in ([self.parent] if self.parent is not None else []) + self.workers:
                 spans, rpcs = ledger.close_numeric_window()
                 self.open_spans_at_close += spans
                 self.active_rpcs_at_close += rpcs
         # Restore only our own hooks. Native code may have installed a new one.
-        self.parent_hook_changed = sys.getprofile() is not self.parent_hook
+        expected_parent = self.previous_parent_hook if self.workers_only else self.parent_hook
+        self.parent_hook_changed = sys.getprofile() is not expected_parent
         self.future_hook_changed = threading.getprofile() is not self.worker_hook
-        if not self.parent_hook_changed:
+        if not self.workers_only and not self.parent_hook_changed:
             sys.setprofile(self.previous_parent_hook)
         if not self.future_hook_changed:
             threading.setprofile(self.previous_future_hook)
@@ -219,7 +232,15 @@ class OwnedThreadObserver:
         if not marker and target is None:
             return
         try:
-            wall, cpu = self.wall_clock(), self.cpu_clock()
+            expired = self.workers_only and ledger is not None and ledger.cap_crossing_elapsed_ns is not None
+            if expired and not marker:
+                return
+            # Expired ledgers still track exact marker entry/return lifecycle,
+            # but take no further wall/CPU samples or tagged numeric events.
+            wall = None if expired else self.wall_clock()
+            crossing = (self.workers_only and ledger is not None and not expired
+                and wall - ledger.start_wall >= self.cap_ns)
+            cpu = None if expired or crossing else self.cpu_clock()
             with self.lock:
                 if self.closed:
                     return
@@ -238,7 +259,17 @@ class OwnedThreadObserver:
                             self.workers.append(ledger)
                             self.local.ledger = ledger
                 if ledger is not None and target is not None:
-                    ledger.observe(event, *target, wall, cpu)
+                    if crossing:
+                        # Do not invent a thread-CPU sample at the deadline or
+                        # include the later crossing event. A long native call
+                        # stays partial at the last actual in-window sample,
+                        # without affecting the call or its protocol.
+                        ledger.cap_crossing_elapsed_ns = max(0, wall - ledger.start_wall)
+                        ledger.owned_depth_at_cap = depth
+                        ledger.open_spans_at_cap, ledger.active_rpcs_at_cap = ledger.close_numeric_window()
+                        ledger.observation_disabled = True
+                    elif not expired:
+                        ledger.observe(event, *target, wall, cpu)
                 if marker and event == "return" and depth:
                     self.active_owned_work -= 1
                     self.local.owned_depth = depth - 1
@@ -288,8 +319,20 @@ class OwnedThreadObserver:
         if not self.closed or self.end_wall is None:
             raise RuntimeError("closed numeric snapshot required")
         elapsed = max(0, self.end_wall - self.start_wall)
+        workers = [worker.summary(self.tags) for worker in self.workers]
+        if self.workers_only:
+            for ledger, summary in zip(self.workers, workers):
+                summary.update(first_owned_entry_offset_seconds=max(0, ledger.start_wall - self.start_wall) / 1e9,
+                    observation_cap_seconds=self.cap_ns / 1e9,
+                    observation_cap_reached=ledger.cap_crossing_elapsed_ns is not None,
+                    cap_crossing_elapsed_seconds=(None if ledger.cap_crossing_elapsed_ns is None
+                        else ledger.cap_crossing_elapsed_ns / 1e9),
+                    open_tagged_spans_at_cap=ledger.open_spans_at_cap,
+                    active_observed_rpcs_at_cap=ledger.active_rpcs_at_cap,
+                    active_owned_work_at_cap=ledger.owned_depth_at_cap)
         return dict(elapsed_seconds=elapsed / 1e9,
-            overshoot_seconds=0 if self.cap_ns is None else max(0, elapsed - self.cap_ns) / 1e9,
+            overshoot_seconds=(None if self.workers_only else 0 if self.cap_ns is None
+                else max(0, elapsed - self.cap_ns) / 1e9),
             stopped_before_parent_rpc=self.stopped_before_parent_rpc,
             cap_deferred_parent_entries=self.cap_deferred_entries,
             classified_owned_work_entries=self.owned_entries,
@@ -301,7 +344,7 @@ class OwnedThreadObserver:
             active_observed_rpcs_at_close=self.active_rpcs_at_close,
             observer_errors=self.observer_errors,
             parent_hook_changed=self.parent_hook_changed, future_hook_changed=self.future_hook_changed,
-            parent=self.parent.summary(self.tags), workers=[worker.summary(self.tags) for worker in self.workers])
+            parent=None if self.parent is None else self.parent.summary(self.tags), workers=workers)
 
 
 def _nested_code(function, name):
@@ -318,8 +361,13 @@ def original_case():
 
 
 def native_targets(module):
-    from flora.selected import context, experiment_runtime, judgment_lineage, native_reads
+    from flora.selected import (context, context_guard, experiment_runtime,
+        judgment_lineage, native_reads, selected_authority_frame, selected_history_contribution,
+        selected_phase_authority)
     reads = native_reads.SelectedNativeReadServices
+    frame = selected_authority_frame.SharedSelectedAuthorityFrame
+    physical = selected_authority_frame._FramePhysicalData
+    history = selected_history_contribution.SelectedHistoryContribution
     method = getattr(getattr(module, FIXTURE_CLASS), FIXTURE_METHOD)
     targets = transport.selected_targets()
     fixed = (("fixture.original_native_case", method),
@@ -328,7 +376,28 @@ def native_targets(module):
         ("runtime.context", experiment_runtime.FloRAExperimentRuntime._context),
         ("context.assemble", context.assemble_context),
         ("lineage.authorize_context", judgment_lineage.NativeJudgmentLineageVerifier.authorize_context),
-        ("lineage.context", judgment_lineage.NativeJudgmentLineageVerifier.context_lineage))
+        ("lineage.context", judgment_lineage.NativeJudgmentLineageVerifier.context_lineage),
+        ("context.prepare_current", context_guard.prepare_current_context),
+        ("context.metadata_current", context_guard.PreparedCurrentContext.metadata_current),
+        ("phase.descriptor_verify", selected_phase_authority.SelectedPhaseAuthorityDescriptor.verify),
+        ("phase.descriptor_tree_verify", selected_phase_authority._verify_selected_phase_tree),
+        ("phase.descriptor_contracts", selected_phase_authority._require_descriptor_contracts),
+        ("phase.origin_seal_verify", selected_phase_authority._verify_origin_seal),
+        ("phase.origin_verify", selected_phase_authority._Origin.verify),
+        ("phase.function_binding_verify", selected_phase_authority._FunctionBinding.verify),
+        ("shared.frame.create", selected_authority_frame.create_shared_selected_frame),
+        ("shared.frame.context_binding_verify", selected_authority_frame._verify_binding),
+        ("shared.frame.contracts", selected_authority_frame._require_frame_contracts),
+        ("shared.frame.initialize", frame.__init__),
+        ("shared.frame.base_bindings", frame._base_bindings),
+        ("shared.frame.binding", frame.binding),
+        ("shared.frame.finish", frame.finish),
+        ("shared.frame.physical_closure", physical.closure),
+        ("shared.frame.physical_reobserve", physical.reobserve),
+        ("shared.history.initialize", history.__init__),
+        ("shared.history.permissions", history.validate_permissions),
+        ("shared.history.member", history.member),
+        ("shared.history.manifest_reobserve", history.reobserve_manifest))
     for tag, function in fixed:
         targets[transport._target_function(function)] = Target(tag)
     closures = (("native.owned_work", reads._read, "work"),
@@ -354,22 +423,33 @@ def source_hashes():
     return result
 
 
-def build_receipt(*, status, result, observer, cap_seconds, before, after):
+def build_receipt(*, status, result, observer, cap_seconds, before, after, workers_only=False):
     summary = observer.summary() if observer is not None and observer.end_wall is not None else None
+    workers_only = observer.workers_only if observer is not None else workers_only
     changed = sorted(name for name, digest in before.items() if after.get(name) != digest)
     return dict(schema_version=1, fixture_id=FIXTURE_ID, diagnostic_status=status,
         qualification=False, response_budget_ms=PROTOCOL_RESPONSE_BUDGET_MS,
-        soft_cap_seconds=cap_seconds,
-        cap_policy="parent_next_outer_rpc_only_without_active_observed_rpc_or_owned_work",
-        cap_outcome=("not_observed" if summary is None else "stopped_before_parent_rpc"
+        soft_cap_seconds=None if workers_only else cap_seconds,
+        worker_observation_cap_seconds=cap_seconds if workers_only else None,
+        cap_policy=("per_worker_first_exact_owned_entry_to_last_in_cap_sample_observation_only"
+            if workers_only else "parent_next_outer_rpc_only_without_active_observed_rpc_or_owned_work"),
+        cap_outcome=("not_observed" if summary is None else "owned_work_not_observed"
+            if workers_only and not summary["classified_owned_work_entries"] else "worker_observation_window_capped"
+            if workers_only and any(worker["observation_cap_reached"] for worker in summary["workers"])
+            else "worker_windows_closed_with_observer" if workers_only else "stopped_before_parent_rpc"
             if summary["stopped_before_parent_rpc"] else "completed_after_cap"
             if summary["overshoot_seconds"] else "within_cap"),
-        coverage=("parent_rpc_only_before_first_owned_entry_then_fixed_parent_and_owned_worker_tags"
+        coverage=("future_threads_classified_by_exact_original_owned_work_code_workers_only"
+            if workers_only else "parent_rpc_only_before_first_owned_entry_then_fixed_parent_and_owned_worker_tags"
             if observer is not None and observer.parent_rpc_only_before_owned
             else "parent_and_future_threads_classified_by_exact_original_owned_work_code"),
-        parent_non_rpc_setup_observed=(not observer.parent_rpc_only_before_owned
+        parent_non_rpc_setup_observed=(False if workers_only else not observer.parent_rpc_only_before_owned
             if observer is not None else None),
+        parent_rpc_setup_observed=(False if workers_only else True if observer is not None else None),
+        parent_profile_hook_installed=False if workers_only else observer is not None and observer.end_wall is not None,
+        parent_thread_cpu_observed=(False if workers_only else True if summary is not None else None),
         coverage_limits=["observer_overhead_precludes_latency_qualification",
+            "changing_fixed_target_set_changes_observer_sampling_overhead",
             "return_events_include_exception_unwind_and_do_not_attest_authorization_success",
             "preexisting_threads_child_processes_and_unclassified_threads_not_measured",
             "coroutine_and_generator_spans_not_targeted",
@@ -381,7 +461,15 @@ def build_receipt(*, status, result, observer, cap_seconds, before, after):
             "queued_owned_jobs_entering_only_after_close_are_unobserved",
             "ledger_or_stack_overflow_and_hook_changes_make_coverage_incomplete"] +
             (["non_rpc_parent_setup_is_unobserved_before_first_exact_owned_entry"]
-                if observer is not None and observer.parent_rpc_only_before_owned else []),
+                if observer is not None and observer.parent_rpc_only_before_owned else []) +
+            (["all_parent_and_setup_rpc_non_rpc_cpu_timings_are_unobserved",
+                "whole_observer_elapsed_is_not_a_worker_window_and_has_no_180_second_setup_cap",
+                "each_worker_window_starts_once_at_its_first_exact_owned_entry_and_is_not_reset",
+                "worker_cap_freezes_at_last_in_window_sample_on_next_targeted_event",
+                "long_native_spans_can_cross_cap_without_an_in_window_cpu_sample_and_remain_partial",
+                "worker_observation_cap_never_raises_cancels_or_stops_fixture_rpc_or_worker",
+                "exact_owned_marker_lifecycle_counts_continue_after_numeric_window_closes"]
+                if workers_only else []),
         outcome_counts=result.counts(), aggregate=summary,
         loaded_source_sha256_before=before, loaded_source_sha256_after=after,
         source_hashes_unchanged=(not changed if before else None), changed_source_modules=changed,
@@ -407,7 +495,10 @@ def _discard_cli_output():
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cap-seconds", type=float, default=180)
+    parser.add_argument("--cap-seconds", type=float, default=180,
+        help="parent soft cap by default; each worker's observation window with --workers-only")
+    parser.add_argument("--workers-only", action="store_true",
+        help="observe owned workers only; parent/setup are unobserved and no fixture stop cap is installed")
     parser.add_argument("--output", type=Path, default=Path("selected-native-profile.json"))
     arguments = parser.parse_args(argv)
     if not math.isfinite(arguments.cap_seconds) or not 0 < arguments.cap_seconds <= 180:
@@ -426,7 +517,7 @@ def main(argv=None):
             targets, marker = native_targets(module)
             before = source_hashes()
             observer = OwnedThreadObserver(targets, owned_work_code=marker, cap_seconds=cap_seconds,
-                parent_rpc_only_before_owned=True)
+                parent_rpc_only_before_owned=not arguments.workers_only, workers_only=arguments.workers_only)
             with observer:
                 unittest.TestSuite((case,)).run(result)
             status = result.fixture_status()
@@ -445,7 +536,7 @@ def main(argv=None):
         if before and any(after.get(name) != digest for name, digest in before.items()):
             status = "source_changed"
         receipt = build_receipt(status=status, result=result, observer=observer,
-            cap_seconds=cap_seconds, before=before, after=after)
+            cap_seconds=cap_seconds, before=before, after=after, workers_only=arguments.workers_only)
         published_head = os.environ.get("GITHUB_SHA", "")
         receipt["published_head_sha"] = published_head if re.fullmatch(r"[0-9a-f]{40}", published_head) else None
         arguments.output.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n")

@@ -1,0 +1,294 @@
+{
+  "schema": "flora-completed-ci-receipt-v1",
+  "review_date": "2026-10-02",
+  "repository": "NIne-WIngEd/FloRA",
+  "runtime_commit": "74f42417be37a2fbdc6c603a1ea657b040e0052e",
+  "run_id": 36828262948,
+  "run_url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948",
+  "conclusion": "failure",
+  "component_tests": 884,
+  "component_modules": 75,
+  "physical": {
+    "discovered": 53,
+    "passed": 49,
+    "failed_response_cases": 2,
+    "incomplete_cases": 2,
+    "standalone_elapsed_ms": {
+      "before": 17471,
+      "after": 28082,
+      "budget": 10000
+    },
+    "native_elapsed_ms": {
+      "before": 60072,
+      "after": 60142,
+      "budget": 60000
+    },
+    "ci_job_cap_minutes": 60
+  },
+  "qualification": {
+    "physical_complete": false,
+    "response_latency": false,
+    "learned_behavior": false,
+    "builder_transfer": false
+  },
+  "method": "Read completed job records and decoded logs via GitHub connector; retain safe synthetic case summaries, not full logs. Counts are case results, not every restart probe or subtest. No tests dispatched for this receipt.",
+  "jobs": [
+    {
+      "job_id": 110258742073,
+      "name": "contracts",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742073",
+      "case_receipts": [
+        "2026-10-01T07:05:18.5737834Z Ran 8 tests in 0.017s",
+        "2026-10-01T07:05:22.9444052Z Ran 13 tests in 2.566s",
+        "2026-10-01T07:05:25.5499955Z Ran 3 tests in 0.997s",
+        "2026-10-01T07:05:29.5613931Z Ran 18 tests in 2.600s",
+        "2026-10-01T07:05:31.8439438Z Ran 13 tests in 0.699s",
+        "2026-10-01T07:05:37.0812904Z Ran 15 tests in 3.648s",
+        "2026-10-01T07:05:37.7769234Z Ran 10 tests in 0.317s",
+        "2026-10-01T07:05:39.4827120Z Ran 6 tests in 1.600s",
+        "2026-10-01T07:05:41.9372744Z Ran 6 tests in 0.814s",
+        "2026-10-01T07:05:43.6207620Z Ran 19 tests in 0.099s",
+        "2026-10-01T07:05:46.4693239Z Ran 6 tests in 1.460s",
+        "2026-10-01T07:05:48.1822416Z Ran 14 tests in 0.197s",
+        "2026-10-01T07:05:50.3230433Z Ran 16 tests in 0.686s",
+        "2026-10-01T07:06:01.6835081Z Ran 29 tests in 9.825s",
+        "2026-10-01T07:06:02.2909672Z Ran 4 tests in 0.095s",
+        "2026-10-01T07:06:02.3888995Z Ran 2 tests in 0.003s",
+        "2026-10-01T07:06:04.1656455Z Ran 21 tests in 1.442s",
+        "2026-10-01T07:06:04.7798335Z Ran 38 tests in 0.163s",
+        "2026-10-01T07:06:11.0641558Z Ran 20 tests in 4.686s",
+        "2026-10-01T07:06:14.0734749Z Ran 27 tests in 1.404s",
+        "2026-10-01T07:06:43.6933185Z Ran 23 tests in 27.905s",
+        "2026-10-01T07:06:43.9582350Z Ran 3 tests in 0.016s",
+        "2026-10-01T07:06:46.4833617Z Ran 8 tests in 1.065s",
+        "2026-10-01T07:06:49.1295813Z Ran 6 tests in 0.977s",
+        "2026-10-01T07:06:49.9628614Z Ran 11 tests in 0.317s",
+        "2026-10-01T07:06:54.0385330Z Ran 24 tests in 3.661s",
+        "2026-10-01T07:06:58.1663140Z Ran 4 tests in 2.602s",
+        "2026-10-01T07:07:01.7887250Z Ran 25 tests in 2.072s",
+        "2026-10-01T07:07:37.3092021Z Ran 10 tests in 33.898s",
+        "2026-10-01T07:07:37.6744397Z Ran 20 tests in 0.074s",
+        "2026-10-01T07:07:41.5128637Z Ran 2 tests in 2.327s",
+        "2026-10-01T07:07:53.6009562Z Ran 11 tests in 10.415s",
+        "2026-10-01T07:07:55.5712064Z Ran 11 tests in 0.271s",
+        "2026-10-01T07:08:57.9359121Z Ran 21 tests in 60.728s",
+        "2026-10-01T07:08:59.1701578Z Ran 11 tests in 0.801s",
+        "2026-10-01T07:09:00.2239435Z Ran 12 tests in 0.761s",
+        "2026-10-01T07:09:01.9000727Z Ran 13 tests in 0.205s",
+        "2026-10-01T07:09:02.3846217Z Ran 2 tests in 0.012s",
+        "2026-10-01T07:09:03.0330162Z Ran 11 tests in 0.248s",
+        "2026-10-01T07:09:05.8398734Z Ran 4 tests in 1.296s",
+        "2026-10-01T07:21:23.6936558Z Ran 31 tests in 736.272s",
+        "2026-10-01T07:21:26.7966651Z Ran 14 tests in 1.414s",
+        "2026-10-01T07:21:29.4741822Z Ran 7 tests in 0.879s",
+        "2026-10-01T07:22:34.3879649Z [history-preregistration] original-inputs-registered: elapsed=63.148s",
+        "2026-10-01T07:22:44.3134179Z Ran 6 tests in 73.156s",
+        "2026-10-01T07:22:46.1414399Z Ran 14 tests in 0.174s",
+        "2026-10-01T07:24:01.6003867Z Ran 8 tests in 73.794s",
+        "2026-10-01T07:24:04.0961447Z Ran 6 tests in 0.741s",
+        "2026-10-01T07:24:05.8335873Z Ran 4 tests in 0.139s",
+        "2026-10-01T07:24:08.1919285Z Ran 8 tests in 0.709s",
+        "2026-10-01T07:24:10.9736819Z Ran 7 tests in 1.123s",
+        "2026-10-01T07:24:13.7513493Z Ran 12 tests in 1.125s",
+        "2026-10-01T07:25:25.3375614Z Ran 23 tests in 69.882s",
+        "2026-10-01T07:25:33.4670351Z Ran 11 tests in 6.186s",
+        "2026-10-01T07:25:33.9578927Z Ran 3 tests in 0.005s",
+        "2026-10-01T07:25:41.9162532Z Ran 13 tests in 6.521s",
+        "2026-10-01T07:25:45.2859290Z Ran 7 tests in 1.837s",
+        "2026-10-01T07:25:47.0198951Z Ran 12 tests in 1.253s",
+        "2026-10-01T07:25:47.3097505Z Ran 3 tests in 0.002s",
+        "2026-10-01T07:25:48.1903393Z Ran 5 tests in 0.140s",
+        "2026-10-01T07:25:49.6512225Z Ran 5 tests in 0.018s",
+        "2026-10-01T07:25:50.2217338Z Ran 7 tests in 0.106s",
+        "2026-10-01T07:25:54.6432516Z Ran 24 tests in 2.412s",
+        "2026-10-01T07:25:56.9808432Z Ran 5 tests in 2.136s",
+        "2026-10-01T07:26:44.3648804Z Ran 11 tests in 45.753s",
+        "2026-10-01T07:26:44.8070934Z Ran 2 tests in 0.009s",
+        "2026-10-01T07:26:48.6316612Z Ran 18 tests in 2.259s",
+        "2026-10-01T07:26:53.1082745Z Ran 31 tests in 2.883s",
+        "2026-10-01T07:26:53.7211966Z Ran 15 tests in 0.127s",
+        "2026-10-01T07:26:54.9832561Z Ran 7 tests in 0.016s",
+        "2026-10-01T07:26:56.7717267Z Ran 29 tests in 1.297s",
+        "2026-10-01T07:26:59.7659967Z Ran 12 tests in 0.057s"
+      ]
+    },
+    {
+      "job_id": 110258742274,
+      "name": "integration-history-routes-native",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742274",
+      "case_receipts": [
+        "2026-10-01T07:05:44.8180738Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:41:54.5075853Z [completed test_selected_phase_history_routes.SelectedPhaseHistoryRoutesTest.test_strict_router_recovers_distinct_actual_native_arm_invocations_on_all_phase_routes in 2167.184s]"
+      ]
+    },
+    {
+      "job_id": 110258742293,
+      "name": "integration-native-pilot-outcome-audit",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742293",
+      "case_receipts": [
+        "2026-10-01T07:05:52.8543453Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:31:42.5683571Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_native_outcome_audit_unknown_tail_and_permission_withdrawal in 1547.685s]"
+      ]
+    },
+    {
+      "job_id": 110258742413,
+      "name": "integration-native-pilot-withdrawal",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742413",
+      "case_receipts": [
+        "2026-10-01T07:12:25.9864851Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:14:47.8527429Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_phase_withdrawal_at_native_cipher_read_blocks_later_private_reads in 139.256s]"
+      ]
+    },
+    {
+      "job_id": 110258742437,
+      "name": "integration-transport",
+      "conclusion": "failure",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742437",
+      "case_receipts": [
+        "2026-10-01T07:05:50.1617278Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:06:49.1521328Z Selected comparator attempt timing: [{\"elapsed_ms\": 17471, \"phase\": \"before\", \"status\": \"budget_exceeded\"}, {\"elapsed_ms\": 28082, \"phase\": \"after\", \"status\": \"budget_exceeded\"}]",
+        "2026-10-01T07:06:49.1611323Z First differing element 0:",
+        "2026-10-01T07:06:49.1612589Z + ['success', 'success'] : [{'phase': 'before', 'status': 'budget_exceeded', 'elapsed_ms': 17471}, {'phase': 'after', 'status': 'budget_exceeded', 'elapsed_ms': 28082}]",
+        "2026-10-01T07:06:49.1613869Z [completed test_selected_comparator_memory.SelectedComparatorIntegrationTest.test_phase_isolated_hybrid_memory_and_separately_authorized_signed_exchange in 57.044s]",
+        "2026-10-01T07:07:57.4163068Z [completed test_selected_provider_attempt_ledger.SelectedProviderAttemptLedgerIntegrationTest.test_frozen_phase_custody_signed_failures_and_fresh_per_decrypt_authority in 68.256s]",
+        "2026-10-01T07:07:57.4169274Z First differing element 0:",
+        "2026-10-01T07:07:57.4170270Z + ['success', 'success'] : [{'phase': 'before', 'status': 'budget_exceeded', 'elapsed_ms': 17471}, {'phase': 'after', 'status': 'budget_exceeded', 'elapsed_ms': 28082}]",
+        "2026-10-01T07:07:57.4171061Z Ran 2 tests in 125.300s"
+      ]
+    },
+    {
+      "job_id": 110258742460,
+      "name": "integration-core",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742460",
+      "case_receipts": [
+        "2026-10-01T07:05:54.2034066Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:05:57.6104671Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_changed_encrypted_qualification_custody_prevents_runtime_binding in 0.811s]",
+        "2026-10-01T07:05:57.7520190Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_custody_and_registry_recover_without_caller_qualification_map in 0.141s]",
+        "2026-10-01T07:05:57.8381767Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_immutable_receipt_and_artifact_identity_cannot_be_rebound in 0.085s]",
+        "2026-10-01T07:05:57.8509887Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_invalid_or_denied_external_receipts_never_create_current_role in 0.014s]",
+        "2026-10-01T07:05:58.1123358Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_racing_writers_cannot_both_activate_the_same_predecessor in 0.260s]",
+        "2026-10-01T07:05:58.2135372Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_runtime_rechecks_independent_qualification_and_missing_checkpoint in 0.103s]",
+        "2026-10-01T07:05:58.2805790Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_scope_namespace_and_expected_contract_fail_closed in 0.067s]",
+        "2026-10-01T07:05:58.4754077Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_second_generation_stale_cas_and_old_retry_preserve_current_head in 0.195s]",
+        "2026-10-01T07:06:32.3510060Z [completed test_comparison_custody.SelectedComparisonCustodyIntegrationTest.test_recovery_failure_matrix_exact_sources_and_separate_review_authority in 33.876s]",
+        "2026-10-01T07:06:43.5855586Z [completed test_formation_admission.FormationAdmissionIntegrationTest.test_real_atomic_authority_correction_idempotency_and_source_revocation in 11.235s]",
+        "2026-10-01T07:17:05.3091548Z [completed test_selected_assessment_custody.SelectedAssessmentCustodyIntegrationTest.test_real_custody_recovery_signed_seal_and_current_key_release in 621.723s]",
+        "2026-10-01T07:17:05.3316060Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_decision_and_observed_outcome_keep_source_lineage in 0.023s]",
+        "2026-10-01T07:17:05.5861284Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_fictional_pilot_has_separate_before_and_after_experience in 0.254s]",
+        "2026-10-01T07:17:05.6081259Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_kurrent_expected_revision_idempotency_and_replay in 0.021s]",
+        "2026-10-01T07:17:05.6278416Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_nats_edge_intake_commits_only_to_kurrent_authority in 0.021s]",
+        "2026-10-01T07:17:05.6367986Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_raw_experience_replay_binds_mfm_input_without_granting_authority in 0.009s]",
+        "2026-10-01T07:17:12.1094572Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_registered_mfm_context_recovers_sources_and_original_closure in 6.472s]",
+        "2026-10-01T07:17:15.9894195Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_xtdb_bitemporal_current_claim_and_host_isolation in 3.879s]",
+        "2026-10-01T07:17:16.0334168Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_xtdb_immutable_relation_race_has_one_winner in 0.045s]",
+        "2026-10-01T07:17:16.8824932Z [completed test_selected_bounded_xtdb_read_faults.SelectedBoundedXTDBFaultTest.test_real_select_blackhole_releases_cancelled_physical_reader_without_late_mutation in 0.849s]",
+        "2026-10-01T07:17:16.9568146Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_missing_wrong_position_digest_and_time_fail_against_actual_records in 0.074s]",
+        "2026-10-01T07:17:17.0501028Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_persisted_locator_resolves_exact_source_after_unrelated_tail in 0.093s]",
+        "2026-10-01T07:17:17.3792745Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_selected_closure_rejects_actual_parent_revocation_during_physical_read in 0.329s]",
+        "2026-10-01T07:17:17.8056466Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_selected_parent_closure_checks_actual_grants_and_later_withdrawal in 0.426s]",
+        "2026-10-01T07:17:17.8953966Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_soft_delete_and_reappend_reject_stale_position_and_commit_time in 0.090s]",
+        "2026-10-01T07:17:17.9332330Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_well_formed_false_locator_still_needs_independent_physical_proof in 0.038s]",
+        "2026-10-01T07:17:46.6613450Z [completed test_selected_experiment_manifest_custody.SelectedExperimentManifestIntegrationTest.test_cross_host_metadata_permissions_private_recovery_and_no_auto_builder_case in 28.727s]",
+        "2026-10-01T07:17:54.0033219Z [completed test_selected_governed_claim_quarantine.GovernedClaimQuarantineIntegrationTest.test_real_atomic_pending_barrier_recreation_and_temporal_derived_cleanup in 7.343s]",
+        "2026-10-01T07:17:59.7557986Z [completed test_selected_governed_development.GovernedDevelopmentSelectedBackendTest.test_registered_permissions_govern_activation_restore_and_restart in 5.752s]",
+        "2026-10-01T07:19:57.7875400Z [completed test_selected_governed_episodes.SelectedGovernedEpisodesTest.test_accepted_episode_and_state_recover_then_current_denial_blocks_private_reads in 118.032s]",
+        "2026-10-01T07:19:59.0826075Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_manifest_reconstruction_uses_only_bounded_metadata_reads in 1.294s]",
+        "2026-10-01T07:19:59.8870532Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_phase_membership_uses_original_ids_and_excludes_receipts in 0.802s]",
+        "2026-10-01T07:20:00.8325802Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_signed_late_revocation_is_rejected_by_shared_terminal_fence in 0.949s]",
+        "2026-10-01T07:20:01.6748484Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_explicit_selected_domain_does_not_claim_unrelated_stream_integrity in 0.842s]",
+        "2026-10-01T07:20:08.1696376Z [completed test_selected_personal_artifact_custody.SelectedPersonalArtifactCustodyTest.test_state_approval_permission_and_rollback_recover_without_reference_or_proof_maps in 6.496s]",
+        "2026-10-01T07:20:10.5054332Z [completed test_selected_phase_source_fence.SelectedPhaseSourceFenceIntegrationTest.test_actual_finite_source_action_head_claim_query_and_final_callback_withdrawal in 2.336s]",
+        "2026-10-01T07:21:13.5586476Z [completed test_selected_runtime_bridge.SelectedExperimentRuntimeIntegrationTest.test_actual_runtime_admission_governed_context_recovery_and_denial in 63.053s]",
+        "2026-10-01T07:21:13.9155959Z [completed test_selected_runtime_custody_transactions.SelectedRuntimeCustodyTransactionIntegrationTest.test_actual_xtdb_dml_batch_and_owner_withdrawal_deny_continuation in 0.357s]",
+        "2026-10-01T07:21:13.9157243Z Ran 38 tests in 917.117s",
+        "2026-10-01T07:21:41.5770199Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:21:42.6077854Z Persistent Temporal workflow recovered and resumed without repeating the completed activity"
+      ]
+    },
+    {
+      "job_id": 110258742499,
+      "name": "integration-native-pilot-typed-phase",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742499",
+      "case_receipts": [
+        "2026-10-01T07:05:47.4404275Z Persistent Temporal server and namespace ready",
+        "2026-10-01T08:00:11.4351195Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_typed_phase_snapshot_and_grant_proof_join_before_tail_only in 3261.212s]"
+      ]
+    },
+    {
+      "job_id": 110258742504,
+      "name": "integration-native-comparison",
+      "conclusion": "failure",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742504",
+      "case_receipts": [
+        "2026-10-01T07:05:55.9009153Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:09:17.2687866Z First differing element 0:",
+        "2026-10-01T07:09:17.2689736Z + ['success', 'success'] : [{'phase': 'before', 'status': 'timeout', 'elapsed_ms': 60072}, {'phase': 'after', 'status': 'timeout', 'elapsed_ms': 60142}]",
+        "2026-10-01T07:09:17.2780336Z [completed test_selected_native_comparison.SelectedNativeComparisonIntegrationTest.test_actual_phase_context_execution_parent_and_private_run_custody in 199.182s]",
+        "2026-10-01T07:09:17.2792188Z First differing element 0:",
+        "2026-10-01T07:09:17.2794587Z + ['success', 'success'] : [{'phase': 'before', 'status': 'timeout', 'elapsed_ms': 60072}, {'phase': 'after', 'status': 'timeout', 'elapsed_ms': 60142}]"
+      ]
+    },
+    {
+      "job_id": 110258742512,
+      "name": "integration-history",
+      "conclusion": "cancelled",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742512",
+      "case_receipts": [
+        "2026-10-01T07:09:18.3279304Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:11:07.2539312Z [completed test_selected_experiment_coordinator.SelectedExperimentCoordinatorIntegrationTest.test_registered_sources_to_blocked_control_stages_on_actual_selected_engines in 106.223s]",
+        "2026-10-01T07:12:48.5251767Z [history-preregistration] original-inputs-registered: elapsed=101.266s",
+        "2026-10-01T08:04:58.3568928Z ##[error]The operation was canceled."
+      ]
+    },
+    {
+      "job_id": 110258742522,
+      "name": "integration-native-pilot-before-tail",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742522",
+      "case_receipts": [
+        "2026-10-01T07:06:01.9703395Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:41:55.6929632Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_native_before_tail_then_correction_without_internal_history in 2150.790s]"
+      ]
+    },
+    {
+      "job_id": 110258742541,
+      "name": "integration-lineage",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742541",
+      "case_receipts": [
+        "2026-10-01T07:05:43.9296784Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:32:45.5109689Z [completed test_selected_native_lineage_backend.SelectedJudgmentLineageIntegrationTest.test_exact_accepted_episode_control_and_native_state_lineage_after_recreation in 1619.082s]",
+        "2026-10-01T07:35:15.0442450Z [completed test_selected_native_lineage_backend.SelectedJudgmentLineageIntegrationTest.test_exact_approved_native_state_history_output_recreation_and_revocation in 149.533s]",
+        "2026-10-01T07:35:15.0443756Z Ran 2 tests in 1768.615s"
+      ]
+    },
+    {
+      "job_id": 110258742546,
+      "name": "integration-history-routes-retained",
+      "conclusion": "cancelled",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742546",
+      "case_receipts": [
+        "2026-10-01T07:06:01.2304830Z Persistent Temporal server and namespace ready",
+        "2026-10-01T08:05:03.2924161Z ##[error]The operation was canceled."
+      ]
+    },
+    {
+      "job_id": 110258742628,
+      "name": "integration-readers",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/36828262948/job/110258742628",
+      "case_receipts": [
+        "2026-10-01T07:05:54.8385651Z Persistent Temporal server and namespace ready",
+        "2026-10-01T07:07:38.7000259Z [completed test_selected_native_read_sessions.SelectedNativeReadSessionIntegrationTest.test_fresh_guarded_real_sessions_recover_existing_receipts_and_respect_live_revocation in 100.940s]",
+        "2026-10-01T07:07:39.5728262Z [completed test_selected_native_writer_faults.SelectedNativeWriterFaultTest.test_real_blocked_pgconn_exits_on_owner_without_late_sql_continuation in 0.872s]",
+        "2026-10-01T07:07:39.5734111Z Ran 2 tests in 101.812s"
+      ]
+    }
+  ]
+}

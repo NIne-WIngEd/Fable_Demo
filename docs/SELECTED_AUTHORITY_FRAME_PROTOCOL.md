@@ -1,26 +1,123 @@
 # Selected authority frame protocol
 
-Date: 2026-10-01 UTC
-Status: bounded design and descriptor foundation; shared collectors and frame integration pending
+Latest October 3: both full `4b88946f` ordinary gates are complete and failed;
+each passes978 components. Current PR physical50/2/1, push49/2/2 and separate
+Temporal restart exit139 remain. Runtime is unchanged while one optional 50ms
+original-owned-stack diagnostic discriminates remaining costs. See the
+[latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md). Earlier pending
+notices below are historical; no new authority or permission cache is added.
+
+Latest result, October 3: the once-dispatched `4b88946f` native diagnostic is
+complete, with a failed fixture and qualification false. All 116 after/115 before
+source hashes match pinned blobs. Preparation still dominates; fewer tagged calls
+do not establish a speedup because shallow own checks change call-graph attribution.
+Ordinary PR/push gates remain incomplete, with response failures and one push
+Temporal restart-probe exit 139 preserved. See the
+[current checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md) and
+[numeric review](evidence/2026-10-03_4b88946f_native_profile_review.json).
+Origin-seal representation stays conditional. Older pending notices below are
+historical snapshots; they do not describe the completed diagnostic.
+
+Date: 2026-10-01 UTC; implementation update 2026-10-02
+Status: frame repair and measured-origin candidate published; current engine qualification pending
+
+October 3: [the latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md)
+records completed older CI and published fresh context-walk runtime `4b88946f`.
+It changes only duplicate pure function verification, retaining the existing
+owned reader checks and all authority/callback/physical/terminal boundaries.
+Its 978-case final-module component gate is complete after the retained worker
+fixture repeat; physical and latency verification remains pending.
+Later sections preserve historical source and pending snapshots.
+
+Continuation scope, 2026-10-02: this composes checks already needed by FloRA's
+narrow prototype. It is not a mandate to implement Alice's full memory/mission
+platform. The [context record](FLORA_CONTEXT.md) and
+[completed physical receipt](VERIFICATION_CHECKPOINT_2026-10-02.md) supersede
+the older pending CI status. The development implementation below composes the
+existing authority slice. Its frozen source is published at
+`ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f`, tree
+`1f9b955849cbc69ed1f0244366876bbe672fd0c6`, in
+[draft PR #1](https://github.com/NIne-WIngEd/FloRA/pull/1).
+Ordinary [run 37054784829](https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829)
+checks merge `2f166a9d745667b200302a404bd04f8def7a83d9`, whose complete tree
+matches the published runtime. Its 19:38:11 UTC partial receipt has three
+physical passes and one native response failure; full verification is pending.
 
 This protocol follows [the latency architecture review](LATENCY_ARCHITECTURE_RECALIBRATION_2026-10-01.md)
 and [explicit selected context/history consumers](SELECTED_CONTEXT_AND_HISTORY.md).
-The next change should compose their checks within each protected boundary.
+The implemented slice composes their checks within each protected boundary.
 It must not reuse a successful authorization from an earlier boundary.
 
 The privately issued selected-phase descriptor is a foundation for identifying
 which native checks can be composed. Its addition alone changes no serving
 algorithm and skips no existing history, permission, ancestry or private-read
-check. The shared frame described below is not yet implemented or qualified.
+check. The frame now has a development implementation, described below. Source-pinned
+contract, physical-engine and response verification remain separate gates.
 No latency improvement is claimed.
 
-## What the existing implementation repeats
+## Refined observation completed
+
+The four-tag diagnostic completed with a failed fixture and qualification
+false. [Its source-verified receipt](evidence/2026-10-02_d0f90655_native_profile_validation.json)
+matches 116 files. Origin seal traversal recorded 10,063 calls / 21.670 s
+exclusive CPU; context binding recorded 245,532 / 13.555 s. The descriptor
+contract scan was 2.341 s and frame contract scan 1.507 s exclusive CPU.
+This refines the remaining preparation cost; added sampling prevents treating
+it as an equal-overhead speedup comparison. Every independent seal remains
+required. [The checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) records the
+conditional shared-dependency representation question and pending ordinary CI;
+no further runtime rewrite or memory/mission plane is added.
+
+## Current original-code observation
+
+Source `d0f90655` adds only four numeric fixed targets for descriptor tree,
+descriptor contracts, origin seals and frame contracts; all prior targets and
+budgets remain. Runtime source/tests are identical to `da370ebc`. All 32
+observer contracts pass in 3.493 s, separate from the 72 runtime contracts.
+The [checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) and
+[receipt](evidence/2026-10-02_d0f90655_observer_contracts.json) link pending
+diagnostic 37073820659 and ordinary PR CI 37073825647. The extra targets add
+sampling overhead, so this new scope supports attribution rather than direct
+equal-overhead speedup measurement. The previous failed fixture is preserved.
+
+## Completed da370ebc observation
+
+The source-verified fixture failed; collection success does not qualify the
+response. Six owned jobs recorded 120.902 s wall / 109.280 s thread CPU and
+two preparation calls consumed 119.398 s inclusive wall. More frame/RPC work
+was reached within unchanged deadlines, while public descriptor work moved
+into private tree traversal under base_bindings. Parent setup is unobserved;
+no equal-work speedup or downstream generation attribution follows.
+
+The [latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) preserves all
+116 source hashes, original artifact, numeric comparison, complete 72 targeted
+passes and current ordinary CI. The bounded next observation adds only four
+original-code tags for descriptor tree/contracts, origin seals and frame
+contracts. Added observer overhead changes coverage; it supports diagnosis,
+not another runtime rewrite or more memory/mission infrastructure.
+
+## Current measured-origin candidate
+
+The connected frame's current candidate is `da370ebc9b089aec430859059cc83af52e623089`,
+tree `5a904dbd310814bf5dbeeaac8832dc4fc53d573c`. A fresh private descriptor
+tree verifies each exact origin body once while independently verifying all
+descriptor, parent, reader, gate and installed-owner seals. Tracking ends on
+return before callbacks; the next call starts fresh. This produces no authority
+lease and changes no H/C source cap, callback, physical reread or terminal fence.
+
+The [exact-source receipt](evidence/2026-10-02_da370ebc_origin_contracts.json)
+has 72 targeted passes, including the complete original 20-case frame suite.
+It preserves the initial scope test-placement failure and test-only correction. [The latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md)
+links current engine/ordinary CI. No latency improvement or learned result is
+claimed. Historical repair and failure descriptions below retain their sources.
+
+## What the earlier implementation repeats
 
 The audit concerns runtime
 [`029a7655ca4aac16ba5c7644b7ca579a8ac45aac`](https://github.com/NIne-WIngEd/FloRA/commit/029a7655ca4aac16ba5c7644b7ca579a8ac45aac).
 Let **C** be the selected context source closure and **H** the held original
 history. Both include their required parents. Selecting a small C does not
-currently prevent repeated verification of H.
+prevent repeated verification of H in that earlier runtime.
 
 | Call path | Repeated work | Pinned implementation |
 | --- | --- | --- |
@@ -125,7 +222,7 @@ before traversing nested records. A tampered name, record or collection must
 reject before any custom hash, equality, property or iteration callback runs.
 The lookup and validation helpers must retain their pinned native code.
 
-## Proposed protected-boundary order
+## Protected-boundary order
 
 1. **Bind and nominate.** Capture exact native owners, readers, code and held
    values. Validate the descriptor and selected domains. Nominate H, its
@@ -171,6 +268,16 @@ authorize pooling live connections or skipping independent execution recovery.
 - Source caps cover required parents and manifest inclusion. The implementation
   must derive a finite row cap that also includes distinct purposes, Claim/state
   dependencies and rollback targets. Every discovered dependency counts.
+- Keep H (including its custody manifest) and C under separate source-closure
+  caps. Each phase-membership ancestry traversal also keeps its H cap. The
+  existing history helper's additional `source_purposes` puts the combined
+  set under H's cap and cannot substitute for these separate domains. The
+  native fixture has H=32 and C=128; a broad C must not enlarge one ancestry's
+  permitted width or shrink into H's aggregate cap.
+- Frames cover initial private context assembly through
+  `prepare_current_context`'s `initial_barrier`, as well as later current checks
+  and ciphertext/plaintext boundaries. Each barrier creates a fresh frame.
+  One sampled frame is not extended across separate private operations.
 - Sampled rows and immutable event material live within one frame. Mutable
   heads, positive permissions and current qualification are not persistent
   caches. Native predicates execute again at every protected boundary.
@@ -218,5 +325,137 @@ change to the new serving path. A failed response budget remains a failure;
 fixture timings and diagnostic counts cannot replace it.
 
 No personality model or MFM is constructed, trained, downloaded or substituted
-by this protocol. Shared frame implementation, learned behavior, builder
-transfer and consumer performance qualification remain pending.
+by this protocol. The shared-frame development implementation does not establish
+learned behavior, builder transfer or consumer performance qualification.
+
+## Implemented slice and remaining work, 2026-10-02
+
+The current development change adds
+[`selected_authority_frame.py`](../src/flora/selected/selected_authority_frame.py)
+and the data-only
+[`selected_history_contribution.py`](../src/flora/selected/selected_history_contribution.py).
+Only privately issued `permits` and `allow_event` descriptors with the identical
+verified native origin enter the composed route. Completely unissued routes
+keep their existing behavior; partial, detached or changed issuance rejects
+before independent callbacks or private I/O. The origin, producer accessors,
+helper code, original controllers and held inputs remain bound throughout.
+
+The frame owns one `SelectedContextMetadataSample` on the actual metadata
+connection. Its `permissions` owner remains the actual gated runtime policy,
+and `state.policy` remains that same object. Only copied local views compose
+native permission, phase-member and context predicates over sampled rows and
+captured C events. Replacing the actual runtime policy with the origin's
+ungated history-policy copy would violate this ownership contract.
+
+H contributes its exact manifest custody, source/raw metadata, held originals
+and evaluation heads/actions, including H originals not selected by C. It
+reserves one H source slot for the manifest and creates no manifest grant.
+C has a separate complete parent-DAG cap. Each phase-membership ancestry keeps
+its H limit; neither a broad C nor overlapping purposes expands that limit.
+The existing 4,096-row metadata cap also covers immutable Claim versions and
+relations, current Claim heads, active state heads, versions, activation/approval
+receipts and rollback dependencies. Excess material rejects without truncation.
+
+`context_guard.py` uses distinct frames for the initial nomination, every
+`initial_barrier`, each prepared `metadata_current` and post-assembly metadata
+capture. Exact nomination and held-authority comparisons use the local views.
+After the retained independent authority callback, the manifest and exact
+physical targets are reobserved and one capped XTDB statement fences H, C,
+Claim and governed-state rows together. Only sealed native owner, reader,
+class, helper and value checks run afterward. Frames and local reader closures
+are discarded; no successful permission or qualification crosses a boundary.
+
+The integration preserves the original private operation protocol. One
+`_AuthorizedRuntimeReads.get` still checks four independent boundaries around
+the outer plaintext operation and inner ciphertext fetch. Initial source denial
+precedes private role qualification and the approval-verifier factory. Actual
+owner proof and qualification work remain independently current; they are not
+replaced by the metadata sample. Captured context values and physical maps,
+including H material outside C, cannot be mutated to fit a later supplied
+signature or substituted callback.
+
+Remaining costs are deliberate limits of this change. `assemble_context` still
+uses the original services and gated predicates; its nested byte boundaries
+use fresh frames. Independent opaque guards, including native lineage's
+separate history check, still execute. They have no descriptor that permits
+omitting or merging their external authority behavior. Some immutable Claim
+and state row readers also sample separately from their terminal contributors.
+No live connection pooling, request-wide sampled authority or shared owner
+approval is introduced. These remaining costs may matter to response timing.
+
+The regression selection includes actual issued origins, unselected H
+withdrawal, selected C withdrawal, distinct purposes on one source, Claim/state
+and activation changes, initial qualification-time withdrawal, four fresh
+private-read boundaries, ciphertext-time withdrawal before decryption, held
+values/history/origin changes, private descriptor and nested callback swaps,
+physical mutation with matching forged signatures, opaque equality/getter
+callbacks, and the prohibition on JSON work after terminal observation.
+Controlled fixtures use real encryption, owner signatures and canonical
+services; their SQL/Kurrent transports and supplied content are test fixtures.
+
+The [October 2 checkpoint](VERIFICATION_CHECKPOINT_2026-10-02.md) records the
+old and repaired source/test hashes separately. At `36f39b36`, the native
+Linux/ARM64 runner began at 18:54:22 UTC and verified its hashes. Its H
+contributor module passed 19 tests in 4.535 s, but the frame module failed two
+of 19 cases in 930.594 s: selected C and unselected H final-callback withdrawal
+both observed only one independent guard call when two were required.
+Recursive binding capture had frozen legitimate mutable state inside the
+opaque guard. That failed receipt remains preserved. Assertions and response
+budgets are unchanged.
+
+The local `_capture_context_binding` repair passed the two formerly failing
+C/H callback tests in 68.205 s on native Linux/ARM64 at the earlier source
+fingerprint `82c784b`, before final function-code pins. It does not verify
+the final repaired source.
+
+At `ef9c190e`, recursive seals cover known pure context helpers, while native
+immutable `_guard_codes` pairs bind opaque function identity/code and permit
+legitimate internal counter changes. Final C/H withdrawal tests passed 2/2 in
+73.007 s; the new code-swap test passed 1/1 in 10.439 s. The complete 20-case
+frame suite completed at 19:48:46 UTC with 20/20 cases passing in 944.073 s;
+its exact-source receipt is linked from the checkpoint. This is a controlled
+module result. The separate existing-module
+runner halted at 19:37:32 UTC after 35/76 modules: 476 passes, one failure and
+one error across 478 cases; 41 modules remain unrun. The unchanged worker's
+two issues are `worker_rejected` instead of `exit_failure`, and an unexpected
+`NativeWorkerFailure: worker_rejected`. Asyncio/transport warnings were also
+observed. Cause remains unresolved; no environment or frame attribution is
+established. The broad local gate has failed pending investigation.
+
+The final-source ordinary partial receipt records readers 2/2 and withdrawal
+1/1 passing, but native responses 60,061 / 60,108 ms exceed the unchanged
+60,000 ms budget. Transport and other jobs remain pending at that observation.
+
+The earlier QEMU contributor result was 19 tests in 26.478 s. QEMU
+frame/context selections on candidate `876e4177` stopped incomplete when
+superseded; both candidate CI runs were intentionally canceled. An exploratory
+metadata case passed in 253.115 s before final seals. These observations do
+not substitute for the published source's ordinary CI, whose full result
+remains **pending**. The older `36f39b36` run's reader job passed, but native responses
+60,087 / 60,155 ms still exceed the unchanged 60,000 ms budget.
+Earlier failed response budgets remain failures. Local
+construction or contract tests do not qualify physical consistency, response
+latency, learned personal judgment or FBM transfer.
+
+## Completed CI and measurement boundary update
+
+Ordinary ef9c190e CI is now complete: 944 component cases in 78 modules passed,
+including H 19 and frame 20; physical results are 49 pass, two failed responses
+and two incomplete cases of 53. Earlier pending statements above are historical.
+Standalone 25,743 / 40,144 ms exceeds 10,000 ms; native 60,061 / 60,108 ms
+exceeds 60,000 ms. The checkpoint links the exact completed receipt.
+
+The local worker input race was independently confirmed and repaired at 9b57ed3.
+All 13 worker contracts passed on unchanged source after a preserved initial
+deadline-fixture error; residual transport warnings remain. This change does
+not alter frame contracts or claim latency improvement. The native profiler's
+21 contracts passed, but its physical diagnostic capped during setup before
+any owned reader. No frame timing was collected. The next observation mode
+explicitly excludes parent setup and bounds each owned worker's numeric window;
+it must never turn its observation cutoff into authorization or cancellation.
+
+Primary implementation research is linked in LATENCY_RESEARCH_2026-10-02.md.
+Exact immutable dependency sharing is a measured hypothesis, while independent
+effectful guards, fresh permissions, manifest/physical reobservation and the
+terminal joint XTDB fence remain required. The protocol is a necessary prototype
+slice and does not mandate Alice's full memory, experience or mission platform.

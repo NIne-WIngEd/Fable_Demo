@@ -1,0 +1,270 @@
+{
+  "schema": "flora-ordinary-ci-partial-receipt-v1",
+  "observed_at_utc": "2026-10-02T19:38:11Z",
+  "repository": "NIne-WIngEd/FloRA",
+  "runtime_commit": "ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f",
+  "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+  "checkout_and_runtime_tree": "1f9b955849cbc69ed1f0244366876bbe672fd0c6",
+  "tree_identity_verified": true,
+  "checkout_merge_parents": [
+    "885be57abb582510d27a98177facd2a358c11387",
+    "ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f"
+  ],
+  "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "run_id": 37054784829,
+  "run_url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829",
+  "run_status": "in_progress",
+  "run_conclusion": null,
+  "run_event": "pull_request",
+  "run_attempt": 1,
+  "source_refs": {
+    "runtime_commit": "https://github.com/NIne-WIngEd/FloRA/commit/ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f",
+    "checkout_commit": "https://github.com/NIne-WIngEd/FloRA/commit/2f166a9d745667b200302a404bd04f8def7a83d9",
+    "tree": "https://api.github.com/repos/NIne-WIngEd/FloRA/git/trees/1f9b955849cbc69ed1f0244366876bbe672fd0c6",
+    "workflow": "https://github.com/NIne-WIngEd/FloRA/blob/ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f/.github/workflows/flora.yml"
+  },
+  "completed_job_count": 3,
+  "total_job_count": 13,
+  "component_tests": null,
+  "component_modules": null,
+  "physical": {
+    "discovered": 53,
+    "completed_cases": 4,
+    "passed": 3,
+    "failed_response_cases": 1,
+    "pending_cases": 49,
+    "standalone_elapsed_ms": {
+      "before": null,
+      "after": null,
+      "budget": 10000,
+      "status": "pending completed transport job logs"
+    },
+    "native_elapsed_ms": {
+      "before": 60061,
+      "after": 60108,
+      "budget": 60000,
+      "status": "timeout"
+    },
+    "ci_job_cap_minutes": 60
+  },
+  "jobs": [
+    {
+      "name": "contracts",
+      "id": 110996694507,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996694507",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": null,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-transport",
+      "id": 110996695035,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695035",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": null,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-lineage",
+      "id": 110996695150,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695150",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T19:32:35Z",
+      "completed_at_utc": null,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-history",
+      "id": 110996695219,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695219",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": null,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-native-pilot-typed-phase",
+      "id": 110996695250,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695250",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T19:32:35Z",
+      "completed_at_utc": null,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-native-pilot-before-tail",
+      "id": 110996695252,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695252",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T19:32:35Z",
+      "completed_at_utc": null,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-native-comparison",
+      "id": 110996695267,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695267",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at_utc": "2026-10-02T19:32:35Z",
+      "completed_at_utc": "2026-10-02T19:36:51Z",
+      "case_total": 1,
+      "case_passed": 0,
+      "case_failed": 1,
+      "cases": [
+        {
+          "case": "test_selected_native_comparison.SelectedNativeComparisonIntegrationTest.test_actual_phase_context_execution_parent_and_private_run_custody",
+          "outcome": "failure",
+          "fixture_elapsed_seconds": 184.816,
+          "completion_receipt": "2026-10-02T19:36:47.7785269Z [completed test_selected_native_comparison.SelectedNativeComparisonIntegrationTest.test_actual_phase_context_execution_parent_and_private_run_custody in 184.816s]"
+        }
+      ],
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:37.7880747Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:38.2703889Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "suite_result_receipts": [
+        "2026-10-02T19:36:47.7791833Z Ran 1 test in 184.816s",
+        "2026-10-02T19:36:47.7792026Z FAILED (failures=1)"
+      ],
+      "response_budget_ms": 60000,
+      "before": {
+        "status": "timeout",
+        "elapsed_ms": 60061
+      },
+      "after": {
+        "status": "timeout",
+        "elapsed_ms": 60108
+      },
+      "failure_reason": "Both native response attempts timed out against the unchanged response budget."
+    },
+    {
+      "name": "integration-readers",
+      "id": 110996695306,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695306",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": "2026-10-02T19:35:17Z",
+      "case_total": 2,
+      "case_passed": 2,
+      "case_failed": 0,
+      "cases": [
+        {
+          "case": "test_selected_native_read_sessions.SelectedNativeReadSessionIntegrationTest.test_fresh_guarded_real_sessions_recover_existing_receipts_and_respect_live_revocation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 93.277,
+          "completion_receipt": "2026-10-02T19:35:11.7440178Z [completed test_selected_native_read_sessions.SelectedNativeReadSessionIntegrationTest.test_fresh_guarded_real_sessions_recover_existing_receipts_and_respect_live_revocation in 93.277s]"
+        },
+        {
+          "case": "test_selected_native_writer_faults.SelectedNativeWriterFaultTest.test_real_blocked_pgconn_exits_on_owner_without_late_sql_continuation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.87,
+          "completion_receipt": "2026-10-02T19:35:12.6139948Z [completed test_selected_native_writer_faults.SelectedNativeWriterFaultTest.test_real_blocked_pgconn_exits_on_owner_without_late_sql_continuation in 0.870s]"
+        }
+      ],
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:36.8953960Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:37.6527982Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "suite_result_receipts": [
+        "2026-10-02T19:35:12.6141309Z Ran 2 tests in 94.147s",
+        "2026-10-02T19:35:12.6141568Z OK"
+      ]
+    },
+    {
+      "name": "integration-core",
+      "id": 110996695321,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695321",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T19:32:35Z",
+      "completed_at_utc": null,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-native-pilot-outcome-audit",
+      "id": 110996695385,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695385",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": null,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-native-pilot-withdrawal",
+      "id": 110996695418,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695418",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": "2026-10-02T19:35:58Z",
+      "case_total": 1,
+      "case_passed": 1,
+      "case_failed": 0,
+      "cases": [
+        {
+          "case": "test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_phase_withdrawal_at_native_cipher_read_blocks_later_private_reads",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 124.765,
+          "completion_receipt": "2026-10-02T19:35:51.8462207Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_phase_withdrawal_at_native_cipher_read_blocks_later_private_reads in 124.765s]"
+        }
+      ],
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:38.1627827Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:39.4455734Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "suite_result_receipts": [
+        "2026-10-02T19:35:51.8463981Z Ran 1 test in 124.766s",
+        "2026-10-02T19:35:51.8464320Z OK"
+      ]
+    },
+    {
+      "name": "integration-history-routes-retained",
+      "id": 110996695451,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695451",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": null,
+      "case_results_not_yet_available": true
+    },
+    {
+      "name": "integration-history-routes-native",
+      "id": 110996695575,
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695575",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": null,
+      "case_results_not_yet_available": true
+    }
+  ],
+  "method": "Read one follow-up snapshot of all 13 job records and decoded logs for the three completed jobs through the GitHub connector. Preserve safe fixed case identities, results, checkout receipts and fixture durations, not full logs. Each completed log names merge2f166a9d and Alice4f287a48; GitHub commit metadata verifies merge parents and exact merge/runtime tree identity. Component totals and transport elapsed times remain unavailable because their jobs are pending. No earlier runtime's case results or response clocks are copied. No tests, custom diagnostic, cancellation, source edits or dependency substitutions were dispatched for this receipt.",
+  "interpretation": "These results belong only to published repaired runtime ef9c190e. Local native ARM64 component results and earlier36f39b36 ordinary CI are separate. Fixture and workflow times are not response times. The ordinary run is pending, and the completed native response case failed its unchanged budget. This partial receipt grants no latency, learned-behavior, model or transfer qualification.",
+  "qualification": {
+    "same_commit_full_gate": false,
+    "component_suite_complete": false,
+    "physical_complete": false,
+    "response_latency": false,
+    "learned_judgment": false,
+    "trained_FBM_or_transfer": false,
+    "local_native_component_results_verified_by_this_receipt": false
+  },
+  "pending": "Recover completed contracts, transport and remaining physical job outcomes later; retain failures and any cancellation/incomplete cases. Pending cases are not passed."
+}

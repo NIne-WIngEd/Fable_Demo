@@ -1,0 +1,1219 @@
+{
+  "after_count": 116,
+  "after_hash_mismatches": [],
+  "alice_runtime_contract_head_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "alice_tree_sha": "461f857518173000aa42dfc9071e1be8c4c48283",
+  "all_before_after_file_hashes_verified": true,
+  "artifact_published_head_sha": "da370ebc9b089aec430859059cc83af52e623089",
+  "artifact_sha256": "b87e1becf62a7ff864074584fa7f2cf826a083a0461383cd6dc5cc8a4e34b37d",
+  "artifact_source_hashes_unchanged": true,
+  "before_count": 115,
+  "before_hash_mismatches": [],
+  "before_modules_missing_after": [],
+  "changed_before_modules": [],
+  "compiled_code_provenance_independently_attested_by_file_hashes": false,
+  "dynamic_fixture_loader_checks": {
+    "flora_native_comparison_backend_fixture": true,
+    "flora_native_comparison_phase_fixture": true,
+    "flora_native_comparison_process_fixture": true
+  },
+  "dynamic_module_paths": {
+    "flora_native_comparison_backend_fixture": "tests/integration/test_selected_runtime_bridge.py",
+    "flora_native_comparison_phase_fixture": "tests/test_selected_judgment_lineage.py",
+    "flora_native_comparison_process_fixture": "tests/native_contract_fixture.py",
+    "native_diagnostic_script": "scripts/profile_selected_native_boundaries.py",
+    "shared_transport_diagnostic": "scripts/profile_selected_transport_boundaries.py"
+  },
+  "flora_tree_sha": "5a904dbd310814bf5dbeeaac8832dc4fc53d573c",
+  "limits": [
+    "Module-associated file bytes are verified. The artifact does not record runtime paths or independently attest executed code compilation/provenance.",
+    "Pinned loader declarations make expected dynamic fixture/helper paths unambiguous; altered in-memory module metadata or code would require separate checks.",
+    "Loaded original code objects are bound by profiler target identity separately from these file digests.",
+    "Only listed module files and explicit profiler/helper files are covered; imported presence does not establish measured execution.",
+    "This receipt makes no response-latency or candidate-improvement claim; workflow checkout and command verification are owned by the parent."
+  ],
+  "newly_loaded_source_modules": [
+    "flora.selected.authenticated_history"
+  ],
+  "private_content_retained": false,
+  "published_flora_head_sha": "da370ebc9b089aec430859059cc83af52e623089",
+  "qualification": false,
+  "receipt_kind": "source_file_validation_only",
+  "schema_version": 1,
+  "source_hash_function_and_helper_checks": {
+    "fixture_import_named_original": true,
+    "helper_path_same_script_directory": true,
+    "module_files_hashed": true,
+    "native_script_hashed": true,
+    "transport_helper_hashed": true
+  },
+  "source_hash_method": "SHA256 of exact raw subprocess git show COMMIT:PATH stdout bytes, without newline translation or importing fixture/runtime code.",
+  "unresolved_module_paths": [],
+  "verified_after_count": 116,
+  "verified_repository_counts": {
+    "alice": 56,
+    "flora": 60
+  },
+  "verified_sources": [
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.adjudication_contracts",
+      "path": "src/cognitive_kernel/adjudication_contracts.py",
+      "pinned_blob_sha256": "59e245fe81247ed937d3240157051bc342a2f72c321f434d8afb46bf5f1dfe1e",
+      "reported_after_sha256": "59e245fe81247ed937d3240157051bc342a2f72c321f434d8afb46bf5f1dfe1e",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.attention",
+      "path": "src/cognitive_kernel/attention.py",
+      "pinned_blob_sha256": "2fc6c3138ac327c7995589691d49d2d702a6e59a91a25821f578ce894c1ca0f0",
+      "reported_after_sha256": "2fc6c3138ac327c7995589691d49d2d702a6e59a91a25821f578ce894c1ca0f0",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.attention_policy",
+      "path": "src/cognitive_kernel/attention_policy.py",
+      "pinned_blob_sha256": "4ed9093bec3ecd0b3bb4dedff02d841472dadd33e06aef38940b2ee592f3fe0e",
+      "reported_after_sha256": "4ed9093bec3ecd0b3bb4dedff02d841472dadd33e06aef38940b2ee592f3fe0e",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.authority",
+      "path": "src/cognitive_kernel/authority.py",
+      "pinned_blob_sha256": "5479cd69a42181f0c1657d1dbeb26f3fa238821d86d996edded079aac76b8604",
+      "reported_after_sha256": "5479cd69a42181f0c1657d1dbeb26f3fa238821d86d996edded079aac76b8604",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.bounded_serving_prototype",
+      "path": "src/cognitive_kernel/bounded_serving_prototype.py",
+      "pinned_blob_sha256": "09cd11bfee9b2cf4bb2475e099a07d91c45fc1eecd93c094f81bf315d363229d",
+      "reported_after_sha256": "09cd11bfee9b2cf4bb2475e099a07d91c45fc1eecd93c094f81bf315d363229d",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.canonical",
+      "path": "src/cognitive_kernel/canonical.py",
+      "pinned_blob_sha256": "d3f78be7e367bd8a3115b75e8d05d3f5fa5b177a32b44dea6e01f8375adf2ae8",
+      "reported_after_sha256": "d3f78be7e367bd8a3115b75e8d05d3f5fa5b177a32b44dea6e01f8375adf2ae8",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.claim_authority_prototype",
+      "path": "src/cognitive_kernel/claim_authority_prototype.py",
+      "pinned_blob_sha256": "c688b138d499e78cdf70e700e48f282c31564aaf529934fe2ab529702a8025f0",
+      "reported_after_sha256": "c688b138d499e78cdf70e700e48f282c31564aaf529934fe2ab529702a8025f0",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.claim_contracts",
+      "path": "src/cognitive_kernel/claim_contracts.py",
+      "pinned_blob_sha256": "d5535175cbd361c2a00f8b4d59cc05d169af80cb63d94dd50e9d1483cdcd4e75",
+      "reported_after_sha256": "d5535175cbd361c2a00f8b4d59cc05d169af80cb63d94dd50e9d1483cdcd4e75",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.contracts",
+      "path": "src/cognitive_kernel/contracts.py",
+      "pinned_blob_sha256": "3cb7a5f228816056bb335bae206c88a69d08dc7c809833dc267c9027e9454e3a",
+      "reported_after_sha256": "3cb7a5f228816056bb335bae206c88a69d08dc7c809833dc267c9027e9454e3a",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.curation_contracts",
+      "path": "src/cognitive_kernel/curation_contracts.py",
+      "pinned_blob_sha256": "463fab732f4a6796835d4a7a8aa69a37377bf1e26acf5809300d905ebba8cd5e",
+      "reported_after_sha256": "463fab732f4a6796835d4a7a8aa69a37377bf1e26acf5809300d905ebba8cd5e",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.deletion_contracts",
+      "path": "src/cognitive_kernel/deletion_contracts.py",
+      "pinned_blob_sha256": "df30438dae8c663cedb12074b92da6b48a6219abf845010cf0a9287ea6635290",
+      "reported_after_sha256": "df30438dae8c663cedb12074b92da6b48a6219abf845010cf0a9287ea6635290",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.deletion_prototype",
+      "path": "src/cognitive_kernel/deletion_prototype.py",
+      "pinned_blob_sha256": "a757187280fe0952cbb2f7e014588a40f33eee64074e86303e1730ae1756acd4",
+      "reported_after_sha256": "a757187280fe0952cbb2f7e014588a40f33eee64074e86303e1730ae1756acd4",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.durable_workflow_prototype",
+      "path": "src/cognitive_kernel/durable_workflow_prototype.py",
+      "pinned_blob_sha256": "7094a3342f017d37e44a40f9e2fd42786ffefffeefb615f6b19f82d0857dc346",
+      "reported_after_sha256": "7094a3342f017d37e44a40f9e2fd42786ffefffeefb615f6b19f82d0857dc346",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.experience",
+      "path": "src/cognitive_kernel/experience.py",
+      "pinned_blob_sha256": "07fa74978ce555256f9eaeb4c0ab812aa674fda5fd5efcff912367e965baf15c",
+      "reported_after_sha256": "07fa74978ce555256f9eaeb4c0ab812aa674fda5fd5efcff912367e965baf15c",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.formation_context_planner",
+      "path": "src/cognitive_kernel/formation_context_planner.py",
+      "pinned_blob_sha256": "0441994076c1f867f86d2e78e0d3ff9350ab85e53fa4df2b4679244b713f2cd0",
+      "reported_after_sha256": "0441994076c1f867f86d2e78e0d3ff9350ab85e53fa4df2b4679244b713f2cd0",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.formation_contracts",
+      "path": "src/cognitive_kernel/formation_contracts.py",
+      "pinned_blob_sha256": "4130c59b61cc2aa119ef8658af57639d9185a7727ecf461508b655724e55cb8a",
+      "reported_after_sha256": "4130c59b61cc2aa119ef8658af57639d9185a7727ecf461508b655724e55cb8a",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.formation_retrieval",
+      "path": "src/cognitive_kernel/formation_retrieval.py",
+      "pinned_blob_sha256": "f5b9aba868fb01225bf30683c99e8da3cbc47331e9416291849f126360025b7e",
+      "reported_after_sha256": "f5b9aba868fb01225bf30683c99e8da3cbc47331e9416291849f126360025b7e",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.formation_sources",
+      "path": "src/cognitive_kernel/formation_sources.py",
+      "pinned_blob_sha256": "415cb8b13fbd9fcd4fce9478df913dc470f1529222714903ffc55c5b4e0a202a",
+      "reported_after_sha256": "415cb8b13fbd9fcd4fce9478df913dc470f1529222714903ffc55c5b4e0a202a",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.guest",
+      "path": "src/cognitive_kernel/guest.py",
+      "pinned_blob_sha256": "4ffe563d0c68cea1a4bded009bd7fb744467d5d5896ece1890c51204764a973c",
+      "reported_after_sha256": "4ffe563d0c68cea1a4bded009bd7fb744467d5d5896ece1890c51204764a973c",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.interaction_policy",
+      "path": "src/cognitive_kernel/interaction_policy.py",
+      "pinned_blob_sha256": "88e67fd8def614ca520297aca2b573926d4fe0ae2e487d10dc196a1fe9de0b0c",
+      "reported_after_sha256": "88e67fd8def614ca520297aca2b573926d4fe0ae2e487d10dc196a1fe9de0b0c",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.ledger",
+      "path": "src/cognitive_kernel/ledger.py",
+      "pinned_blob_sha256": "5a77cc9d142fbe0692b1f023f4610b03ebdc12bdf1ae69559ae03c88c203d06d",
+      "reported_after_sha256": "5a77cc9d142fbe0692b1f023f4610b03ebdc12bdf1ae69559ae03c88c203d06d",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.ledger_policy",
+      "path": "src/cognitive_kernel/ledger_policy.py",
+      "pinned_blob_sha256": "eccbe0b71215597617b5d14d191ef675209926972f6ee25846a84ceb881483c1",
+      "reported_after_sha256": "eccbe0b71215597617b5d14d191ef675209926972f6ee25846a84ceb881483c1",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.ledger_store",
+      "path": "src/cognitive_kernel/ledger_store.py",
+      "pinned_blob_sha256": "d36f710f13e9b2ab2e309f3a5e429185a0e14319859704fbc9f0d329a780111a",
+      "reported_after_sha256": "d36f710f13e9b2ab2e309f3a5e429185a0e14319859704fbc9f0d329a780111a",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.lifecycle",
+      "path": "src/cognitive_kernel/lifecycle.py",
+      "pinned_blob_sha256": "9da069d7aa34b0a797a4443f6ba97d413f472d784a9fb017899a45ad9ca1a431",
+      "reported_after_sha256": "9da069d7aa34b0a797a4443f6ba97d413f472d784a9fb017899a45ad9ca1a431",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.lifecycle_policy",
+      "path": "src/cognitive_kernel/lifecycle_policy.py",
+      "pinned_blob_sha256": "37434734aba96d2de82b60759292c606ec94cbcaf6d48eb281d50c12a11fb9e3",
+      "reported_after_sha256": "37434734aba96d2de82b60759292c606ec94cbcaf6d48eb281d50c12a11fb9e3",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.lifecycle_store",
+      "path": "src/cognitive_kernel/lifecycle_store.py",
+      "pinned_blob_sha256": "8550b7266e5ab526a4cdca53243d7fc4c4f3b7352c65bc7f692287d90d0b46cc",
+      "reported_after_sha256": "8550b7266e5ab526a4cdca53243d7fc4c4f3b7352c65bc7f692287d90d0b46cc",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.m2_closeout",
+      "path": "src/cognitive_kernel/m2_closeout.py",
+      "pinned_blob_sha256": "4a185b5d85d1545802e3e2414ce740699bbd56c0a6bd0fc8ae79d0f529ab15b6",
+      "reported_after_sha256": "4a185b5d85d1545802e3e2414ce740699bbd56c0a6bd0fc8ae79d0f529ab15b6",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.memory_contracts",
+      "path": "src/cognitive_kernel/memory_contracts.py",
+      "pinned_blob_sha256": "b533c8a83e41ea22ae7b761f70c8859ec1d867c072f2c1e23eea26947a367e86",
+      "reported_after_sha256": "b533c8a83e41ea22ae7b761f70c8859ec1d867c072f2c1e23eea26947a367e86",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.mission",
+      "path": "src/cognitive_kernel/mission.py",
+      "pinned_blob_sha256": "e4bba264405ef192f5dc3150b21e7dd9d2d2e9b9206b2f54dd648606bac1e5a7",
+      "reported_after_sha256": "e4bba264405ef192f5dc3150b21e7dd9d2d2e9b9206b2f54dd648606bac1e5a7",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.mission_policy",
+      "path": "src/cognitive_kernel/mission_policy.py",
+      "pinned_blob_sha256": "bf38e476fb8cc904ab36973323e11226ce5e008b5312b80da6e60a1f42c696be",
+      "reported_after_sha256": "bf38e476fb8cc904ab36973323e11226ce5e008b5312b80da6e60a1f42c696be",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.payload_store",
+      "path": "src/cognitive_kernel/payload_store.py",
+      "pinned_blob_sha256": "ace7660bcb4be6273402141c4b392014d5398a7dd9b056338014450d49e14524",
+      "reported_after_sha256": "ace7660bcb4be6273402141c4b392014d5398a7dd9b056338014450d49e14524",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.phase2_shadow_adapter",
+      "path": "src/cognitive_kernel/phase2_shadow_adapter.py",
+      "pinned_blob_sha256": "1ed3e555ac50a80f56d622d0d7552eece7b14f50e99cb9144a8b85f738e2b675",
+      "reported_after_sha256": "1ed3e555ac50a80f56d622d0d7552eece7b14f50e99cb9144a8b85f738e2b675",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.policy",
+      "path": "src/cognitive_kernel/policy.py",
+      "pinned_blob_sha256": "f47fdb975241c5fd9820afec3906f7582fbb5ce363464b22c33c9a153413929b",
+      "reported_after_sha256": "f47fdb975241c5fd9820afec3906f7582fbb5ce363464b22c33c9a153413929b",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.projection_contracts",
+      "path": "src/cognitive_kernel/projection_contracts.py",
+      "pinned_blob_sha256": "92026b96625dc91ec9779e70343ffe3cf187a94336f59200270704790537fd77",
+      "reported_after_sha256": "92026b96625dc91ec9779e70343ffe3cf187a94336f59200270704790537fd77",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.projection_prototype",
+      "path": "src/cognitive_kernel/projection_prototype.py",
+      "pinned_blob_sha256": "19391a1a3b7a3a3d9a46947769f2f70267406a2997459f2a05b634e196e7d3c9",
+      "reported_after_sha256": "19391a1a3b7a3a3d9a46947769f2f70267406a2997459f2a05b634e196e7d3c9",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.raw_buffer",
+      "path": "src/cognitive_kernel/raw_buffer.py",
+      "pinned_blob_sha256": "5631c42a3ef0570aa08ca9b006b4698a3272c069206a8863583e03b5c5c301ed",
+      "reported_after_sha256": "5631c42a3ef0570aa08ca9b006b4698a3272c069206a8863583e03b5c5c301ed",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.raw_buffer_policy",
+      "path": "src/cognitive_kernel/raw_buffer_policy.py",
+      "pinned_blob_sha256": "7edef26aec1c340ce2966d648890f31cc274fc79577108f735626362bf46c3dc",
+      "reported_after_sha256": "7edef26aec1c340ce2966d648890f31cc274fc79577108f735626362bf46c3dc",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.release",
+      "path": "src/cognitive_kernel/release.py",
+      "pinned_blob_sha256": "39c654ed93317b11b714090837af88193f62d290a06356e47f8a7900a7987013",
+      "reported_after_sha256": "39c654ed93317b11b714090837af88193f62d290a06356e47f8a7900a7987013",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.release_policy",
+      "path": "src/cognitive_kernel/release_policy.py",
+      "pinned_blob_sha256": "b73c2417fca05e5d2556f5c6c6584b5a6ab684c4902e652c505868e772e0a8e6",
+      "reported_after_sha256": "b73c2417fca05e5d2556f5c6c6584b5a6ab684c4902e652c505868e772e0a8e6",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.results",
+      "path": "src/cognitive_kernel/results.py",
+      "pinned_blob_sha256": "dac1ba0ecdbac5e53c6cea4fa6b31d7571121f3d3cb3e7be16276e2f0e238624",
+      "reported_after_sha256": "dac1ba0ecdbac5e53c6cea4fa6b31d7571121f3d3cb3e7be16276e2f0e238624",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.routing",
+      "path": "src/cognitive_kernel/routing.py",
+      "pinned_blob_sha256": "8c48b2e8ef37dcbd71ca1bd000590105a421643534ba970517cea0b6fb8d3c9f",
+      "reported_after_sha256": "8c48b2e8ef37dcbd71ca1bd000590105a421643534ba970517cea0b6fb8d3c9f",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.serving_contracts",
+      "path": "src/cognitive_kernel/serving_contracts.py",
+      "pinned_blob_sha256": "2cfd732c0ca9d07dbfb4298f78eadeb56bd5af1b618610b909f0cbd1afd6c6cc",
+      "reported_after_sha256": "2cfd732c0ca9d07dbfb4298f78eadeb56bd5af1b618610b909f0cbd1afd6c6cc",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.shadow_adjudication_prototype",
+      "path": "src/cognitive_kernel/shadow_adjudication_prototype.py",
+      "pinned_blob_sha256": "68c11fe998f0ee6226441df1b75dd745ef32960ade5a2fbfbc917213029db999",
+      "reported_after_sha256": "68c11fe998f0ee6226441df1b75dd745ef32960ade5a2fbfbc917213029db999",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.shadow_migration_contracts",
+      "path": "src/cognitive_kernel/shadow_migration_contracts.py",
+      "pinned_blob_sha256": "bb9a43f13144cf7a47a6d448063612a3793a16fa6f05dd22bc8460f97b2bccd4",
+      "reported_after_sha256": "bb9a43f13144cf7a47a6d448063612a3793a16fa6f05dd22bc8460f97b2bccd4",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.shadow_migration_stage_c_e",
+      "path": "src/cognitive_kernel/shadow_migration_stage_c_e.py",
+      "pinned_blob_sha256": "1b18645403fbc80509b1bcae8376c8e04cd3f0b92b043c2668f11ea1cc980c07",
+      "reported_after_sha256": "1b18645403fbc80509b1bcae8376c8e04cd3f0b92b043c2668f11ea1cc980c07",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.shadow_migration_stage_c_e_evaluation",
+      "path": "src/cognitive_kernel/shadow_migration_stage_c_e_evaluation.py",
+      "pinned_blob_sha256": "ae26ed605cba806ea54dafdf15e46f376a5667151a22315d5ce87c8a59cd2561",
+      "reported_after_sha256": "ae26ed605cba806ea54dafdf15e46f376a5667151a22315d5ce87c8a59cd2561",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.shadow_migration_stage_d",
+      "path": "src/cognitive_kernel/shadow_migration_stage_d.py",
+      "pinned_blob_sha256": "991fa58799fa7cbcb3873703676d9efdfa224f58b438707c5f26573ccc7e6b42",
+      "reported_after_sha256": "991fa58799fa7cbcb3873703676d9efdfa224f58b438707c5f26573ccc7e6b42",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.shadow_migration_stage_f_g",
+      "path": "src/cognitive_kernel/shadow_migration_stage_f_g.py",
+      "pinned_blob_sha256": "c0233a60dcf08fb31f3498c0085d82b7162b31e875f705b40e9bb0b3ac4a9d5b",
+      "reported_after_sha256": "c0233a60dcf08fb31f3498c0085d82b7162b31e875f705b40e9bb0b3ac4a9d5b",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.shadow_migration_stage_f_g_evaluation",
+      "path": "src/cognitive_kernel/shadow_migration_stage_f_g_evaluation.py",
+      "pinned_blob_sha256": "5accde1e30b4094b697b64494b8e10c2be5f7b9566062ef5f9915f11b3fd360d",
+      "reported_after_sha256": "5accde1e30b4094b697b64494b8e10c2be5f7b9566062ef5f9915f11b3fd360d",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.shadow_migration_stage_f_g_persistent",
+      "path": "src/cognitive_kernel/shadow_migration_stage_f_g_persistent.py",
+      "pinned_blob_sha256": "799cb10f575c9d032dd29f3b396fc8065505dd8f93a4635c379dba1470b084fc",
+      "reported_after_sha256": "799cb10f575c9d032dd29f3b396fc8065505dd8f93a4635c379dba1470b084fc",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.shadow_migration_stage_f_g_persistent_evaluation",
+      "path": "src/cognitive_kernel/shadow_migration_stage_f_g_persistent_evaluation.py",
+      "pinned_blob_sha256": "3bc9a4a65a0895779791d681a8b845d1df71ab85223d2863cee983a122de83ea",
+      "reported_after_sha256": "3bc9a4a65a0895779791d681a8b845d1df71ab85223d2863cee983a122de83ea",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.speaker",
+      "path": "src/cognitive_kernel/speaker.py",
+      "pinned_blob_sha256": "bf342d5fa2980d3c1b6cfa32ad8a30f8ba289b6605048b7cfd9ea0ea6bdaba80",
+      "reported_after_sha256": "bf342d5fa2980d3c1b6cfa32ad8a30f8ba289b6605048b7cfd9ea0ea6bdaba80",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.tier_transition",
+      "path": "src/cognitive_kernel/tier_transition.py",
+      "pinned_blob_sha256": "3e46f2b87f172a9acfed605b5082a35df62018bd08e9abcb8f599f1fa0fdd698",
+      "reported_after_sha256": "3e46f2b87f172a9acfed605b5082a35df62018bd08e9abcb8f599f1fa0fdd698",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.tier_transition_policy",
+      "path": "src/cognitive_kernel/tier_transition_policy.py",
+      "pinned_blob_sha256": "0c6ecac4fa843f9e851abe7e64a26c8fa47f6edb2d2fc742b4652aa2ae20776c",
+      "reported_after_sha256": "0c6ecac4fa843f9e851abe7e64a26c8fa47f6edb2d2fc742b4652aa2ae20776c",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.tier_transition_store",
+      "path": "src/cognitive_kernel/tier_transition_store.py",
+      "pinned_blob_sha256": "f42c972fd244a4ba8e6e02085d8853bc77f24b49096ae43dbd46b3863524ceda",
+      "reported_after_sha256": "f42c972fd244a4ba8e6e02085d8853bc77f24b49096ae43dbd46b3863524ceda",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "cognitive_kernel.workspace",
+      "path": "src/cognitive_kernel/workspace.py",
+      "pinned_blob_sha256": "980ae3680c489a00b48ad518c30647a3720f8ddbe76664a0346622a921686d8d",
+      "reported_after_sha256": "980ae3680c489a00b48ad518c30647a3720f8ddbe76664a0346622a921686d8d",
+      "repository": "alice"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.comparison_run",
+      "path": "src/flora/comparison_run.py",
+      "pinned_blob_sha256": "a4fcee755a0b5bb72a58d67d4c2c6744c3c3a518bf4746f6f9252ec50577ce3f",
+      "reported_after_sha256": "a4fcee755a0b5bb72a58d67d4c2c6744c3c3a518bf4746f6f9252ec50577ce3f",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.evaluation_protocol",
+      "path": "src/flora/evaluation_protocol.py",
+      "pinned_blob_sha256": "462b6180d7a732738c4a849a12d394f00bd7a995489a3ec8f2d479d038ecbe0f",
+      "reported_after_sha256": "462b6180d7a732738c4a849a12d394f00bd7a995489a3ec8f2d479d038ecbe0f",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected",
+      "path": "src/flora/selected/__init__.py",
+      "pinned_blob_sha256": "b1068b7e21a7cdae7d928b081abf8d7cb45ccf7a143f0dda10b3397cebf9e477",
+      "reported_after_sha256": "b1068b7e21a7cdae7d928b081abf8d7cb45ccf7a143f0dda10b3397cebf9e477",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.artifact_registry",
+      "path": "src/flora/selected/artifact_registry.py",
+      "pinned_blob_sha256": "fcf128a00174638117a3b9f6f04e9a61e926c5113fd1d65ae7cbab34a289d810",
+      "reported_after_sha256": "fcf128a00174638117a3b9f6f04e9a61e926c5113fd1d65ae7cbab34a289d810",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": null,
+      "loaded_before": false,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.authenticated_history",
+      "path": "src/flora/selected/authenticated_history.py",
+      "pinned_blob_sha256": "097615b65c63dd58bc48661ff17f0236294df0a52b1c3ef7e3b5ab0da5011bd5",
+      "reported_after_sha256": "097615b65c63dd58bc48661ff17f0236294df0a52b1c3ef7e3b5ab0da5011bd5",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.authority_binding",
+      "path": "src/flora/selected/authority_binding.py",
+      "pinned_blob_sha256": "a816f8cd62d63c4467f07f3c8879c92a5d48b2352c74f164ed23c8d6a350059a",
+      "reported_after_sha256": "a816f8cd62d63c4467f07f3c8879c92a5d48b2352c74f164ed23c8d6a350059a",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.bounded_xtdb_reads",
+      "path": "src/flora/selected/bounded_xtdb_reads.py",
+      "pinned_blob_sha256": "3f3bbf52a4703d0b8694091b7b191dbd0a15f657ae21092c9f0019d88d09b418",
+      "reported_after_sha256": "3f3bbf52a4703d0b8694091b7b191dbd0a15f657ae21092c9f0019d88d09b418",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.claim_controller",
+      "path": "src/flora/selected/claim_controller.py",
+      "pinned_blob_sha256": "e1589f7d9c4616380017c41ce406395064d4e502ffb99cc2ea1f16be948d684b",
+      "reported_after_sha256": "e1589f7d9c4616380017c41ce406395064d4e502ffb99cc2ea1f16be948d684b",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.claims",
+      "path": "src/flora/selected/claims.py",
+      "pinned_blob_sha256": "191e04d017cba1a3fbc159e96711d592678f17a6142987d546044e3eaee57728",
+      "reported_after_sha256": "191e04d017cba1a3fbc159e96711d592678f17a6142987d546044e3eaee57728",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.comparison_custody",
+      "path": "src/flora/selected/comparison_custody.py",
+      "pinned_blob_sha256": "f6edab4b16df89892297ed985214539313944f62ec0d72e8b78802652cb42572",
+      "reported_after_sha256": "f6edab4b16df89892297ed985214539313944f62ec0d72e8b78802652cb42572",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.context",
+      "path": "src/flora/selected/context.py",
+      "pinned_blob_sha256": "730f5035d1fe549ab2d06e83055bfe90ef55c4ead983d2f18e8da5f1a1ace6f9",
+      "reported_after_sha256": "730f5035d1fe549ab2d06e83055bfe90ef55c4ead983d2f18e8da5f1a1ace6f9",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.context_guard",
+      "path": "src/flora/selected/context_guard.py",
+      "pinned_blob_sha256": "84877fc0101521f79dabfa9b0f4f787235e980b742d512228cf55ad54e4fa778",
+      "reported_after_sha256": "84877fc0101521f79dabfa9b0f4f787235e980b742d512228cf55ad54e4fa778",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.decision_outcome",
+      "path": "src/flora/selected/decision_outcome.py",
+      "pinned_blob_sha256": "2f2246a26b178c0e2800ec0ac0ba3fb517ba471de6cd4e65db7fd665236d16fd",
+      "reported_after_sha256": "2f2246a26b178c0e2800ec0ac0ba3fb517ba471de6cd4e65db7fd665236d16fd",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.development_sources",
+      "path": "src/flora/selected/development_sources.py",
+      "pinned_blob_sha256": "a0ab962e0df33b1eabd115fcecf587c01393d989d38428bf9df78e5d8feca226",
+      "reported_after_sha256": "a0ab962e0df33b1eabd115fcecf587c01393d989d38428bf9df78e5d8feca226",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.episodes",
+      "path": "src/flora/selected/episodes.py",
+      "pinned_blob_sha256": "4fb601c9a881c9ea6e7b4d4c3b276d5184957486de4e1f6c5c7174a41bc88ebf",
+      "reported_after_sha256": "4fb601c9a881c9ea6e7b4d4c3b276d5184957486de4e1f6c5c7174a41bc88ebf",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.experience",
+      "path": "src/flora/selected/experience.py",
+      "pinned_blob_sha256": "61b1e81b343ae5fef98175108d97db620770dd9aa04e6b591c3eae6ef0087f9a",
+      "reported_after_sha256": "61b1e81b343ae5fef98175108d97db620770dd9aa04e6b591c3eae6ef0087f9a",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.experiment_runtime",
+      "path": "src/flora/selected/experiment_runtime.py",
+      "pinned_blob_sha256": "ffd9a124795c5df095a38cede697f1534fedb1c2820610490fd97640030c567d",
+      "reported_after_sha256": "ffd9a124795c5df095a38cede697f1534fedb1c2820610490fd97640030c567d",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.formation_admission",
+      "path": "src/flora/selected/formation_admission.py",
+      "pinned_blob_sha256": "2608f5681b97b596cd02d5747a2f516a8e80d461eb138f9a109ef998ece2bb10",
+      "reported_after_sha256": "2608f5681b97b596cd02d5747a2f516a8e80d461eb138f9a109ef998ece2bb10",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.formation_candidates",
+      "path": "src/flora/selected/formation_candidates.py",
+      "pinned_blob_sha256": "ec3f3222b0b8156cbf6968d216d97f24578c2a088642fb8b27702a778d9c4f7b",
+      "reported_after_sha256": "ec3f3222b0b8156cbf6968d216d97f24578c2a088642fb8b27702a778d9c4f7b",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.formation_context",
+      "path": "src/flora/selected/formation_context.py",
+      "pinned_blob_sha256": "e1a2c4ba3ce9bd1d4212007ca6d15e71e7edd6a0946b4955a7c2610da94bf9fd",
+      "reported_after_sha256": "e1a2c4ba3ce9bd1d4212007ca6d15e71e7edd6a0946b4955a7c2610da94bf9fd",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.formation_policy",
+      "path": "src/flora/selected/formation_policy.py",
+      "pinned_blob_sha256": "b8b088256d5ef3f55f310181fd207559c0dd978ec90ceb4ee129e527a2214278",
+      "reported_after_sha256": "b8b088256d5ef3f55f310181fd207559c0dd978ec90ceb4ee129e527a2214278",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.formation_registry",
+      "path": "src/flora/selected/formation_registry.py",
+      "pinned_blob_sha256": "ec3282e9f123f9af99713dd3fdc0366ac1a9574c8b6019f9d28d9fc29b06581f",
+      "reported_after_sha256": "ec3282e9f123f9af99713dd3fdc0366ac1a9574c8b6019f9d28d9fc29b06581f",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.governed_development",
+      "path": "src/flora/selected/governed_development.py",
+      "pinned_blob_sha256": "a93d7585421113780473a4eb50eb18bb74b160eec9e9c057e32816a3b1b17a7b",
+      "reported_after_sha256": "a93d7585421113780473a4eb50eb18bb74b160eec9e9c057e32816a3b1b17a7b",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.governed_episodes",
+      "path": "src/flora/selected/governed_episodes.py",
+      "pinned_blob_sha256": "0965b0d76ff0c5f0e7ff7dce8ecaa1cf5464d5c2eae885dc7611abb0d6eb8b69",
+      "reported_after_sha256": "0965b0d76ff0c5f0e7ff7dce8ecaa1cf5464d5c2eae885dc7611abb0d6eb8b69",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.graph_recollection",
+      "path": "src/flora/selected/graph_recollection.py",
+      "pinned_blob_sha256": "647130ac6ac9a202714ceb03d8145325c417e2e70a1499fc293a933b150e4d36",
+      "reported_after_sha256": "647130ac6ac9a202714ceb03d8145325c417e2e70a1499fc293a933b150e4d36",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.history_fence",
+      "path": "src/flora/selected/history_fence.py",
+      "pinned_blob_sha256": "73fea72846ea94ea2cdcc7088e52a19e3dbce6c62a02668724410d65cd25b0b9",
+      "reported_after_sha256": "73fea72846ea94ea2cdcc7088e52a19e3dbce6c62a02668724410d65cd25b0b9",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.judgment_context",
+      "path": "src/flora/selected/judgment_context.py",
+      "pinned_blob_sha256": "5d21a667fa6d44681ef93ca3de98d989ca28891b9aa0e8efca9c8c56683fae72",
+      "reported_after_sha256": "5d21a667fa6d44681ef93ca3de98d989ca28891b9aa0e8efca9c8c56683fae72",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.judgment_lineage",
+      "path": "src/flora/selected/judgment_lineage.py",
+      "pinned_blob_sha256": "9c19afa50816992382965da7f2476f4268ec81382e6072bfe900daf4595d63b9",
+      "reported_after_sha256": "9c19afa50816992382965da7f2476f4268ec81382e6072bfe900daf4595d63b9",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.native_arm",
+      "path": "src/flora/selected/native_arm.py",
+      "pinned_blob_sha256": "4bb71bdad32d8ffc8ce6f1f57454631cc70224a4263fc34dce35f636b513dd21",
+      "reported_after_sha256": "4bb71bdad32d8ffc8ce6f1f57454631cc70224a4263fc34dce35f636b513dd21",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.native_phase_gate",
+      "path": "src/flora/selected/native_phase_gate.py",
+      "pinned_blob_sha256": "3893586557c9005b263b761d2e4f80b3e4d7697e10a92d700ed1676bca10e908",
+      "reported_after_sha256": "3893586557c9005b263b761d2e4f80b3e4d7697e10a92d700ed1676bca10e908",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.native_reads",
+      "path": "src/flora/selected/native_reads.py",
+      "pinned_blob_sha256": "c790c66e76577a2e68b32a4e386ec50bcc5f7c2c8e6b8555fe84ef56407cda3a",
+      "reported_after_sha256": "c790c66e76577a2e68b32a4e386ec50bcc5f7c2c8e6b8555fe84ef56407cda3a",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.native_worker",
+      "path": "src/flora/selected/native_worker.py",
+      "pinned_blob_sha256": "83b76e8c63398b90b1d4c6e2e6ff5290862b5d8670c77c2ac351cb73cc3138bb",
+      "reported_after_sha256": "83b76e8c63398b90b1d4c6e2e6ff5290862b5d8670c77c2ac351cb73cc3138bb",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.native_writer_guard",
+      "path": "src/flora/selected/native_writer_guard.py",
+      "pinned_blob_sha256": "281020690c0203dad6697207f4919b89518eafbadadf18b31d120cdc7223fb8a",
+      "reported_after_sha256": "281020690c0203dad6697207f4919b89518eafbadadf18b31d120cdc7223fb8a",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.object_store",
+      "path": "src/flora/selected/object_store.py",
+      "pinned_blob_sha256": "373de1e874c571555d6866b2178865e1b3b736a50660b16f57ea20101fe12073",
+      "reported_after_sha256": "373de1e874c571555d6866b2178865e1b3b736a50660b16f57ea20101fe12073",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.outcome_revision",
+      "path": "src/flora/selected/outcome_revision.py",
+      "pinned_blob_sha256": "9ae5148abdbad19d4c31f78683f81978a4d7387bb666c5428d8e980f30256cc2",
+      "reported_after_sha256": "9ae5148abdbad19d4c31f78683f81978a4d7387bb666c5428d8e980f30256cc2",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.owner_authorization",
+      "path": "src/flora/selected/owner_authorization.py",
+      "pinned_blob_sha256": "da41c70b31a5e1880fdbc44d4fc49788bb2c78eccd632f74cfa1b5d53ac3f884",
+      "reported_after_sha256": "da41c70b31a5e1880fdbc44d4fc49788bb2c78eccd632f74cfa1b5d53ac3f884",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.personal_artifact_custody",
+      "path": "src/flora/selected/personal_artifact_custody.py",
+      "pinned_blob_sha256": "a83906892589b1f4bd7b51cf8acc821ce49998f74f1f6c8557a70937e3243fa9",
+      "reported_after_sha256": "a83906892589b1f4bd7b51cf8acc821ce49998f74f1f6c8557a70937e3243fa9",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.personal_state",
+      "path": "src/flora/selected/personal_state.py",
+      "pinned_blob_sha256": "a564a23027ff6af4427320fad478efd14a6461d44b660dad87f3fda06a8da475",
+      "reported_after_sha256": "a564a23027ff6af4427320fad478efd14a6461d44b660dad87f3fda06a8da475",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.phase_routes",
+      "path": "src/flora/selected/phase_routes.py",
+      "pinned_blob_sha256": "34aa39d6e604ff999cf1b598617657d97a460b17ee9c4ffeb75a6fd66cbb880d",
+      "reported_after_sha256": "34aa39d6e604ff999cf1b598617657d97a460b17ee9c4ffeb75a6fd66cbb880d",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.phase_snapshots",
+      "path": "src/flora/selected/phase_snapshots.py",
+      "pinned_blob_sha256": "caf029c475821b6f736e7a1b433fb9c601a61064d4cbc99e432bc60981e29a8c",
+      "reported_after_sha256": "caf029c475821b6f736e7a1b433fb9c601a61064d4cbc99e432bc60981e29a8c",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.phase_source_fence",
+      "path": "src/flora/selected/phase_source_fence.py",
+      "pinned_blob_sha256": "b0829cf3995179b37a0beaf7bf4d42f0f06833b636d52b3231a13962bbb50015",
+      "reported_after_sha256": "b0829cf3995179b37a0beaf7bf4d42f0f06833b636d52b3231a13962bbb50015",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.revocation",
+      "path": "src/flora/selected/revocation.py",
+      "pinned_blob_sha256": "345f75c57a43b8f268348fdae57eb28ccd85980d034a783cca4eac7d7547efe8",
+      "reported_after_sha256": "345f75c57a43b8f268348fdae57eb28ccd85980d034a783cca4eac7d7547efe8",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.selected_authority_frame",
+      "path": "src/flora/selected/selected_authority_frame.py",
+      "pinned_blob_sha256": "2d6c40adc5d141498aea9e999733bff39e537770d55e04dcc9ca146faa983e9f",
+      "reported_after_sha256": "2d6c40adc5d141498aea9e999733bff39e537770d55e04dcc9ca146faa983e9f",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.selected_context",
+      "path": "src/flora/selected/selected_context.py",
+      "pinned_blob_sha256": "c11d75502049966ae1949c2c7f696141b493fd4e7714e799a7ceee1c5d78b243",
+      "reported_after_sha256": "c11d75502049966ae1949c2c7f696141b493fd4e7714e799a7ceee1c5d78b243",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.selected_context_fence",
+      "path": "src/flora/selected/selected_context_fence.py",
+      "pinned_blob_sha256": "556826540bfac77979f696e49b8eb2406315a710d21bc2d68fdc983027ed668a",
+      "reported_after_sha256": "556826540bfac77979f696e49b8eb2406315a710d21bc2d68fdc983027ed668a",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.selected_history_contribution",
+      "path": "src/flora/selected/selected_history_contribution.py",
+      "pinned_blob_sha256": "12aa389e4b33bd0aa98b5c3d2b7c6435d225386020de38c45ac6b1182894be9b",
+      "reported_after_sha256": "12aa389e4b33bd0aa98b5c3d2b7c6435d225386020de38c45ac6b1182894be9b",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.selected_history_fence",
+      "path": "src/flora/selected/selected_history_fence.py",
+      "pinned_blob_sha256": "40d599f96d8e495d0cfa6cc4b1007a11efe3a4a58d2d2edb1fcefee921ece2b1",
+      "reported_after_sha256": "40d599f96d8e495d0cfa6cc4b1007a11efe3a4a58d2d2edb1fcefee921ece2b1",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.selected_phase_authority",
+      "path": "src/flora/selected/selected_phase_authority.py",
+      "pinned_blob_sha256": "de50b7f75a041b5be426f0171466a0330a4e618bf15eb090cc8b5cf447a1812f",
+      "reported_after_sha256": "de50b7f75a041b5be426f0171466a0330a4e618bf15eb090cc8b5cf447a1812f",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.source_closure",
+      "path": "src/flora/selected/source_closure.py",
+      "pinned_blob_sha256": "641b5eed5d11b1a656bb5ce024820807f6764fa7aabba3b397674f8019b7dcdd",
+      "reported_after_sha256": "641b5eed5d11b1a656bb5ce024820807f6764fa7aabba3b397674f8019b7dcdd",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.source_native",
+      "path": "src/flora/selected/source_native.py",
+      "pinned_blob_sha256": "24e1fe5596442cf4c3d46460fee12429578e08b17bb8d2d53efe2251c144470b",
+      "reported_after_sha256": "24e1fe5596442cf4c3d46460fee12429578e08b17bb8d2d53efe2251c144470b",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora.selected.vector_recollection",
+      "path": "src/flora/selected/vector_recollection.py",
+      "pinned_blob_sha256": "b7f8a338d79ebfbbe746ab56caed82d37f9819353305a7ae0a4f428877ffa34a",
+      "reported_after_sha256": "b7f8a338d79ebfbbe746ab56caed82d37f9819353305a7ae0a4f428877ffa34a",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora_native_comparison_backend_fixture",
+      "path": "tests/integration/test_selected_runtime_bridge.py",
+      "pinned_blob_sha256": "bb76abe24ace38c4dca4cdda1933f4a70f1fb38c114a5e343b8dfb9c2d26b6d7",
+      "reported_after_sha256": "bb76abe24ace38c4dca4cdda1933f4a70f1fb38c114a5e343b8dfb9c2d26b6d7",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora_native_comparison_phase_fixture",
+      "path": "tests/test_selected_judgment_lineage.py",
+      "pinned_blob_sha256": "0b62ca8a2c6b62bd0b9ba91c19135852dbbe19ec5563389c41b2f2db214a879d",
+      "reported_after_sha256": "0b62ca8a2c6b62bd0b9ba91c19135852dbbe19ec5563389c41b2f2db214a879d",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "flora_native_comparison_process_fixture",
+      "path": "tests/native_contract_fixture.py",
+      "pinned_blob_sha256": "c1bc8ab278587602196a7ba8d4b2c886ea6c9400bd196c5c6669f1ce28d2b918",
+      "reported_after_sha256": "c1bc8ab278587602196a7ba8d4b2c886ea6c9400bd196c5c6669f1ce28d2b918",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "native_diagnostic_script",
+      "path": "scripts/profile_selected_native_boundaries.py",
+      "pinned_blob_sha256": "10bd63df7b05b130db3da4ab05ed8cb3903144cf01f91445f1235f0c180b33ea",
+      "reported_after_sha256": "10bd63df7b05b130db3da4ab05ed8cb3903144cf01f91445f1235f0c180b33ea",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "shared_transport_diagnostic",
+      "path": "scripts/profile_selected_transport_boundaries.py",
+      "pinned_blob_sha256": "4be23d3f2eb874647ee0cc9b23744664043df26935bb127b6cd07b537761617d",
+      "reported_after_sha256": "4be23d3f2eb874647ee0cc9b23744664043df26935bb127b6cd07b537761617d",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "test_selected_formation_admission",
+      "path": "tests/test_selected_formation_admission.py",
+      "pinned_blob_sha256": "88727ebaec247ae61ecb20940aea899d2c46834f9f3ce79ca1035cecf2e6a07d",
+      "reported_after_sha256": "88727ebaec247ae61ecb20940aea899d2c46834f9f3ce79ca1035cecf2e6a07d",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "test_selected_formation_candidates",
+      "path": "tests/test_selected_formation_candidates.py",
+      "pinned_blob_sha256": "10e802f472c362d1ee49ba1ad0838a2731ecf926866497724a794ef5a35086e6",
+      "reported_after_sha256": "10e802f472c362d1ee49ba1ad0838a2731ecf926866497724a794ef5a35086e6",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "test_selected_formation_registry",
+      "path": "tests/test_selected_formation_registry.py",
+      "pinned_blob_sha256": "c496f44077144999dc73f6962570377eb17e989286561346771458b0d17037d6",
+      "reported_after_sha256": "c496f44077144999dc73f6962570377eb17e989286561346771458b0d17037d6",
+      "repository": "flora"
+    },
+    {
+      "before_matches_pinned_blob": true,
+      "loaded_before": true,
+      "matches_pinned_blob": true,
+      "module": "test_selected_native_comparison",
+      "path": "tests/integration/test_selected_native_comparison.py",
+      "pinned_blob_sha256": "60d1d55b635b9b63c7acb18d6a04bb1676f31f3133ac8932e55beef48c473850",
+      "reported_after_sha256": "60d1d55b635b9b63c7acb18d6a04bb1676f31f3133ac8932e55beef48c473850",
+      "repository": "flora"
+    }
+  ]
+}

@@ -1,5 +1,20 @@
 # FloRA
 
+**Current scope — 2026-10-02:** FloRA is a narrow prototype, not the complete
+Alice/Fable memory, experience or mission platform. Build only what its selected
+experiment needs, preserving Alice's contracts and chosen engines for those
+parts. Start a continuation with [the context record](docs/FLORA_CONTEXT.md)
+and [Alice's infrastructure map](docs/ALICE_INFRASTRUCTURE_MAP.md).
+The [latest completed receipt](docs/VERIFICATION_CHECKPOINT_2026-10-02.md)
+replaces the previously pending October 1 CI status. Full-product build lanes
+below are implementation inventory, not prerequisites for this prototype.
+
+The [shared source metadata collector](docs/SHARED_SOURCE_METADATA_CAPS.md)
+now preserves separate source-DAG caps while sharing overlapping sampled rows.
+Ninety targeted contracts pass locally, including custom-reader regressions.
+The shared serving frame and response-latency qualification remain pending;
+the checkpoint preserves the exact source receipt and platform limits.
+
 An experiment for one Fable claim: after a host corrects a relevant belief or preference and a decision has an outcome, does Fable's later **native judgment** change for the right reason, while keeping its evidence trail? The experiment will compare that behavior with a strong general model plus memory, using the same available history and response budget. Then a small builder must reproduce the capability for another isolated host.
 
 The [frozen experiment goal](docs/EXPERIMENT_GOAL.md) defines the product comparison, mechanism ablation, cross-host builder test, and evidence rules. Numerical acceptance thresholds will be preregistered before the final evaluation.
@@ -17,7 +32,7 @@ Material build decisions and failures are captured as [FBM process seeds](docs/f
 
 **Re-audit follow-up — 2026-09-30:** the registered MFM interfaces, governed admission and development, runtime integration, paired comparator and blinded assessment now have implementations. The remaining work is being checked through actual phase routing, native pilot transitions, cohort/builder preparation and recovery after interrupted writes. The [readiness re-audit](docs/READINESS_REAUDIT_2026-09-29.md) preserves the original findings. We have not declared a model-only waiting point.
 
-The [October 1 verification checkpoint](docs/VERIFICATION_CHECKPOINT_2026-10-01.md) records the latest completed evidence: 695 contract tests, all 28 core cases, actual storage/Temporal restarts, both guarded-reader and lineage cases, and the isolated native-withdrawal case passed. Transport and native comparison still exceed their unchanged response budgets. Chronology observation identifies repeated permission metadata work before context assembly; it does not qualify the experiment. The remaining physical jobs and follow-up repairs need exact-commit receipts. The [September 30 checkpoint](docs/VERIFICATION_CHECKPOINT_2026-09-30.md) preserves earlier evidence. Fictional producer receipts exercise wiring only; real learned formation, judgment and model-update proofs still come from the other workstreams.
+The [October 2 verification checkpoint](docs/VERIFICATION_CHECKPOINT_2026-10-02.md) records completed CI at runtime `74f42417`: 884 contract cases in 75 modules and 49/53 physical cases passed. Standalone and native comparison failed their unchanged response budgets; two history cases hit the one-hour job limits. The [October 1](docs/VERIFICATION_CHECKPOINT_2026-10-01.md) and [September 30](docs/VERIFICATION_CHECKPOINT_2026-09-30.md) checkpoints preserve earlier receipts. Diagnostics identify repeated proof construction; they do not qualify the experiment. Fictional producer receipts exercise wiring only; real learned formation, judgment and model-update proofs still come from the other workstreams.
 
 Current additions include [bounded native execution](docs/NATIVE_EXECUTION_BRIDGE.md), [private provider attempts](docs/PROVIDER_ATTEMPT_CUSTODY.md), [comparator transport wiring](docs/COMPARATOR_ATTEMPT_WIRING.md), [bounded local embeddings](docs/BOUNDED_LOCAL_EMBEDDINGS.md), [native pilot transitions](docs/NATIVE_PILOT_LIFECYCLE.md), [phase-specific bindings](docs/PHASE_BINDINGS.md) and [current private-read authority](docs/CURRENT_AUTHORITY_BARRIERS.md). Their documents separate implementation, mechanical tests and missing qualification.
 
@@ -59,7 +74,7 @@ The [alignment and build map](docs/FloRA_ALIGNMENT.md) names the selected planes
 - `selected/owner_authorization.py` verifies host-bound Ed25519 action signatures against a separately enrolled public key for state activation and claim quarantine. The selected-backend quarantine gate exercises a real signature; secure key enrollment, custody, recovery, and owner policy remain product work.
 - Synthetic component tests and real-backend integration tests cover these boundaries. They are infrastructure evidence, not a Fable capability or behavioral result.
 
-Secure owner-key enrollment, complete conflict/deletion lineage, multi-device reconciliation, learned episode formation and graph relations, qualified semantic/vector retrieval and wider source retrieval, adaptive Context Planner, production personal-state approval policy and learned updates, outcome quality assessment, and complete application recovery remain open. No model or behavioral score is being inferred from the backend result. See the [alignment map](docs/FloRA_ALIGNMENT.md) for the green boundary.
+The broader product backlog includes secure owner-key enrollment, complete conflict/deletion lineage, multi-device reconciliation, learned episode formation and graph relations, qualified semantic/vector retrieval and wider source retrieval, an adaptive Context Planner, production personal-state approval policy and learned updates, outcome quality assessment, and complete application recovery. For this prototype, the next required work is the existing fixture's shared authority frame and its unchanged correctness/latency gates. Expand a surface only for a named experiment case. Personality and MFM are built in other chats and plugged into these interfaces when qualified. See the [alignment map](docs/FloRA_ALIGNMENT.md) for the exercised boundary.
 
 ## Dependencies and evidence gates
 

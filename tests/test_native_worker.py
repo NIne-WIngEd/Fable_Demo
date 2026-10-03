@@ -13,6 +13,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cognitive_kernel.canonical import canonical_json_bytes
@@ -207,6 +208,71 @@ class NativeWorkerProcessTest(unittest.IsolatedAsyncioTestCase):
                 await self.invoke(worker)
             self.assertEqual(failure.exception.receipt.reason, reason)
             self.assertNotIn("private", repr(failure.exception.receipt))
+
+    async def test_exit_before_second_dispatch_preserves_status_and_valid_output(self):
+        actual_spawn = asyncio.create_subprocess_exec
+        for program, expected_exit, expected_output in (
+                ("import sys\nsys.exit(7)\n", 7, None),
+                ("print('empty')\n", 0, b"empty\n")):
+            with self.subTest(exit_code=expected_exit):
+                worker = worker_fixture(self.root, program)
+                processes, calls = [], []
+                async def spawn(*args, **kwargs):
+                    process = await actual_spawn(*args, **kwargs)
+                    processes.append(process)
+                    return process
+                async def authorize():
+                    calls.append("authorized")
+                    if len(calls) == 2:
+                        await asyncio.sleep(.03)
+                        # This legal dispatch delay ends only after the real
+                        # child has exited, so the closed-input race is exact.
+                        await asyncio.wait_for(processes[0].wait(), 1)
+                        self.assertEqual(processes[0].returncode, expected_exit)
+                with patch("flora.selected.native_worker.asyncio.create_subprocess_exec", new=spawn):
+                    if expected_output is None:
+                        with self.assertRaises(NativeWorkerFailure) as failed:
+                            await self.invoke(worker, authorize=authorize)
+                        self.assertEqual(failed.exception.receipt.reason, "exit_failure")
+                        self.assertEqual(failed.exception.receipt.exit_code, expected_exit)
+                    else:
+                        observed = await self.invoke(worker, authorize=authorize)
+                        self.assertEqual(observed.exit_code, expected_exit)
+                        self.assertEqual(observed.output, expected_output)
+                self.assertEqual(calls, ["authorized", "authorized"])
+
+    async def test_cancellation_at_stdin_close_preserves_protocol_future(self):
+        worker = worker_fixture(self.root, "import time\ntime.sleep(60)\n")
+        loop, errors, processes = asyncio.get_running_loop(), [], []
+        actual_handler, actual_spawn = loop.get_exception_handler(), asyncio.create_subprocess_exec
+        loop.set_exception_handler(lambda current, context: errors.append(type(context.get("exception"))))
+        closed = False
+        async def spawn(*args, **kwargs):
+            process = await actual_spawn(*args, **kwargs)
+            processes.append(process)
+            actual_close = process.stdin.close
+            def close():
+                nonlocal closed
+                actual_close()
+                if not closed:
+                    closed = True
+                    task.cancel()
+            process.stdin.close = close
+            return process
+        try:
+            with patch("flora.selected.native_worker.asyncio.create_subprocess_exec", new=spawn):
+                task = asyncio.create_task(self.invoke(worker))
+                with self.assertRaises(asyncio.CancelledError):
+                    await task
+            await asyncio.sleep(0)
+            await asyncio.sleep(0)
+            self.assertTrue(closed)
+            self.assertEqual(worker.last_failure.reason, "cancelled")
+            self.assertEqual(errors, [])
+            with self.assertRaises(ProcessLookupError):
+                os.kill(processes[0].pid, 0)
+        finally:
+            loop.set_exception_handler(actual_handler)
 
     async def test_deadline_does_not_block_event_loop_and_terminates_process_group(self):
         marker = self.root / "pid"

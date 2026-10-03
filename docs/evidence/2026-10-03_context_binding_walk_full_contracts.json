@@ -1,0 +1,1414 @@
+{
+  "status": "completed_with_initial_failure",
+  "source_sha256_before": {
+    "src/flora/selected/selected_phase_authority.py": "6589bce9051bcc410282b5aba7fc3259bc0ef57105aeb98966e0fa50aaa9542a",
+    "src/flora/selected/selected_authority_frame.py": "599d996805c8c197a3bdd102df3fc5fb6d8500f12a613c81565c903ec76947d6",
+    "tests/test_shared_context_bindings.py": "07c9b08ec27b745a74292226ce92fd694a213d05e21e69cc6a976820391bbea2",
+    "tests/test_selected_phase_authority.py": "fba8e8b69d9b05e858a0fbcf3d9ff8ad9769225149425e50acbad4d567b55e11",
+    "tests/test_shared_phase_authority.py": "f473f346e8bc5686d03da12bae4fc253a10feef05c9ee766978c2e02552d69b4",
+    "tests/test_shared_authority_frame.py": "6adaae62780b1fabda5e9e39c041d8849797206f4433822c807de57683300552",
+    "scripts/profile_selected_native_boundaries.py": "56e3000009353d1ca96e89a39a15a87bb5110ea757281cad49256cdf33ba31fe",
+    "tests/test_native_boundary_profiler.py": "131f3488c0164e771a8f2d24a33a2198695499f0c23efd69bd72765f7394797e"
+  },
+  "source_sha256_after": {
+    "src/flora/selected/selected_phase_authority.py": "6589bce9051bcc410282b5aba7fc3259bc0ef57105aeb98966e0fa50aaa9542a",
+    "src/flora/selected/selected_authority_frame.py": "599d996805c8c197a3bdd102df3fc5fb6d8500f12a613c81565c903ec76947d6",
+    "tests/test_shared_context_bindings.py": "07c9b08ec27b745a74292226ce92fd694a213d05e21e69cc6a976820391bbea2",
+    "tests/test_selected_phase_authority.py": "fba8e8b69d9b05e858a0fbcf3d9ff8ad9769225149425e50acbad4d567b55e11",
+    "tests/test_shared_phase_authority.py": "f473f346e8bc5686d03da12bae4fc253a10feef05c9ee766978c2e02552d69b4",
+    "tests/test_shared_authority_frame.py": "6adaae62780b1fabda5e9e39c041d8849797206f4433822c807de57683300552",
+    "scripts/profile_selected_native_boundaries.py": "56e3000009353d1ca96e89a39a15a87bb5110ea757281cad49256cdf33ba31fe",
+    "tests/test_native_boundary_profiler.py": "131f3488c0164e771a8f2d24a33a2198695499f0c23efd69bd72765f7394797e"
+  },
+  "modules": [
+    {
+      "module": "test_artifact_registry.py",
+      "exit_code": 0,
+      "process_seconds": 2.316769461001968,
+      "tests": 8,
+      "summaries": [
+        {
+          "tests": 8,
+          "seconds": 0.047
+        }
+      ],
+      "log_sha256": "587dc140a46881ae06e8a8c26913f1d429a45ac0050ee33e25bf112129678905",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_assessment_custody.py",
+      "exit_code": 0,
+      "process_seconds": 9.3959032030034,
+      "tests": 13,
+      "summaries": [
+        {
+          "tests": 13,
+          "seconds": 4.284
+        }
+      ],
+      "log_sha256": "b4bfa8bef3f48c62c5afc652d89844f841fbc7bf55815a5e85c3351d8d98936a",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_assessment_release_fence.py",
+      "exit_code": 0,
+      "process_seconds": 6.444944987000781,
+      "tests": 3,
+      "summaries": [
+        {
+          "tests": 3,
+          "seconds": 1.857
+        }
+      ],
+      "log_sha256": "1c165309a99045ffa4992036e25a5f0dc86624156d8dafd561ac42af9a24157a",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_authenticated_history.py",
+      "exit_code": 0,
+      "process_seconds": 8.46461081099551,
+      "tests": 18,
+      "summaries": [
+        {
+          "tests": 18,
+          "seconds": 3.923
+        }
+      ],
+      "log_sha256": "436847fffa83a5203687f48d932d8af1b8c0a926394b01ebc90215e356c4cb5e",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_blind_assessment.py",
+      "exit_code": 0,
+      "process_seconds": 4.4407583869979135,
+      "tests": 13,
+      "summaries": [
+        {
+          "tests": 13,
+          "seconds": 0.865
+        }
+      ],
+      "log_sha256": "219f0e81d7b8dad5a99e49e269560fa2089183cc81d53026965b26c68ddc480c",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_bounded_embedding_lifecycle.py",
+      "exit_code": 0,
+      "process_seconds": 16.15099544000259,
+      "tests": 15,
+      "summaries": [
+        {
+          "tests": 15,
+          "seconds": 12.625
+        }
+      ],
+      "log_sha256": "1cb9c9f2b33932105aa24d008a1d9f71bb470e196d251d451c834746795fa9de",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_bounded_xtdb_reads.py",
+      "exit_code": 0,
+      "process_seconds": 2.263755387997662,
+      "tests": 10,
+      "summaries": [
+        {
+          "tests": 10,
+          "seconds": 0.373
+        }
+      ],
+      "log_sha256": "e2f448fb301d1807bc0ec12f791e1ccfb4f04b73a9e384befa643e19c684fac0",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_chronology_boundary_profiler.py",
+      "exit_code": 0,
+      "process_seconds": 6.279282821000379,
+      "tests": 6,
+      "summaries": [
+        {
+          "tests": 6,
+          "seconds": 5.202
+        }
+      ],
+      "log_sha256": "aefdcb86305fc8ede0e635cececa66d78f7b78d505884a18d65cd92c8c7f46e8",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_combined_history_guard.py",
+      "exit_code": 0,
+      "process_seconds": 7.9040315539969015,
+      "tests": 6,
+      "summaries": [
+        {
+          "tests": 6,
+          "seconds": 1.949
+        }
+      ],
+      "log_sha256": "e481b06d42db63289a2479a87b2b84fa0b4a2315b29c59af13f4565faa2af4df",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_comparator.py",
+      "exit_code": 0,
+      "process_seconds": 4.189803355002368,
+      "tests": 19,
+      "summaries": [
+        {
+          "tests": 19,
+          "seconds": 0.075
+        }
+      ],
+      "log_sha256": "8614821a86a322b13115a2781440f79c5df3b0409d8bbca301f1f66fec07d7e3",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_comparator_current_guards.py",
+      "exit_code": 0,
+      "process_seconds": 8.32024379500217,
+      "tests": 6,
+      "summaries": [
+        {
+          "tests": 6,
+          "seconds": 2.326
+        }
+      ],
+      "log_sha256": "db44da0c55dfe4eed7c2a971c4ee2c91d2c91fba9b0b32cbc276d91b1992946a",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_comparison_custody.py",
+      "exit_code": 0,
+      "process_seconds": 5.859111835998192,
+      "tests": 14,
+      "summaries": [
+        {
+          "tests": 14,
+          "seconds": 1.229
+        }
+      ],
+      "log_sha256": "ff0e5a4c493d68dbc6bc269ded7e055abfbc17557f39e00083dc9dc053fb1ba4",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_comparison_run.py",
+      "exit_code": 0,
+      "process_seconds": 8.549002880994522,
+      "tests": 16,
+      "summaries": [
+        {
+          "tests": 16,
+          "seconds": 3.605
+        }
+      ],
+      "log_sha256": "bf4cae7e60ac8f08473c8ca4733a003296720cde31b5483d7e91a27cbfd8554b",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_current_context_guard.py",
+      "exit_code": 0,
+      "process_seconds": 17.779432441995596,
+      "tests": 29,
+      "summaries": [
+        {
+          "tests": 29,
+          "seconds": 10.952
+        }
+      ],
+      "log_sha256": "47603fe0d4eea176a70b2d44e231805ca1a0fa8829ac3096aded2a1f3be137a7",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_development_source_freshness.py",
+      "exit_code": 0,
+      "process_seconds": 3.3657570680006756,
+      "tests": 4,
+      "summaries": [
+        {
+          "tests": 4,
+          "seconds": 0.577
+        }
+      ],
+      "log_sha256": "e2265ee9d2a802e0cf5aadc412e2200c7cd526a18f924cac904c987d122047d4",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_evaluation_protocol.py",
+      "exit_code": 0,
+      "process_seconds": 0.5054385940020438,
+      "tests": 2,
+      "summaries": [
+        {
+          "tests": 2,
+          "seconds": 0.002
+        }
+      ],
+      "log_sha256": "d4aae1e9c784bfac31b83ae37fe9d2f245907e9275def912613930e768efbc0f",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_experience_envelope_reuse.py",
+      "exit_code": 0,
+      "process_seconds": 4.3219292129942914,
+      "tests": 21,
+      "summaries": [
+        {
+          "tests": 21,
+          "seconds": 2.299
+        }
+      ],
+      "log_sha256": "ba63115a82edd8590e6d7ae2a09aad3be86cd3d55623364b24c52c538aeeb16c",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_experience_exact_lookup.py",
+      "exit_code": 0,
+      "process_seconds": 1.8562588210043032,
+      "tests": 38,
+      "summaries": [
+        {
+          "tests": 38,
+          "seconds": 0.15
+        }
+      ],
+      "log_sha256": "e276169136cc994dbaf00acdab5b31bbfee350087bc0c0af058b8d10dced473f",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_experiment_coordinator.py",
+      "exit_code": 0,
+      "process_seconds": 12.041155999002513,
+      "tests": 20,
+      "summaries": [
+        {
+          "tests": 20,
+          "seconds": 8.026
+        }
+      ],
+      "log_sha256": "c40dd1e5b1781e97bc7cac40db8142c0dbc14d5e965759391ff73215d6418a8c",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_experiment_manifests.py",
+      "exit_code": 0,
+      "process_seconds": 7.968310604999715,
+      "tests": 27,
+      "summaries": [
+        {
+          "tests": 27,
+          "seconds": 4.058
+        }
+      ],
+      "log_sha256": "6fbdb3ae79f32e61a017aff90b6e09203faeba8024bd58579dcedebe39662e80",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_experiment_preregistration.py",
+      "exit_code": 0,
+      "process_seconds": 37.784536865998234,
+      "tests": 23,
+      "summaries": [
+        {
+          "tests": 23,
+          "seconds": 33.26
+        }
+      ],
+      "log_sha256": "49c9ee6a2521d17c74b3c2b840f3c415ae2d14b9a08e69dc74979f590bd1d76e",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_fbm_seed_contract.py",
+      "exit_code": 0,
+      "process_seconds": 3.2156031539998366,
+      "tests": 3,
+      "summaries": [
+        {
+          "tests": 3,
+          "seconds": 2.76
+        }
+      ],
+      "log_sha256": "d42e9f16a02f1ce8828714e8f5583ec8f8839d3bea94f139ef16131a1a7b9766",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_formation_preflight.py",
+      "exit_code": 0,
+      "process_seconds": 4.890333515002567,
+      "tests": 8,
+      "summaries": [
+        {
+          "tests": 8,
+          "seconds": 1.436
+        }
+      ],
+      "log_sha256": "ae9f5b35a89b9418bfce464a862fd14855fef9c664fb97e146240646360d63e0",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_governed_claim_quarantine.py",
+      "exit_code": 0,
+      "process_seconds": 5.154604906005261,
+      "tests": 6,
+      "summaries": [
+        {
+          "tests": 6,
+          "seconds": 1.05
+        }
+      ],
+      "log_sha256": "037e47a7417b66c38c9f21c3d29f4e4b1c72dbc29be68b6b51e94629347c0f65",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_governed_development.py",
+      "exit_code": 0,
+      "process_seconds": 4.603102968998428,
+      "tests": 11,
+      "summaries": [
+        {
+          "tests": 11,
+          "seconds": 1.001
+        }
+      ],
+      "log_sha256": "df3485f2750f5591d5761f0f2d0019f1552d1bfb031ab970d9eb71e4499bd3c1",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_governed_episodes.py",
+      "exit_code": 0,
+      "process_seconds": 7.780809933996352,
+      "tests": 24,
+      "summaries": [
+        {
+          "tests": 24,
+          "seconds": 5.616
+        }
+      ],
+      "log_sha256": "0133971af93ce7b13ae3a68a87bbc5ed828774e30c41fc793efeeca43c24e626",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_guarded_object_copies.py",
+      "exit_code": 0,
+      "process_seconds": 8.043826581997564,
+      "tests": 4,
+      "summaries": [
+        {
+          "tests": 4,
+          "seconds": 3.497
+        }
+      ],
+      "log_sha256": "3f3da947d4d9a95df3667526322c9f2cf8f170cb2075cb38924f407ec74dd204",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_history_fence.py",
+      "exit_code": 0,
+      "process_seconds": 8.424436526998761,
+      "tests": 25,
+      "summaries": [
+        {
+          "tests": 25,
+          "seconds": 4.44
+        }
+      ],
+      "log_sha256": "a06f4dfaef68e4930c001af244671a70ae96d2cf99e5987bd74d1b39d35d5b3e",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_native_arm.py",
+      "exit_code": 0,
+      "process_seconds": 45.86217389599915,
+      "tests": 10,
+      "summaries": [
+        {
+          "tests": 10,
+          "seconds": 40.233
+        }
+      ],
+      "log_sha256": "ddd53dabe5a0e92c1598abd34f53c110e982cedbb3e5963ae48f6874ff87ab35",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_native_boundary_profiler.py",
+      "exit_code": 0,
+      "process_seconds": 5.649839616999088,
+      "tests": 32,
+      "summaries": [
+        {
+          "tests": 32,
+          "seconds": 4.551
+        }
+      ],
+      "log_sha256": "72b836fd96e1127a21d4121f7d1a7dc71d455f6865a65e8707bd830dc3869028",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_native_comparison_fixture.py",
+      "exit_code": 0,
+      "process_seconds": 6.964050145004876,
+      "tests": 2,
+      "summaries": [
+        {
+          "tests": 2,
+          "seconds": 2.723
+        }
+      ],
+      "log_sha256": "5fcc914076b17368616e73cb5603e291398880c060ab67154d79ec0e305bfcab",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_native_final_seal.py",
+      "exit_code": 0,
+      "process_seconds": 15.665217239999038,
+      "tests": 11,
+      "summaries": [
+        {
+          "tests": 11,
+          "seconds": 11.624
+        }
+      ],
+      "log_sha256": "5c5f7ecd41845c7862f9351df062a67544d8ed86a35810f0253847fe29afd507",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_native_pilot_lifecycle.py",
+      "exit_code": 0,
+      "process_seconds": 5.86559578699962,
+      "tests": 11,
+      "summaries": [
+        {
+          "tests": 11,
+          "seconds": 1.408
+        }
+      ],
+      "log_sha256": "5b8130232ed1c542cb2e78c0c44af83f0905f8ad4efa63a99018c85c863120e5",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_native_reads.py",
+      "exit_code": 0,
+      "process_seconds": 65.3581369559979,
+      "tests": 21,
+      "summaries": [
+        {
+          "tests": 21,
+          "seconds": 61.168
+        }
+      ],
+      "log_sha256": "fefe30deb655a9b70be5ee6bf3ca86302dde1c0e76df5905a1a5a7c4b657810b",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_native_worker.py",
+      "exit_code": 0,
+      "process_seconds": 4.3423820349999005,
+      "tests": 13,
+      "summaries": [
+        {
+          "tests": 13,
+          "seconds": 2.494
+        }
+      ],
+      "log_sha256": "792964af4277b175ed5a2fcd274c033a1f99c615691740426e361f4b7fd8ddcc",
+      "log_filename": "test_native_worker_retry1.log",
+      "failures": [],
+      "resource_warning_count": 16,
+      "skipped": []
+    },
+    {
+      "module": "test_native_writer_guard.py",
+      "exit_code": 0,
+      "process_seconds": 2.9568205600007786,
+      "tests": 12,
+      "summaries": [
+        {
+          "tests": 12,
+          "seconds": 1.016
+        }
+      ],
+      "log_sha256": "91412e061b884a84445549fb3a6dda5c73eff9faaa7101acb6be60cabeceba03",
+      "log_filename": "test_native_writer_guard.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_openai_responses_transport.py",
+      "exit_code": 0,
+      "process_seconds": 5.337305989000015,
+      "tests": 13,
+      "summaries": [
+        {
+          "tests": 13,
+          "seconds": 1.401
+        }
+      ],
+      "log_sha256": "e9135c7bc1b020a963ef968b3bee0d569eff082fbe24ba87f23c367aa214c6f1",
+      "log_filename": "test_openai_responses_transport.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_owner_authorization.py",
+      "exit_code": 0,
+      "process_seconds": 2.4880578390002484,
+      "tests": 2,
+      "summaries": [
+        {
+          "tests": 2,
+          "seconds": 0.013
+        }
+      ],
+      "log_sha256": "c1d45351ea4ed6d88d4e4191e54616f02c8bc3e1e60eb2c17c464f1a2214c5bf",
+      "log_filename": "test_owner_authorization.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_personal_artifact_custody.py",
+      "exit_code": 0,
+      "process_seconds": 3.690795488000731,
+      "tests": 11,
+      "summaries": [
+        {
+          "tests": 11,
+          "seconds": 1.075
+        }
+      ],
+      "log_sha256": "18b6bbb3b5f25e95466ec58f0538b3c4c489dd0a81eee5216264b848047aa746",
+      "log_filename": "test_personal_artifact_custody.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_phase_authorized_reads.py",
+      "exit_code": 0,
+      "process_seconds": 6.619955826005025,
+      "tests": 4,
+      "summaries": [
+        {
+          "tests": 4,
+          "seconds": 1.987
+        }
+      ],
+      "log_sha256": "28f306e5eb0276f430358636ab1c0beee89a3852a02db8646d53c47783ab7dcd",
+      "log_filename": "test_phase_authorized_reads.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_phase_snapshots.py",
+      "exit_code": 0,
+      "process_seconds": 512.2253412639984,
+      "tests": 31,
+      "summaries": [
+        {
+          "tests": 31,
+          "seconds": 508.129
+        }
+      ],
+      "log_sha256": "86b929a6b6588625b0a75bf81c271143afae8d07f135d0f4c7f47a705eb4a0e4",
+      "log_filename": "test_phase_snapshots.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_phase_source_fence.py",
+      "exit_code": 0,
+      "process_seconds": 4.667368841001007,
+      "tests": 14,
+      "summaries": [
+        {
+          "tests": 14,
+          "seconds": 1.713
+        }
+      ],
+      "log_sha256": "2a28cc115939a96785b2b797a33c4d10d103867569514cc1a27b3feb410f799e",
+      "log_filename": "test_phase_source_fence.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_pilot_fixture.py",
+      "exit_code": 0,
+      "process_seconds": 0.40481356799864443,
+      "tests": 1,
+      "summaries": [
+        {
+          "tests": 1,
+          "seconds": 0.016
+        }
+      ],
+      "log_sha256": "62a7dfa39bf1c35b138361c7405ec3bcf3790468d58c996399d1321d4b09bb6d",
+      "log_filename": "test_pilot_fixture.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_preregistration_current_guard.py",
+      "exit_code": 0,
+      "process_seconds": 3.7465714989957632,
+      "tests": 7,
+      "summaries": [
+        {
+          "tests": 7,
+          "seconds": 0.951
+        }
+      ],
+      "log_sha256": "5546c8bf019c09bcb5ed65053e0cb28327fd32418fd223883bb59ebf228971ae",
+      "log_filename": "test_preregistration_current_guard.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_preregistration_metadata_frame.py",
+      "exit_code": 0,
+      "process_seconds": 50.25250948599569,
+      "tests": 6,
+      "summaries": [
+        {
+          "tests": 6,
+          "seconds": 47.377
+        }
+      ],
+      "log_sha256": "60c54297edb3e730fbdb40813b1dac348f0bad972762a9aadaf00c5d20c6f206",
+      "log_filename": "test_preregistration_metadata_frame.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_provider_attempt_custody.py",
+      "exit_code": 0,
+      "process_seconds": 2.724297161999857,
+      "tests": 14,
+      "summaries": [
+        {
+          "tests": 14,
+          "seconds": 0.246
+        }
+      ],
+      "log_sha256": "fc98c8e37bf4322cc7128c8b9721a686971a68e055bcf1bbc586a8b3c70bc728",
+      "log_filename": "test_provider_attempt_custody.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_provider_final_binding.py",
+      "exit_code": 0,
+      "process_seconds": 49.37392901199928,
+      "tests": 8,
+      "summaries": [
+        {
+          "tests": 8,
+          "seconds": 46.709
+        }
+      ],
+      "log_sha256": "05ad3b3709a37ad12454646f13fcde925f7f59819115e00c1d96ed1718af0633",
+      "log_filename": "test_provider_final_binding.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_provider_source_fence.py",
+      "exit_code": 0,
+      "process_seconds": 3.2683640200048103,
+      "tests": 6,
+      "summaries": [
+        {
+          "tests": 6,
+          "seconds": 0.788
+        }
+      ],
+      "log_sha256": "2ed15acf36989b03b56111534db51016850819945545cfdfe5e7cf53615e238d",
+      "log_filename": "test_provider_source_fence.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_registered_judgment_context.py",
+      "exit_code": 0,
+      "process_seconds": 2.417602886001987,
+      "tests": 4,
+      "summaries": [
+        {
+          "tests": 4,
+          "seconds": 0.181
+        }
+      ],
+      "log_sha256": "1b151d1fad469775dfd51d6232e9fc91d3d0219f847f6ee8dc6c1c6c1486daa1",
+      "log_filename": "test_registered_judgment_context.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_runtime_context_domain.py",
+      "exit_code": 0,
+      "process_seconds": 2.9530505490038195,
+      "tests": 8,
+      "summaries": [
+        {
+          "tests": 8,
+          "seconds": 0.579
+        }
+      ],
+      "log_sha256": "8f3ba23494aa8ecb422eeb8adf125e818964bd2a7022c58b5902ccf18cfd9359",
+      "log_filename": "test_runtime_context_domain.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_runtime_custody_transaction.py",
+      "exit_code": 0,
+      "process_seconds": 3.227397884998936,
+      "tests": 7,
+      "summaries": [
+        {
+          "tests": 7,
+          "seconds": 0.902
+        }
+      ],
+      "log_sha256": "195abb18602d757ee6cd22a279a3fced48027614daf5913bae878e4df0736ca7",
+      "log_filename": "test_runtime_custody_transaction.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_sealed_analysis.py",
+      "exit_code": 0,
+      "process_seconds": 2.861612480999611,
+      "tests": 12,
+      "summaries": [
+        {
+          "tests": 12,
+          "seconds": 0.807
+        }
+      ],
+      "log_sha256": "8954b2a873cf3142aa0e233a5e397ea0d716ec8db68bde21532c9e5588a97532",
+      "log_filename": "test_sealed_analysis.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_context.py",
+      "exit_code": 0,
+      "process_seconds": 52.28955581500486,
+      "tests": 23,
+      "summaries": [
+        {
+          "tests": 23,
+          "seconds": 49.774
+        }
+      ],
+      "log_sha256": "fc4759e0b6a434ebabe6a7777ed58bbb03c8e4e0638ab2eb2abfd2edc9c97eae",
+      "log_filename": "test_selected_context.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_context_fence.py",
+      "exit_code": 0,
+      "process_seconds": 9.175881543000287,
+      "tests": 11,
+      "summaries": [
+        {
+          "tests": 11,
+          "seconds": 6.032
+        }
+      ],
+      "log_sha256": "85e956c02e830503fa56392f41500754a7b2c12a83b9d5344b9ec98dc0b15810",
+      "log_filename": "test_selected_context_fence.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_experience.py",
+      "exit_code": 0,
+      "process_seconds": 1.196371537997038,
+      "tests": 3,
+      "summaries": [
+        {
+          "tests": 3,
+          "seconds": 0.004
+        }
+      ],
+      "log_sha256": "880b3f911c0b80f37c8ce33a168511f88f0064009c9c4cd44be4dcb97069c1f3",
+      "log_filename": "test_selected_experience.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_experiment_runtime.py",
+      "exit_code": 0,
+      "process_seconds": 7.331263894993754,
+      "tests": 13,
+      "summaries": [
+        {
+          "tests": 13,
+          "seconds": 4.773
+        }
+      ],
+      "log_sha256": "59650430ee3941877b3e0038c40c39e8d76176dd02b9733b0cb59fae28be5c06",
+      "log_filename": "test_selected_experiment_runtime.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_formation_admission.py",
+      "exit_code": 0,
+      "process_seconds": 3.970587675998104,
+      "tests": 7,
+      "summaries": [
+        {
+          "tests": 7,
+          "seconds": 1.604
+        }
+      ],
+      "log_sha256": "ffafe2b57e2c6e5963cfa73e06844978af2d7d42cd4f2f8c8e24e711440fb1c1",
+      "log_filename": "test_selected_formation_admission.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_formation_candidates.py",
+      "exit_code": 0,
+      "process_seconds": 2.7791213239979697,
+      "tests": 12,
+      "summaries": [
+        {
+          "tests": 12,
+          "seconds": 1.343
+        }
+      ],
+      "log_sha256": "44f88ecfd562f76c187006eb906c930fcc1a932d24317785f98b55218c65447e",
+      "log_filename": "test_selected_formation_candidates.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_formation_gate.py",
+      "exit_code": 0,
+      "process_seconds": 1.1019538159962394,
+      "tests": 3,
+      "summaries": [
+        {
+          "tests": 3,
+          "seconds": 0.002
+        }
+      ],
+      "log_sha256": "f7689d399dc020d025864b3f11916704ba9a9a5f76345dab2adb0a4cab29319a",
+      "log_filename": "test_selected_formation_gate.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_formation_input.py",
+      "exit_code": 0,
+      "process_seconds": 1.377079492995108,
+      "tests": 1,
+      "summaries": [
+        {
+          "tests": 1,
+          "seconds": 0.018
+        }
+      ],
+      "log_sha256": "73078f05e3c31fb9200fb1b96cd86e1918919297b5c9bbea25a3300cd894a87a",
+      "log_filename": "test_selected_formation_input.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_formation_policy.py",
+      "exit_code": 0,
+      "process_seconds": 2.14253874199494,
+      "tests": 5,
+      "summaries": [
+        {
+          "tests": 5,
+          "seconds": 0.63
+        }
+      ],
+      "log_sha256": "9ea2338a287580e3ebe567c14bfa779bcf7a0562bcd59a78d37d1a2e148bb4bd",
+      "log_filename": "test_selected_formation_policy.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_formation_recollection.py",
+      "exit_code": 0,
+      "process_seconds": 2.281966572001693,
+      "tests": 5,
+      "summaries": [
+        {
+          "tests": 5,
+          "seconds": 0.087
+        }
+      ],
+      "log_sha256": "b715a531b5d31edb2fb53d5299464e468c55520022a0585beb33560af1b0bfd7",
+      "log_filename": "test_selected_formation_recollection.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_formation_registry.py",
+      "exit_code": 0,
+      "process_seconds": 1.444001196003228,
+      "tests": 7,
+      "summaries": [
+        {
+          "tests": 7,
+          "seconds": 0.231
+        }
+      ],
+      "log_sha256": "28d16c9cf09242a2aebfd357cd3a17e0e2aec7494aee64bb9b23b380cd7bcba6",
+      "log_filename": "test_selected_formation_registry.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_graph.py",
+      "exit_code": 0,
+      "process_seconds": 1.3223964170028921,
+      "tests": 1,
+      "summaries": [
+        {
+          "tests": 1,
+          "seconds": 0.114
+        }
+      ],
+      "log_sha256": "7d9b5358963e7d66dba5989e3a1639c7f696a551234ddb56e11015b6b2527089",
+      "log_filename": "test_selected_graph.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_history_contribution.py",
+      "exit_code": 0,
+      "process_seconds": 4.57356691199675,
+      "tests": 19,
+      "summaries": [
+        {
+          "tests": 19,
+          "seconds": 1.955
+        }
+      ],
+      "log_sha256": "6ccd0c8c65630b1c40defcbabb04631423cda4a79471992923cde4b6911ab369",
+      "log_filename": "test_selected_history_contribution.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_history_fence.py",
+      "exit_code": 0,
+      "process_seconds": 5.8791517700010445,
+      "tests": 24,
+      "summaries": [
+        {
+          "tests": 24,
+          "seconds": 3.11
+        }
+      ],
+      "log_sha256": "d703d57c93be548a6410a8602ad68ad7daa89eafb37e66470df51bc1d8ad9f94",
+      "log_filename": "test_selected_history_fence.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_integration_partition.py",
+      "exit_code": 0,
+      "process_seconds": 5.9631822209994425,
+      "tests": 5,
+      "summaries": [
+        {
+          "tests": 5,
+          "seconds": 5.391
+        }
+      ],
+      "log_sha256": "8b0052500af0b638dd24cb1e3e8d5c36fdb8ffed4fd03578f21d6088b871857c",
+      "log_filename": "test_selected_integration_partition.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_judgment_lineage.py",
+      "exit_code": 0,
+      "process_seconds": 35.644761800002016,
+      "tests": 11,
+      "summaries": [
+        {
+          "tests": 11,
+          "seconds": 33.02
+        }
+      ],
+      "log_sha256": "e585db2f3dc434bfbaf235fb82e4f52006e98d5817fc4a9d24b3294caf7fb4d5",
+      "log_filename": "test_selected_judgment_lineage.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_object_store.py",
+      "exit_code": 0,
+      "process_seconds": 0.9157423819997348,
+      "tests": 2,
+      "summaries": [
+        {
+          "tests": 2,
+          "seconds": 0.046
+        }
+      ],
+      "log_sha256": "a58f2ed52ee88283699e8a38dd3b071ec96ca204a0782f0d51f7d5e8d2d06bac",
+      "log_filename": "test_selected_object_store.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_phase_authority.py",
+      "exit_code": 0,
+      "process_seconds": 6.356506399999489,
+      "tests": 25,
+      "summaries": [
+        {
+          "tests": 25,
+          "seconds": 3.765
+        }
+      ],
+      "log_sha256": "0692efa70b582cf11f279411b9fae3b9744434268bf87a48beaf942806f7a835",
+      "log_filename": "test_selected_phase_authority.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_source_closure.py",
+      "exit_code": 0,
+      "process_seconds": 6.6364491380008985,
+      "tests": 31,
+      "summaries": [
+        {
+          "tests": 31,
+          "seconds": 4.171
+        }
+      ],
+      "log_sha256": "3f948ccf35206485ed18b35d2d277fea1d3fceaa780afdcae5784536123e624e",
+      "log_filename": "test_selected_source_closure.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_source_commitment.py",
+      "exit_code": 0,
+      "process_seconds": 1.3647815950025688,
+      "tests": 15,
+      "summaries": [
+        {
+          "tests": 15,
+          "seconds": 0.35
+        }
+      ],
+      "log_sha256": "15a9fa7e6fb6c276c3610a76e573e68274920e5b5de04b359e9cbcd42b70a458",
+      "log_filename": "test_selected_source_commitment.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_selected_source_native.py",
+      "exit_code": 0,
+      "process_seconds": 3.0124026159974164,
+      "tests": 7,
+      "summaries": [
+        {
+          "tests": 7,
+          "seconds": 0.124
+        }
+      ],
+      "log_sha256": "78883738d8977820ff6d12ac0d53c52818fbb8b9e9ef1f3e090aea0564bfbae2",
+      "log_filename": "test_selected_source_native.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_shared_authority_frame.py",
+      "exit_code": 0,
+      "process_seconds": 891.0202762319968,
+      "tests": 20,
+      "summaries": [
+        {
+          "tests": 20,
+          "seconds": 885.554
+        }
+      ],
+      "log_sha256": "3cf49bd2ccd0e40cf3994cd548deeb8c3301d7e327ce0ce771e5f36e4ce7b596",
+      "log_filename": "test_shared_authority_frame.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_shared_context_bindings.py",
+      "exit_code": 0,
+      "process_seconds": 3.2078368679940468,
+      "tests": 5,
+      "summaries": [
+        {
+          "tests": 5,
+          "seconds": 0.003
+        }
+      ],
+      "log_sha256": "5e263fc8426fd27ac9fdd1af5c13429848a42242dd485904389702ac4168260d",
+      "log_filename": "test_shared_context_bindings.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_shared_phase_authority.py",
+      "exit_code": 0,
+      "process_seconds": 48.34548842300137,
+      "tests": 8,
+      "summaries": [
+        {
+          "tests": 8,
+          "seconds": 45.116
+        }
+      ],
+      "log_sha256": "41fb6c75f36075c1d1b07ed271082760a581dbc780605ce25e81e4c8f6ddbe2a",
+      "log_filename": "test_shared_phase_authority.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_shared_source_metadata.py",
+      "exit_code": 0,
+      "process_seconds": 4.341649087000405,
+      "tests": 21,
+      "summaries": [
+        {
+          "tests": 21,
+          "seconds": 2.113
+        }
+      ],
+      "log_sha256": "6eb3bcb17934da642bfde4a3da0f9cdccfcde29b102e1dbde0db4628be4ada57",
+      "log_filename": "test_shared_source_metadata.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_stored_action_codec_reuse.py",
+      "exit_code": 0,
+      "process_seconds": 3.430014500001562,
+      "tests": 29,
+      "summaries": [
+        {
+          "tests": 29,
+          "seconds": 2.083
+        }
+      ],
+      "log_sha256": "c2e1219f58f5a19f8bf05444ba1f5994ffde83b35da7c57c8e87e73999aa016b",
+      "log_filename": "test_stored_action_codec_reuse.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_temporal_reconciliation.py",
+      "exit_code": 0,
+      "process_seconds": 7.344795820004947,
+      "tests": 1,
+      "summaries": [
+        {
+          "tests": 1,
+          "seconds": 6.037
+        }
+      ],
+      "log_sha256": "c18ca56d9b6c08bdfc1d7b5194129936289440a5c82ff42fc44a75800d718048",
+      "log_filename": "test_temporal_reconciliation.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    },
+    {
+      "module": "test_transport_boundary_profiler.py",
+      "exit_code": 0,
+      "process_seconds": 0.5428089089982677,
+      "tests": 12,
+      "summaries": [
+        {
+          "tests": 12,
+          "seconds": 0.187
+        }
+      ],
+      "log_sha256": "943e7d140fb124f3998c15a2bab1983f9d81d3114848ba3de3d875f77d2b7ec6",
+      "log_filename": "test_transport_boundary_profiler.log",
+      "failures": [],
+      "resource_warning_count": 0,
+      "skipped": []
+    }
+  ],
+  "initial_failed_module": {
+    "module": "test_native_worker.py",
+    "exit_code": 1,
+    "process_seconds": 6.695673319998605,
+    "tests": 13,
+    "summaries": [
+      {
+        "tests": 13,
+        "seconds": 4.141
+      }
+    ],
+    "log_sha256": "8e6543b51eadf436313fb3c112b6147f18599b1c3c294b8aefb75683fcd1fc7f",
+    "failures": [
+      "test_deadline_does_not_block_event_loop_and_terminates_process_group (test_native_worker.NativeWorkerProcessTest.test_deadline_does_not_block_event_loop_and_terminates_process_group)"
+    ],
+    "resource_warning_count": 8,
+    "skipped": []
+  },
+  "initial_run_seconds": 371.86371232799866,
+  "resume_seconds": 1779.8829352069952,
+  "component_test_count": 978,
+  "qualification": false,
+  "limits": [
+    "Original native-worker PID marker failure and resource warnings are retained.",
+    "Unchanged 120ms fixture passed alone; this is one source-identical module retry, not a worker/runtime fix."
+  ],
+  "source_unchanged": true,
+  "verified_at_utc": "2026-10-03T08:15:21Z",
+  "source_status": "source_frozen_candidate_ready_for_runtime_publication",
+  "runtime_base_commit": "976b847faa985b08162b5b6c2d72e2d9a6f46086",
+  "publication_parent": "55229f1d5a68ece8e4257e9b0a1301d5cbf5192e",
+  "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "docker_image_sha256": "bbb524290db6a69edc7479eec6ee6a2d2b9946d5c0be0af86eb948575b5379e2",
+  "platform": "native Linux aarch64; Python 3.12.15; no fcntl shim",
+  "original_worker_source_sha256": {
+    "src/flora/selected/native_worker.py": "83b76e8c63398b90b1d4c6e2e6ff5290862b5d8670c77c2ac351cb73cc3138bb",
+    "tests/test_native_worker.py": "ea2ba65b14f8c16db976420307ce35cc9f84c059da4e580d8d016fafb08a6b13"
+  },
+  "all80_final_module_logs_verified": true,
+  "successful_final_module_cases": 978,
+  "successful_final_module_skips": 0,
+  "resource_warning_occurrences_final_modules": 16,
+  "resource_warning_occurrences_initial_failed_module": 8,
+  "original_frame_result": {
+    "module": "test_shared_authority_frame.py",
+    "exit_code": 0,
+    "process_seconds": 891.0202762319968,
+    "tests": 20,
+    "summaries": [
+      {
+        "tests": 20,
+        "seconds": 885.554
+      }
+    ],
+    "log_sha256": "3cf49bd2ccd0e40cf3994cd548deeb8c3301d7e327ce0ce771e5f36e4ce7b596",
+    "log_filename": "test_shared_authority_frame.log",
+    "failures": [],
+    "resource_warning_count": 0,
+    "skipped": []
+  },
+  "physical_engines_run": false,
+  "learned_behavior_run": false,
+  "completion_limit": "All 80 final module executions succeeded after one source-identical worker-module repeat. The first full-loop run failed and is preserved; this is not an uninterrupted pristine suite or a worker cleanup qualification."
+}

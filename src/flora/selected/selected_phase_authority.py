@@ -80,13 +80,17 @@ class _FunctionBinding:
             tuple(cls.capture(cell.cell_contents) for cell in function.__closure__ or ()
                   if type(cell.cell_contents) is FunctionType and cell.cell_contents is not function))
 
-    def verify(self):
+    def _verify_shallow(self):
+        """Check this capture; traversal belongs to the current verifier."""
         if (self.function.__code__ is not self.code
                 or tuple(self.function.__closure__ or ()) != tuple(cell for cell, _ in self.closure)
                 or any(cell.cell_contents is not value for cell, value in self.closure)
                 or any(self.function.__globals__.get(name, _ABSENT) is not value
                        for name, value in self.globals)):
             raise PermissionError("selected phase actual callback binding changed")
+
+    def verify(self):
+        self._verify_shallow()
         for nested in self.nested:
             nested.verify()
 
@@ -251,30 +255,7 @@ class SelectedPhaseAuthorityDescriptor:
 
     def verify(self):
         _require_descriptor_contracts()
-        if type(self) is not SelectedPhaseAuthorityDescriptor:
-            raise PermissionError("selected phase descriptor native class changed")
-        if type(self._name) is not str or self._token is not _TOKEN:
-            raise PermissionError("selected phase descriptor native identity changed")
-        registered = _ISSUED.get((id(self._owner), self._name))
-        if (registered is None
-                or registered.owner() is not self._owner or registered.descriptor() is not self):
-            raise PermissionError("selected phase descriptor was not privately issued")
-        # Reject replaced fields before looking inside any supplied replacement.
-        # This ordering prevents custom hash, equality or dictionary callbacks
-        # from running merely because someone mutated a frozen issued object.
-        _verify_identity(self, registered.descriptor_seal[0], SelectedPhaseAuthorityDescriptor)
-        _verify_function_seal(self._gate, registered.descriptor_seal[1])
-        _verify_identity(self._reader, registered.descriptor_seal[2], _ReaderBinding)
-        _verify_origin_seal(self._origin, registered.origin_seal)
-        self._origin.verify()
-        for parent in self._parents:
-            parent.verify()
-        self._reader.verify()
-        self._gate.verify()
-        method = getattr(self._owner, self._name)
-        if (type(method) is not MethodType or method.__self__ is not self._owner
-                or method.__func__ is not self._method.__func__):
-            raise PermissionError("selected phase installed gate owner changed")
+        _verify_selected_phase_tree((self,))
         return self
 
 
@@ -324,6 +305,54 @@ def _verify_origin_seal(origin, expected):
 def _descriptor_seal(descriptor):
     return (_identity_seal(descriptor), _function_seal(descriptor._gate),
             _identity_seal(descriptor._reader))
+
+
+def _verify_selected_phase_tree(descriptors):
+    """One pure pass; origin work is shared only within this invocation."""
+    _require_descriptor_contracts()
+    if type(descriptors) is not tuple or len(descriptors) not in (1, 2):
+        raise PermissionError("selected phase verification needs native descriptor roots")
+    # Hold exact objects, keyed by native identity, until this pure pass ends.
+    # This collection is never supplied by a caller or retained across a gate,
+    # reader, authority callback or later public verification invocation.
+    checked_origins = {}
+
+    def verify(descriptor):
+        if type(descriptor) is not SelectedPhaseAuthorityDescriptor:
+            raise PermissionError("selected phase descriptor native class changed")
+        if type(descriptor._name) is not str or descriptor._token is not _TOKEN:
+            raise PermissionError("selected phase descriptor native identity changed")
+        registered = _ISSUED.get((id(descriptor._owner), descriptor._name))
+        if (registered is None or registered.owner() is not descriptor._owner
+                or registered.descriptor() is not descriptor):
+            raise PermissionError("selected phase descriptor was not privately issued")
+        # Every descriptor and parent keeps its independent issuance seals.
+        # Reject replacements before inspecting any supplied replacement.
+        _verify_identity(descriptor, registered.descriptor_seal[0], SelectedPhaseAuthorityDescriptor)
+        _verify_function_seal(descriptor._gate, registered.descriptor_seal[1])
+        _verify_identity(descriptor._reader, registered.descriptor_seal[2], _ReaderBinding)
+        _verify_origin_seal(descriptor._origin, registered.origin_seal)
+        origin = descriptor._origin
+        if checked_origins.get(id(origin)) is not origin:
+            origin.verify()
+            checked_origins[id(origin)] = origin
+        for parent in descriptor._parents:
+            verify(parent)
+        descriptor._reader.verify()
+        descriptor._gate.verify()
+        method = getattr(descriptor._owner, descriptor._name)
+        if (type(method) is not MethodType or method.__self__ is not descriptor._owner
+                or method.__func__ is not descriptor._method.__func__):
+            raise PermissionError("selected phase installed gate owner changed")
+
+    for descriptor in descriptors:
+        verify(descriptor)
+
+
+def _verify_selected_phase_pair(permission_descriptor, event_descriptor):
+    """Check two issued trees without producing or retaining authority proof."""
+    _require_descriptor_contracts()
+    _verify_selected_phase_tree((permission_descriptor, event_descriptor))
 
 
 def _register(owner, name, origin, parents=()):
@@ -434,7 +463,8 @@ _DESCRIPTOR_VERIFY = SelectedPhaseAuthorityDescriptor.verify
 _HELPERS = tuple((function.__name__, function, function.__code__) for function in (
     _fields, _native_method, _gate_binding, _identity_seal, _origin_seal,
     _function_seal, _verify_identity, _verify_function_seal, _verify_origin_seal,
-    _descriptor_seal, _register, _issue_selected_phase_authority, selected_phase_authority,
+    _descriptor_seal, _verify_selected_phase_tree, _verify_selected_phase_pair,
+    _register, _issue_selected_phase_authority, selected_phase_authority,
     _inherit_selected_phase_authority, _require_descriptor_contracts))
 _CLASS_SHAPES = tuple((cls, tuple(vars(cls).items())) for cls in (
     _FunctionBinding, _Origin, SelectedPhaseAuthorityDescriptor, _Registration))

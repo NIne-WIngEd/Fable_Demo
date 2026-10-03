@@ -1,0 +1,74 @@
+{
+  "source_status": "uncommitted_working_tree_candidate",
+  "base_commit": "976b847faa985b08162b5b6c2d72e2d9a6f46086",
+  "source_sha256_at_receipt": {
+    "src/flora/selected/selected_phase_authority.py": "6589bce9051bcc410282b5aba7fc3259bc0ef57105aeb98966e0fa50aaa9542a",
+    "src/flora/selected/selected_authority_frame.py": "599d996805c8c197a3bdd102df3fc5fb6d8500f12a613c81565c903ec76947d6",
+    "tests/test_shared_context_bindings.py": "07c9b08ec27b745a74292226ce92fd694a213d05e21e69cc6a976820391bbea2",
+    "tests/test_selected_phase_authority.py": "fba8e8b69d9b05e858a0fbcf3d9ff8ad9769225149425e50acbad4d567b55e11",
+    "tests/test_shared_phase_authority.py": "f473f346e8bc5686d03da12bae4fc253a10feef05c9ee766978c2e02552d69b4",
+    "tests/test_shared_authority_frame.py": "6adaae62780b1fabda5e9e39c041d8849797206f4433822c807de57683300552",
+    "scripts/profile_selected_native_boundaries.py": "56e3000009353d1ca96e89a39a15a87bb5110ea757281cad49256cdf33ba31fe",
+    "tests/test_native_boundary_profiler.py": "131f3488c0164e771a8f2d24a33a2198695499f0c23efd69bd72765f7394797e"
+  },
+  "source_capture_limit": "Hashes captured immediately after the focused run; full component runner records before/after hashes separately.",
+  "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "docker_image_sha256": "bbb524290db6a69edc7479eec6ee6a2d2b9946d5c0be0af86eb948575b5379e2",
+  "platform": "native Linux aarch64; Python 3.12.15; no fcntl shim",
+  "command": "python -m unittest -v test_shared_context_bindings test_selected_phase_authority test_shared_phase_authority test_native_boundary_profiler",
+  "tests": 70,
+  "unittest_seconds": 72.108,
+  "exit_code": 0,
+  "modules": {
+    "new_binding_walk": 5,
+    "phase": 25,
+    "focused_frame": 8,
+    "observer": 32
+  },
+  "red_test": "test_each_function_and_reader_is_checked_once_per_fresh_walk",
+  "red_result": "12 own checks rather than 6 across two three-level walks; four other cases passed before repair.",
+  "green_result": "Each function checked once per fresh walk; reader checked once per walk; no captured callback execution; mutation and helper pin cases passed.",
+  "full_components_status": "resumed_running",
+  "full_component_count_claimed": false,
+  "physical_engines_run": false,
+  "qualification": false,
+  "learned_behavior_run": false,
+  "limits": [
+    "No end-to-end latency result or speedup follows from these controlled contracts.",
+    "Origin seals and independent descriptor/parent seals remain unchanged.",
+    "Original frame suite is included in the complete CI component loop, still pending."
+  ],
+  "review": {
+    "status": "read_only_review_complete",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "source": "976b847 plus exact working-tree candidate",
+    "qualification": false
+  },
+  "original_full_loop_failure": {
+    "module": "test_native_worker.py",
+    "exit_code": 1,
+    "process_seconds": 6.695673319998605,
+    "tests": 13,
+    "summaries": [
+      {
+        "tests": 13,
+        "seconds": 4.141
+      }
+    ],
+    "log_sha256": "8e6543b51eadf436313fb3c112b6147f18599b1c3c294b8aefb75683fcd1fc7f",
+    "failures": [
+      "test_deadline_does_not_block_event_loop_and_terminates_process_group (test_native_worker.NativeWorkerProcessTest.test_deadline_does_not_block_event_loop_and_terminates_process_group)"
+    ],
+    "resource_warning_count": 8,
+    "skipped": []
+  },
+  "isolated_failed_case_repeat": {
+    "tests": 1,
+    "seconds": 0.273,
+    "exit_code": 0
+  },
+  "original_worker_sources_unchanged": true,
+  "candidate_patch_sha256": "6e4c27393b42f6a37a91625f5cde33b415dcd9b153292036c68ffdb4b9a59e28"
+}

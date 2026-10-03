@@ -3,6 +3,14 @@
 This is the historical starting audit. Later repairs and exact-commit engine
 receipts are recorded in the [September 30 verification checkpoint](VERIFICATION_CHECKPOINT_2026-09-30.md).
 
+**October 2 scope clarification:** preserve the findings below as a historical
+audit and backlog. They are not a current requirement to finish every Alice
+product surface. Follow [the current context](FLORA_CONTEXT.md), build only
+what a named Flora experiment case requires, and keep its selected Alice
+contracts. Personality and MFM are built in other chats and only integrated
+here when ready. The current next step is the existing narrow fixture's fresh
+shared authority frame and its correctness/latency gates.
+
 **Verdict: FloRA has not exhausted the work that can proceed without the personality model and MFM. The previous model-only stopping conclusion was premature.** The selected-backend foundation is useful, but tested components are not yet a connected experiment.
 
 This audit rechecked FloRA's source, tests and CI, the live A.L.I.C.E. architecture and relevant model/builder branches, Fable Sleight's live product documents, and the five uploaded source-chat PDFs. No personality substitute, MFM substitute, new judgment model, or behavioral win was introduced.

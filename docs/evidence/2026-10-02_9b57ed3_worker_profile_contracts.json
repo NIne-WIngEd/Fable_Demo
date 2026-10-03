@@ -1,0 +1,82 @@
+{
+  "alice_contract_sha": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "change": "Ignore only BrokenPipeError and ConnectionResetError while writing/draining stdin; close stdin without awaiting its protocol-owned close future; retain actual exit status and bounded stdout/stderr drains.",
+  "environment": {
+    "compatibility_shim": false,
+    "docker_image_sha256": "bbb524290db6a69edc7479eec6ee6a2d2b9946d5c0be0af86eb948575b5379e2",
+    "glibc": "2.41",
+    "platform": "native Linux aarch64",
+    "python": "3.12.15"
+  },
+  "limitations": [
+    "controlled_contracts_are_not_response_latency",
+    "ordinary_9b57ed3_gate_pending_at_recovery",
+    "older_ef9c190e_CI_results_not_transferred",
+    "no_learned_judgment_or_FBM_transfer_result"
+  ],
+  "meaningful_new_regressions": [
+    "test_exit_before_second_dispatch_preserves_status_and_valid_output",
+    "test_cancellation_at_stdin_close_preserves_protocol_future"
+  ],
+  "preserved_contracts": [
+    "two_independent_authorization_calls",
+    "qualified_manifest_and_artifact_hashes",
+    "bounded_stdout_and_stderr",
+    "original_deadlines",
+    "original_cleanup_policy",
+    "standalone_10000_ms_native_60000_ms_and_CI_60_minute_budgets"
+  ],
+  "profiler_contracts": {
+    "duration_seconds": 6.388,
+    "fixed_original_code_tags": true,
+    "original_functions_unwrapped": true,
+    "passed": 21,
+    "tests": 21
+  },
+  "published_runtime_sha": "9b57ed3ce0d634409c967983bd5878ff74b48d3b",
+  "published_runtime_tree": "9541734db403ed1931c974a7e2a1bdab0e2b9c1e",
+  "qualification": false,
+  "record_basis": "Completed root tool observations, source hashes and published commit identity; earlier broad failure retained separately.",
+  "residual_observation": "stdout/stderr ResourceWarnings and Event loop is closed destructor output remain; cleanup qualification is not claimed.",
+  "schema_version": 1,
+  "scope": "controlled_worker_and_profiler_component_contracts",
+  "source_sha256": {
+    "scripts/profile_selected_native_boundaries.py": "dfdca6b39af3ee83bcaa86aeab1e6856851cb573558323de0e7d653d6da4ed79",
+    "src/flora/selected/native_worker.py": "83b76e8c63398b90b1d4c6e2e6ff5290862b5d8670c77c2ac351cb73cc3138bb",
+    "tests/test_native_boundary_profiler.py": "7595c1355a7ecdc101e91db02119663e00dc194fdef45db030a3d6316575acfe",
+    "tests/test_native_worker.py": "ea2ba65b14f8c16db976420307ce35cc9f84c059da4e580d8d016fafb08a6b13"
+  },
+  "worker_attempts": [
+    {
+      "causal_attribution": "not_established",
+      "concurrent_heavy_diagnostic": true,
+      "error_case": "test_deadline_does_not_block_event_loop_and_terminates_process_group",
+      "errors": 1,
+      "failed": 0,
+      "observed_error": "PID marker absent before existing 150 ms deadline",
+      "passed": 12,
+      "tests": 13
+    },
+    {
+      "duration_seconds": 1.972,
+      "errors": 0,
+      "failed": 0,
+      "passed": 13,
+      "source_hashes_unchanged": true,
+      "tests": 13
+    }
+  ],
+  "worker_diagnosis": {
+    "existing_pair_repetitions": 3,
+    "exited_child_seven_prior_status": "worker_rejected",
+    "exited_child_zero_prior_status": "worker_rejected",
+    "legal_second_authorization_delay_ms": 30,
+    "observed_boundary": "proc.stdin.wait_closed",
+    "observed_exception_class": "ConnectionResetError",
+    "ordinary_echo_prior_status": "success",
+    "primary_semantics": "https://docs.python.org/3.12/library/asyncio-subprocess.html#asyncio.subprocess.Process.communicate",
+    "prior_pair_errors": 3,
+    "prior_pair_failures": 3,
+    "prior_source": "ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f"
+  }
+}

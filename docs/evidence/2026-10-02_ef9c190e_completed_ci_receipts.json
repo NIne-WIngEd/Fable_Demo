@@ -1,0 +1,1429 @@
+{
+  "schema": "flora-completed-ci-receipt-v1",
+  "review_date": "2026-10-02",
+  "observed_at_utc": "2026-10-02T21:02:22Z",
+  "repository": "NIne-WIngEd/FloRA",
+  "runtime_commit": "ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f",
+  "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+  "checkout_and_runtime_tree": "1f9b955849cbc69ed1f0244366876bbe672fd0c6",
+  "tree_identity_verified": true,
+  "checkout_merge_parents": [
+    "885be57abb582510d27a98177facd2a358c11387",
+    "ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f"
+  ],
+  "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+  "run_id": 37054784829,
+  "run_url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829",
+  "run_event": "pull_request",
+  "run_attempt": 1,
+  "run_status": "completed",
+  "conclusion": "failure",
+  "completed_at_utc": "2026-10-02T20:32:57Z",
+  "prior_partial_receipt": "docs/evidence/2026-10-02_ef9c190e_partial_ci_receipts.json",
+  "source_refs": {
+    "runtime_commit": "https://github.com/NIne-WIngEd/FloRA/commit/ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f",
+    "checkout_merge_commit": "https://github.com/NIne-WIngEd/FloRA/commit/2f166a9d745667b200302a404bd04f8def7a83d9",
+    "runtime_tree": "https://api.github.com/repos/NIne-WIngEd/FloRA/git/trees/1f9b955849cbc69ed1f0244366876bbe672fd0c6",
+    "workflow": "https://github.com/NIne-WIngEd/FloRA/blob/ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f/.github/workflows/flora.yml",
+    "physical_shard_runner": "https://github.com/NIne-WIngEd/FloRA/blob/ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f/scripts/run_selected_integration_shard.py",
+    "worker_tests": "https://github.com/NIne-WIngEd/FloRA/blob/ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f/tests/test_native_worker.py",
+    "incomplete_preregistration_case": "https://github.com/NIne-WIngEd/FloRA/blob/ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f/tests/integration/test_selected_experiment_preregistration.py",
+    "incomplete_retained_history_case": "https://github.com/NIne-WIngEd/FloRA/blob/ef9c190e0688c2bb06dce5b12bbef06e6bd4f13f/tests/integration/test_selected_phase_history_routes.py"
+  },
+  "environment": {
+    "os": "Ubuntu",
+    "os_version": "24.04.5",
+    "runner_image": "ubuntu-24.04",
+    "runner_image_version": "20260927.320.1",
+    "python_implementation": "CPython",
+    "python_version": "3.12.14",
+    "python_architecture": "x64",
+    "python_location": "/opt/hostedtoolcache/Python/3.12.14/x64",
+    "same_python_location_observed_in_all_13_jobs": true,
+    "receipts": [
+      "2026-10-02T19:32:35.3314648Z Ubuntu",
+      "2026-10-02T19:32:35.3315692Z 24.04.5",
+      "2026-10-02T19:32:35.3319472Z Image: ubuntu-24.04",
+      "2026-10-02T19:32:35.3320444Z Version: 20260927.320.1",
+      "2026-10-02T19:32:38.4681187Z Successfully set up CPython (3.12.14)",
+      "2026-10-02T19:32:38.5235312Z   pythonLocation: /opt/hostedtoolcache/Python/3.12.14/x64"
+    ],
+    "interpretation": "CI environment observations only; they do not establish the cause of any local ARM64 worker difference."
+  },
+  "component_tests": 944,
+  "component_modules": 78,
+  "component_suite_complete": true,
+  "worker_component_tests": 11,
+  "worker_component_passed": 11,
+  "physical": {
+    "discovered": 53,
+    "passed": 49,
+    "failed_response_cases": 2,
+    "incomplete_cases": 2,
+    "standalone_elapsed_ms": {
+      "before": 25743,
+      "after": 40144,
+      "budget": 10000
+    },
+    "native_elapsed_ms": {
+      "before": 60061,
+      "after": 60108,
+      "budget": 60000
+    },
+    "ci_job_cap_minutes": 60
+  },
+  "qualification": {
+    "same_commit_full_gate": false,
+    "physical_complete": false,
+    "response_latency": false,
+    "learned_behavior": false,
+    "builder_transfer": false,
+    "local_native_ARM64_results_verified_by_this_receipt": false
+  },
+  "interpretation": "The published repaired ef9c190e ordinary workflow is complete; its physical gate is not complete or passing. Component tests, including all 11 worker cases, passed on CI's CPython 3.12.14 x64 environment. The two response cases failed their unchanged clocks and two selected cases lack completed results because their jobs were cancelled. Fixture and workflow durations are not response times. Earlier 3a/36f results and local ARM64 results remain separate. This receipt establishes no response-latency, learned-judgment, model, transfer or platform-cause qualification.",
+  "method": "Read all 13 completed job records and their decoded logs through the GitHub connector. Retain safe fixed module/case identities, outcomes, fixture durations, response clocks, checkout/environment lines and cancellation/progress receipts; omit raw logs. Every checkout log independently names the same merge commit and Alice dependency. GitHub commit metadata verifies exact merge/runtime tree identity and merge parents. Contract totals are summed from 78 successful module summaries; the worker module has 11 explicit ok case lines. Physical counts are case results, not every restart probe or subtest. Incomplete identities are verified against pinned source and shard selection. Cancellation timing is consistent with the configured 60-minute cap, but decoded logs only explicitly report cancellation. No tests, custom diagnostic or cancellation was dispatched to create this receipt.",
+  "jobs": [
+    {
+      "job_id": 110996694507,
+      "name": "contracts",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996694507",
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": "2026-10-02T20:12:04Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:37.2947473Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:38.3023277Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "case_total": 944,
+      "case_passed": 944,
+      "module_total": 78,
+      "modules": [
+        {
+          "module": "test_artifact_registry",
+          "tests": 8,
+          "fixture_elapsed_seconds": 0.017,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:05.3378263Z Ran 8 tests in 0.017s"
+        },
+        {
+          "module": "test_assessment_custody",
+          "tests": 13,
+          "fixture_elapsed_seconds": 2.701,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:09.8349643Z Ran 13 tests in 2.701s"
+        },
+        {
+          "module": "test_assessment_release_fence",
+          "tests": 3,
+          "fixture_elapsed_seconds": 0.915,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:12.4136836Z Ran 3 tests in 0.915s"
+        },
+        {
+          "module": "test_authenticated_history",
+          "tests": 18,
+          "fixture_elapsed_seconds": 2.574,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:16.4522282Z Ran 18 tests in 2.574s"
+        },
+        {
+          "module": "test_blind_assessment",
+          "tests": 13,
+          "fixture_elapsed_seconds": 0.699,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:18.7369273Z Ran 13 tests in 0.699s"
+        },
+        {
+          "module": "test_bounded_embedding_lifecycle",
+          "tests": 15,
+          "fixture_elapsed_seconds": 3.645,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:23.9213255Z Ran 15 tests in 3.645s"
+        },
+        {
+          "module": "test_bounded_xtdb_reads",
+          "tests": 10,
+          "fixture_elapsed_seconds": 0.317,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:24.6256154Z Ran 10 tests in 0.317s"
+        },
+        {
+          "module": "test_chronology_boundary_profiler",
+          "tests": 6,
+          "fixture_elapsed_seconds": 1.586,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:26.3212301Z Ran 6 tests in 1.586s"
+        },
+        {
+          "module": "test_combined_history_guard",
+          "tests": 6,
+          "fixture_elapsed_seconds": 0.821,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:28.7940460Z Ran 6 tests in 0.821s"
+        },
+        {
+          "module": "test_comparator",
+          "tests": 19,
+          "fixture_elapsed_seconds": 0.099,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:30.5175455Z Ran 19 tests in 0.099s"
+        },
+        {
+          "module": "test_comparator_current_guards",
+          "tests": 6,
+          "fixture_elapsed_seconds": 1.484,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:33.3737165Z Ran 6 tests in 1.484s"
+        },
+        {
+          "module": "test_comparison_custody",
+          "tests": 14,
+          "fixture_elapsed_seconds": 0.201,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:35.0990578Z Ran 14 tests in 0.201s"
+        },
+        {
+          "module": "test_comparison_run",
+          "tests": 16,
+          "fixture_elapsed_seconds": 0.643,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:37.2309301Z Ran 16 tests in 0.643s"
+        },
+        {
+          "module": "test_current_context_guard",
+          "tests": 29,
+          "fixture_elapsed_seconds": 9.795,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:48.6115170Z Ran 29 tests in 9.795s"
+        },
+        {
+          "module": "test_development_source_freshness",
+          "tests": 4,
+          "fixture_elapsed_seconds": 0.095,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:49.2301861Z Ran 4 tests in 0.095s"
+        },
+        {
+          "module": "test_evaluation_protocol",
+          "tests": 2,
+          "fixture_elapsed_seconds": 0.003,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:49.3287312Z Ran 2 tests in 0.003s"
+        },
+        {
+          "module": "test_experience_envelope_reuse",
+          "tests": 21,
+          "fixture_elapsed_seconds": 1.457,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:51.1196709Z Ran 21 tests in 1.457s"
+        },
+        {
+          "module": "test_experience_exact_lookup",
+          "tests": 38,
+          "fixture_elapsed_seconds": 0.164,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:51.7369462Z Ran 38 tests in 0.164s"
+        },
+        {
+          "module": "test_experiment_coordinator",
+          "tests": 20,
+          "fixture_elapsed_seconds": 4.639,
+          "result": "success",
+          "receipt": "2026-10-02T19:33:57.9637994Z Ran 20 tests in 4.639s"
+        },
+        {
+          "module": "test_experiment_manifests",
+          "tests": 27,
+          "fixture_elapsed_seconds": 1.381,
+          "result": "success",
+          "receipt": "2026-10-02T19:34:00.9833472Z Ran 27 tests in 1.381s"
+        },
+        {
+          "module": "test_experiment_preregistration",
+          "tests": 23,
+          "fixture_elapsed_seconds": 28.049,
+          "result": "success",
+          "receipt": "2026-10-02T19:34:30.7520906Z Ran 23 tests in 28.049s"
+        },
+        {
+          "module": "test_fbm_seed_contract",
+          "tests": 3,
+          "fixture_elapsed_seconds": 0.016,
+          "result": "success",
+          "receipt": "2026-10-02T19:34:31.0396015Z Ran 3 tests in 0.016s"
+        },
+        {
+          "module": "test_formation_preflight",
+          "tests": 8,
+          "fixture_elapsed_seconds": 1.074,
+          "result": "success",
+          "receipt": "2026-10-02T19:34:33.5937338Z Ran 8 tests in 1.074s"
+        },
+        {
+          "module": "test_governed_claim_quarantine",
+          "tests": 6,
+          "fixture_elapsed_seconds": 0.97,
+          "result": "success",
+          "receipt": "2026-10-02T19:34:36.2784282Z Ran 6 tests in 0.970s"
+        },
+        {
+          "module": "test_governed_development",
+          "tests": 11,
+          "fixture_elapsed_seconds": 0.322,
+          "result": "success",
+          "receipt": "2026-10-02T19:34:37.1266031Z Ran 11 tests in 0.322s"
+        },
+        {
+          "module": "test_governed_episodes",
+          "tests": 24,
+          "fixture_elapsed_seconds": 3.694,
+          "result": "success",
+          "receipt": "2026-10-02T19:34:41.2343961Z Ran 24 tests in 3.694s"
+        },
+        {
+          "module": "test_guarded_object_copies",
+          "tests": 4,
+          "fixture_elapsed_seconds": 2.612,
+          "result": "success",
+          "receipt": "2026-10-02T19:34:45.3879119Z Ran 4 tests in 2.612s"
+        },
+        {
+          "module": "test_history_fence",
+          "tests": 25,
+          "fixture_elapsed_seconds": 2.084,
+          "result": "success",
+          "receipt": "2026-10-02T19:34:49.0385369Z Ran 25 tests in 2.084s"
+        },
+        {
+          "module": "test_native_arm",
+          "tests": 10,
+          "fixture_elapsed_seconds": 34.014,
+          "result": "success",
+          "receipt": "2026-10-02T19:35:24.6841149Z Ran 10 tests in 34.014s"
+        },
+        {
+          "module": "test_native_boundary_profiler",
+          "tests": 20,
+          "fixture_elapsed_seconds": 0.074,
+          "result": "success",
+          "receipt": "2026-10-02T19:35:25.1237473Z Ran 20 tests in 0.074s"
+        },
+        {
+          "module": "test_native_comparison_fixture",
+          "tests": 2,
+          "fixture_elapsed_seconds": 2.328,
+          "result": "success",
+          "receipt": "2026-10-02T19:35:28.9923078Z Ran 2 tests in 2.328s"
+        },
+        {
+          "module": "test_native_final_seal",
+          "tests": 11,
+          "fixture_elapsed_seconds": 10.478,
+          "result": "success",
+          "receipt": "2026-10-02T19:35:41.0609768Z Ran 11 tests in 10.478s"
+        },
+        {
+          "module": "test_native_pilot_lifecycle",
+          "tests": 11,
+          "fixture_elapsed_seconds": 0.268,
+          "result": "success",
+          "receipt": "2026-10-02T19:35:42.9941154Z Ran 11 tests in 0.268s"
+        },
+        {
+          "module": "test_native_reads",
+          "tests": 21,
+          "fixture_elapsed_seconds": 60.495,
+          "result": "success",
+          "receipt": "2026-10-02T19:36:45.1282170Z Ran 21 tests in 60.495s"
+        },
+        {
+          "module": "test_native_worker",
+          "tests": 11,
+          "fixture_elapsed_seconds": 0.803,
+          "result": "success",
+          "receipt": "2026-10-02T19:36:46.3509314Z Ran 11 tests in 0.803s"
+        },
+        {
+          "module": "test_native_writer_guard",
+          "tests": 12,
+          "fixture_elapsed_seconds": 0.761,
+          "result": "success",
+          "receipt": "2026-10-02T19:36:47.4017871Z Ran 12 tests in 0.761s"
+        },
+        {
+          "module": "test_openai_responses_transport",
+          "tests": 13,
+          "fixture_elapsed_seconds": 0.205,
+          "result": "success",
+          "receipt": "2026-10-02T19:36:49.0498356Z Ran 13 tests in 0.205s"
+        },
+        {
+          "module": "test_owner_authorization",
+          "tests": 2,
+          "fixture_elapsed_seconds": 0.013,
+          "result": "success",
+          "receipt": "2026-10-02T19:36:49.5434841Z Ran 2 tests in 0.013s"
+        },
+        {
+          "module": "test_personal_artifact_custody",
+          "tests": 11,
+          "fixture_elapsed_seconds": 0.25,
+          "result": "success",
+          "receipt": "2026-10-02T19:36:50.1949298Z Ran 11 tests in 0.250s"
+        },
+        {
+          "module": "test_phase_authorized_reads",
+          "tests": 4,
+          "fixture_elapsed_seconds": 1.304,
+          "result": "success",
+          "receipt": "2026-10-02T19:36:52.9571693Z Ran 4 tests in 1.304s"
+        },
+        {
+          "module": "test_phase_snapshots",
+          "tests": 31,
+          "fixture_elapsed_seconds": 730.178,
+          "result": "success",
+          "receipt": "2026-10-02T19:49:04.6829040Z Ran 31 tests in 730.178s"
+        },
+        {
+          "module": "test_phase_source_fence",
+          "tests": 14,
+          "fixture_elapsed_seconds": 1.424,
+          "result": "success",
+          "receipt": "2026-10-02T19:49:07.7470324Z Ran 14 tests in 1.424s"
+        },
+        {
+          "module": "test_pilot_fixture",
+          "tests": 1,
+          "fixture_elapsed_seconds": 0.001,
+          "result": "success",
+          "receipt": "2026-10-02T19:49:07.9445553Z Ran 1 test in 0.001s"
+        },
+        {
+          "module": "test_preregistration_current_guard",
+          "tests": 7,
+          "fixture_elapsed_seconds": 0.869,
+          "result": "success",
+          "receipt": "2026-10-02T19:49:10.4217797Z Ran 7 tests in 0.869s"
+        },
+        {
+          "module": "test_preregistration_metadata_frame",
+          "tests": 6,
+          "fixture_elapsed_seconds": 73.031,
+          "result": "success",
+          "receipt": "2026-10-02T19:50:25.1794729Z Ran 6 tests in 73.031s"
+        },
+        {
+          "module": "test_provider_attempt_custody",
+          "tests": 14,
+          "fixture_elapsed_seconds": 0.175,
+          "result": "success",
+          "receipt": "2026-10-02T19:50:27.0214295Z Ran 14 tests in 0.175s"
+        },
+        {
+          "module": "test_provider_final_binding",
+          "tests": 8,
+          "fixture_elapsed_seconds": 74.102,
+          "result": "success",
+          "receipt": "2026-10-02T19:51:42.8023511Z Ran 8 tests in 74.102s"
+        },
+        {
+          "module": "test_provider_source_fence",
+          "tests": 6,
+          "fixture_elapsed_seconds": 0.711,
+          "result": "success",
+          "receipt": "2026-10-02T19:51:45.1933138Z Ran 6 tests in 0.711s"
+        },
+        {
+          "module": "test_registered_judgment_context",
+          "tests": 4,
+          "fixture_elapsed_seconds": 0.12,
+          "result": "success",
+          "receipt": "2026-10-02T19:51:46.8716154Z Ran 4 tests in 0.120s"
+        },
+        {
+          "module": "test_runtime_context_domain",
+          "tests": 8,
+          "fixture_elapsed_seconds": 0.668,
+          "result": "success",
+          "receipt": "2026-10-02T19:51:49.1071327Z Ran 8 tests in 0.668s"
+        },
+        {
+          "module": "test_runtime_custody_transaction",
+          "tests": 7,
+          "fixture_elapsed_seconds": 1.089,
+          "result": "success",
+          "receipt": "2026-10-02T19:51:51.7405594Z Ran 7 tests in 1.089s"
+        },
+        {
+          "module": "test_sealed_analysis",
+          "tests": 12,
+          "fixture_elapsed_seconds": 1.11,
+          "result": "success",
+          "receipt": "2026-10-02T19:51:54.3519401Z Ran 12 tests in 1.110s"
+        },
+        {
+          "module": "test_selected_context",
+          "tests": 23,
+          "fixture_elapsed_seconds": 67.606,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:03.4940970Z Ran 23 tests in 67.606s"
+        },
+        {
+          "module": "test_selected_context_fence",
+          "tests": 11,
+          "fixture_elapsed_seconds": 6.101,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:11.1894865Z Ran 11 tests in 6.101s"
+        },
+        {
+          "module": "test_selected_experience",
+          "tests": 3,
+          "fixture_elapsed_seconds": 0.005,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:11.6676244Z Ran 3 tests in 0.005s"
+        },
+        {
+          "module": "test_selected_experiment_runtime",
+          "tests": 13,
+          "fixture_elapsed_seconds": 6.478,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:19.6020524Z Ran 13 tests in 6.478s"
+        },
+        {
+          "module": "test_selected_formation_admission",
+          "tests": 7,
+          "fixture_elapsed_seconds": 1.84,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:22.9482415Z Ran 7 tests in 1.840s"
+        },
+        {
+          "module": "test_selected_formation_candidates",
+          "tests": 12,
+          "fixture_elapsed_seconds": 1.249,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:24.6726383Z Ran 12 tests in 1.249s"
+        },
+        {
+          "module": "test_selected_formation_gate",
+          "tests": 3,
+          "fixture_elapsed_seconds": 0.002,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:24.9541062Z Ran 3 tests in 0.002s"
+        },
+        {
+          "module": "test_selected_formation_input",
+          "tests": 1,
+          "fixture_elapsed_seconds": 0.004,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:25.3085753Z Ran 1 test in 0.004s"
+        },
+        {
+          "module": "test_selected_formation_policy",
+          "tests": 5,
+          "fixture_elapsed_seconds": 0.137,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:25.8204044Z Ran 5 tests in 0.137s"
+        },
+        {
+          "module": "test_selected_formation_recollection",
+          "tests": 5,
+          "fixture_elapsed_seconds": 0.021,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:27.2421240Z Ran 5 tests in 0.021s"
+        },
+        {
+          "module": "test_selected_formation_registry",
+          "tests": 7,
+          "fixture_elapsed_seconds": 0.105,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:27.8041281Z Ran 7 tests in 0.105s"
+        },
+        {
+          "module": "test_selected_graph",
+          "tests": 1,
+          "fixture_elapsed_seconds": 0.077,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:28.2641503Z Ran 1 test in 0.077s"
+        },
+        {
+          "module": "test_selected_history_contribution",
+          "tests": 19,
+          "fixture_elapsed_seconds": 1.727,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:31.5952334Z Ran 19 tests in 1.727s"
+        },
+        {
+          "module": "test_selected_history_fence",
+          "tests": 24,
+          "fixture_elapsed_seconds": 2.363,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:35.6313898Z Ran 24 tests in 2.363s"
+        },
+        {
+          "module": "test_selected_integration_partition",
+          "tests": 5,
+          "fixture_elapsed_seconds": 2.146,
+          "result": "success",
+          "receipt": "2026-10-02T19:53:37.9652635Z Ran 5 tests in 2.146s"
+        },
+        {
+          "module": "test_selected_judgment_lineage",
+          "tests": 11,
+          "fixture_elapsed_seconds": 45.284,
+          "result": "success",
+          "receipt": "2026-10-02T19:54:24.8850807Z Ran 11 tests in 45.284s"
+        },
+        {
+          "module": "test_selected_object_store",
+          "tests": 2,
+          "fixture_elapsed_seconds": 0.008,
+          "result": "success",
+          "receipt": "2026-10-02T19:54:25.3270821Z Ran 2 tests in 0.008s"
+        },
+        {
+          "module": "test_selected_phase_authority",
+          "tests": 18,
+          "fixture_elapsed_seconds": 2.263,
+          "result": "success",
+          "receipt": "2026-10-02T19:54:29.1619161Z Ran 18 tests in 2.263s"
+        },
+        {
+          "module": "test_selected_source_closure",
+          "tests": 31,
+          "fixture_elapsed_seconds": 2.864,
+          "result": "success",
+          "receipt": "2026-10-02T19:54:33.6196179Z Ran 31 tests in 2.864s"
+        },
+        {
+          "module": "test_selected_source_commitment",
+          "tests": 15,
+          "fixture_elapsed_seconds": 0.129,
+          "result": "success",
+          "receipt": "2026-10-02T19:54:34.2328073Z Ran 15 tests in 0.129s"
+        },
+        {
+          "module": "test_selected_source_native",
+          "tests": 7,
+          "fixture_elapsed_seconds": 0.016,
+          "result": "success",
+          "receipt": "2026-10-02T19:54:35.5071077Z Ran 7 tests in 0.016s"
+        },
+        {
+          "module": "test_shared_authority_frame",
+          "tests": 20,
+          "fixture_elapsed_seconds": 1035.521,
+          "result": "success",
+          "receipt": "2026-10-02T20:11:52.6044176Z Ran 20 tests in 1035.521s"
+        },
+        {
+          "module": "test_shared_source_metadata",
+          "tests": 21,
+          "fixture_elapsed_seconds": 1.76,
+          "result": "success",
+          "receipt": "2026-10-02T20:11:55.9898888Z Ran 21 tests in 1.760s"
+        },
+        {
+          "module": "test_stored_action_codec_reuse",
+          "tests": 29,
+          "fixture_elapsed_seconds": 1.3,
+          "result": "success",
+          "receipt": "2026-10-02T20:11:57.8044222Z Ran 29 tests in 1.300s"
+        },
+        {
+          "module": "test_temporal_reconciliation",
+          "tests": 1,
+          "fixture_elapsed_seconds": 2.547,
+          "result": "success",
+          "receipt": "2026-10-02T20:12:00.9614534Z Ran 1 test in 2.547s"
+        },
+        {
+          "module": "test_transport_boundary_profiler",
+          "tests": 12,
+          "fixture_elapsed_seconds": 0.057,
+          "result": "success",
+          "receipt": "2026-10-02T20:12:01.1405750Z Ran 12 tests in 0.057s"
+        }
+      ],
+      "native_worker": {
+        "module": "test_native_worker",
+        "tests": 11,
+        "passed": 11,
+        "fixture_elapsed_seconds": 0.803,
+        "case_receipts": [
+          "2026-10-02T19:36:45.6366655Z test_cancellation_reaps_parent_and_kills_descendant_without_private_echo (test_native_worker.NativeWorkerProcessTest.test_cancellation_reaps_parent_and_kills_descendant_without_private_echo) ... ok",
+          "2026-10-02T19:36:45.6863721Z test_cancelled_passive_callback_retains_physical_slot_and_queues_no_threads (test_native_worker.NativeWorkerProcessTest.test_cancelled_passive_callback_retains_physical_slot_and_queues_no_threads) ... ok",
+          "2026-10-02T19:36:45.8220872Z test_deadline_does_not_block_event_loop_and_terminates_process_group (test_native_worker.NativeWorkerProcessTest.test_deadline_does_not_block_event_loop_and_terminates_process_group) ... ok",
+          "2026-10-02T19:36:45.8655574Z test_dispatch_denial_is_explicit_and_never_sends_input (test_native_worker.NativeWorkerProcessTest.test_dispatch_denial_is_explicit_and_never_sends_input) ... ok",
+          "2026-10-02T19:36:45.9025924Z test_factory_change_during_authorization_cannot_run_unqualified_bytes (test_native_worker.NativeWorkerProcessTest.test_factory_change_during_authorization_cannot_run_unqualified_bytes) ... ok",
+          "2026-10-02T19:36:45.9285592Z test_false_dispatch_result_and_invalid_deadline_never_launch (test_native_worker.NativeWorkerProcessTest.test_false_dispatch_result_and_invalid_deadline_never_launch) ... ok",
+          "2026-10-02T19:36:45.9487156Z test_missing_or_changed_qualification_never_launches (test_native_worker.NativeWorkerProcessTest.test_missing_or_changed_qualification_never_launches) ... ok",
+          "2026-10-02T19:36:46.0608971Z test_output_cap_and_exit_failure_have_safe_receipts (test_native_worker.NativeWorkerProcessTest.test_output_cap_and_exit_failure_have_safe_receipts) ... ok",
+          "2026-10-02T19:36:46.1353623Z test_private_pipe_output_is_bound_and_stderr_is_never_retained (test_native_worker.NativeWorkerProcessTest.test_private_pipe_output_is_bound_and_stderr_is_never_retained) ... ok",
+          "2026-10-02T19:36:46.2174495Z test_sealed_factory_descriptor_cannot_be_modified_by_running_worker (test_native_worker.NativeWorkerProcessTest.test_sealed_factory_descriptor_cannot_be_modified_by_running_worker) ... ok",
+          "2026-10-02T19:36:46.3503554Z test_stderr_limit_and_no_inherited_environment (test_native_worker.NativeWorkerProcessTest.test_stderr_limit_and_no_inherited_environment) ... ok"
+        ]
+      }
+    },
+    {
+      "job_id": 110996695035,
+      "name": "integration-transport",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695035",
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": "2026-10-02T19:39:23Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:37.1991591Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:37.8137894Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 2,
+      "cases": [
+        {
+          "case": "test_selected_comparator_memory.SelectedComparatorIntegrationTest.test_phase_isolated_hybrid_memory_and_separately_authorized_signed_exchange",
+          "outcome": "failure",
+          "fixture_elapsed_seconds": 82.59,
+          "completion_receipt": "2026-10-02T19:35:03.7681199Z [completed test_selected_comparator_memory.SelectedComparatorIntegrationTest.test_phase_isolated_hybrid_memory_and_separately_authorized_signed_exchange in 82.590s]"
+        },
+        {
+          "case": "test_selected_provider_attempt_ledger.SelectedProviderAttemptLedgerIntegrationTest.test_frozen_phase_custody_signed_failures_and_fresh_per_decrypt_authority",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 102.415,
+          "completion_receipt": "2026-10-02T19:36:46.1824537Z [completed test_selected_provider_attempt_ledger.SelectedProviderAttemptLedgerIntegrationTest.test_frozen_phase_custody_signed_failures_and_fresh_per_decrypt_authority in 102.415s]"
+        }
+      ],
+      "case_passed": 1,
+      "case_failed": 1,
+      "case_incomplete": 0,
+      "suite_result_receipts": [
+        "2026-10-02T19:36:46.1840053Z Ran 2 tests in 185.005s",
+        "2026-10-02T19:36:46.1840413Z FAILED (failures=1)"
+      ],
+      "suite_fixture_elapsed_seconds": 185.005,
+      "response_budget_ms": 10000,
+      "response_attempts": [
+        {
+          "phase": "before",
+          "status": "budget_exceeded",
+          "elapsed_ms": 25743
+        },
+        {
+          "phase": "after",
+          "status": "budget_exceeded",
+          "elapsed_ms": 40144
+        }
+      ],
+      "response_timing_source": "Main selected comparator integration test; post-failure profiling does not replace these clocks.",
+      "failure_reason": "Both comparator response attempts exceeded the unchanged response budget; the provider-attempt ledger case passed."
+    },
+    {
+      "job_id": 110996695150,
+      "name": "integration-lineage",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695150",
+      "started_at_utc": "2026-10-02T19:32:35Z",
+      "completed_at_utc": "2026-10-02T20:02:48Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:38.3196725Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:39.5799347Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 2,
+      "cases": [
+        {
+          "case": "test_selected_native_lineage_backend.SelectedJudgmentLineageIntegrationTest.test_exact_accepted_episode_control_and_native_state_lineage_after_recreation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 1587.343,
+          "completion_receipt": "2026-10-02T20:00:19.1450749Z [completed test_selected_native_lineage_backend.SelectedJudgmentLineageIntegrationTest.test_exact_accepted_episode_control_and_native_state_lineage_after_recreation in 1587.343s]"
+        },
+        {
+          "case": "test_selected_native_lineage_backend.SelectedJudgmentLineageIntegrationTest.test_exact_approved_native_state_history_output_recreation_and_revocation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 142.592,
+          "completion_receipt": "2026-10-02T20:02:41.7369360Z [completed test_selected_native_lineage_backend.SelectedJudgmentLineageIntegrationTest.test_exact_approved_native_state_history_output_recreation_and_revocation in 142.592s]"
+        }
+      ],
+      "case_passed": 2,
+      "case_failed": 0,
+      "case_incomplete": 0,
+      "suite_result_receipts": [
+        "2026-10-02T20:02:41.7370437Z Ran 2 tests in 1729.935s",
+        "2026-10-02T20:02:41.7370662Z OK"
+      ],
+      "suite_fixture_elapsed_seconds": 1729.935
+    },
+    {
+      "job_id": 110996695219,
+      "name": "integration-history",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695219",
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": "2026-10-02T20:32:57Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:37.9492414Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:39.1048099Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 2,
+      "cases": [
+        {
+          "case": "test_selected_experiment_coordinator.SelectedExperimentCoordinatorIntegrationTest.test_registered_sources_to_blocked_control_stages_on_actual_selected_engines",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 70.821,
+          "completion_receipt": "2026-10-02T19:34:53.6688517Z [completed test_selected_experiment_coordinator.SelectedExperimentCoordinatorIntegrationTest.test_registered_sources_to_blocked_control_stages_on_actual_selected_engines in 70.821s]"
+        },
+        {
+          "case": "test_selected_experiment_preregistration.SelectedPreregisteredPhaseRoutesTest.test_anchor_before_seal_actual_head_update_after_capture_final_seal_and_four_routes",
+          "outcome": "incomplete",
+          "identity_evidence": "Pinned shard selects the preregistration module and its one test; progress is observed, but no completed marker or final suite summary is present.",
+          "last_progress_receipts": [
+            "2026-10-02T19:35:13.4987162Z [history-preregistration] recipe-registered: elapsed=19.826s",
+            "2026-10-02T19:35:27.7685700Z [history-preregistration] anchor-registered: elapsed=34.096s",
+            "2026-10-02T19:35:58.7662446Z [history-preregistration] original-inputs-registered: elapsed=65.093s"
+          ]
+        }
+      ],
+      "cancellation": {
+        "receipts": [
+          "2026-10-02T20:32:51.1458990Z ##[error]The operation was canceled."
+        ],
+        "configured_job_cap_minutes": 60,
+        "job_elapsed_seconds": 3623,
+        "timing_consistent_with_job_cap": true,
+        "decoded_log_explicit_reason": "The operation was canceled; the decoded log does not explicitly label a timeout."
+      },
+      "case_passed": 1,
+      "case_failed": 0,
+      "case_incomplete": 1,
+      "suite_result_receipts": []
+    },
+    {
+      "job_id": 110996695250,
+      "name": "integration-native-pilot-typed-phase",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695250",
+      "started_at_utc": "2026-10-02T19:32:35Z",
+      "completed_at_utc": "2026-10-02T20:08:49Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:38.1062171Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:38.9750012Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 1,
+      "cases": [
+        {
+          "case": "test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_typed_phase_snapshot_and_grant_proof_join_before_tail_only",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 2087.783,
+          "completion_receipt": "2026-10-02T20:08:42.9273693Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_typed_phase_snapshot_and_grant_proof_join_before_tail_only in 2087.783s]"
+        }
+      ],
+      "case_passed": 1,
+      "case_failed": 0,
+      "case_incomplete": 0,
+      "suite_result_receipts": [
+        "2026-10-02T20:08:42.9275769Z Ran 1 test in 2087.783s",
+        "2026-10-02T20:08:42.9276194Z OK"
+      ],
+      "suite_fixture_elapsed_seconds": 2087.783
+    },
+    {
+      "job_id": 110996695252,
+      "name": "integration-native-pilot-before-tail",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695252",
+      "started_at_utc": "2026-10-02T19:32:35Z",
+      "completed_at_utc": "2026-10-02T19:58:27Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:38.7138252Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:39.8598699Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 1,
+      "cases": [
+        {
+          "case": "test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_native_before_tail_then_correction_without_internal_history",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 1462.102,
+          "completion_receipt": "2026-10-02T19:58:20.5166622Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_native_before_tail_then_correction_without_internal_history in 1462.102s]"
+        }
+      ],
+      "case_passed": 1,
+      "case_failed": 0,
+      "case_incomplete": 0,
+      "suite_result_receipts": [
+        "2026-10-02T19:58:20.5168470Z Ran 1 test in 1462.102s",
+        "2026-10-02T19:58:20.5168816Z OK"
+      ],
+      "suite_fixture_elapsed_seconds": 1462.102
+    },
+    {
+      "job_id": 110996695267,
+      "name": "integration-native-comparison",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695267",
+      "started_at_utc": "2026-10-02T19:32:35Z",
+      "completed_at_utc": "2026-10-02T19:36:51Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:37.7880747Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:38.2703889Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 1,
+      "cases": [
+        {
+          "case": "test_selected_native_comparison.SelectedNativeComparisonIntegrationTest.test_actual_phase_context_execution_parent_and_private_run_custody",
+          "outcome": "failure",
+          "fixture_elapsed_seconds": 184.816,
+          "completion_receipt": "2026-10-02T19:36:47.7785269Z [completed test_selected_native_comparison.SelectedNativeComparisonIntegrationTest.test_actual_phase_context_execution_parent_and_private_run_custody in 184.816s]"
+        }
+      ],
+      "case_passed": 0,
+      "case_failed": 1,
+      "case_incomplete": 0,
+      "suite_result_receipts": [
+        "2026-10-02T19:36:47.7791833Z Ran 1 test in 184.816s",
+        "2026-10-02T19:36:47.7792026Z FAILED (failures=1)"
+      ],
+      "suite_fixture_elapsed_seconds": 184.816,
+      "response_budget_ms": 60000,
+      "response_attempts": [
+        {
+          "phase": "before",
+          "status": "timeout",
+          "elapsed_ms": 60061
+        },
+        {
+          "phase": "after",
+          "status": "timeout",
+          "elapsed_ms": 60108
+        }
+      ],
+      "failure_reason": "Both native response attempts timed out at the unchanged response budget."
+    },
+    {
+      "job_id": 110996695306,
+      "name": "integration-readers",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695306",
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": "2026-10-02T19:35:17Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:36.8953960Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:37.6527982Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 2,
+      "cases": [
+        {
+          "case": "test_selected_native_read_sessions.SelectedNativeReadSessionIntegrationTest.test_fresh_guarded_real_sessions_recover_existing_receipts_and_respect_live_revocation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 93.277,
+          "completion_receipt": "2026-10-02T19:35:11.7440178Z [completed test_selected_native_read_sessions.SelectedNativeReadSessionIntegrationTest.test_fresh_guarded_real_sessions_recover_existing_receipts_and_respect_live_revocation in 93.277s]"
+        },
+        {
+          "case": "test_selected_native_writer_faults.SelectedNativeWriterFaultTest.test_real_blocked_pgconn_exits_on_owner_without_late_sql_continuation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.87,
+          "completion_receipt": "2026-10-02T19:35:12.6139948Z [completed test_selected_native_writer_faults.SelectedNativeWriterFaultTest.test_real_blocked_pgconn_exits_on_owner_without_late_sql_continuation in 0.870s]"
+        }
+      ],
+      "case_passed": 2,
+      "case_failed": 0,
+      "case_incomplete": 0,
+      "suite_result_receipts": [
+        "2026-10-02T19:35:12.6141309Z Ran 2 tests in 94.147s",
+        "2026-10-02T19:35:12.6141568Z OK"
+      ],
+      "suite_fixture_elapsed_seconds": 94.147
+    },
+    {
+      "job_id": 110996695321,
+      "name": "integration-core",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695321",
+      "started_at_utc": "2026-10-02T19:32:35Z",
+      "completed_at_utc": "2026-10-02T19:49:31Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:37.9936631Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:38.7544892Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 38,
+      "cases": [
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_changed_encrypted_qualification_custody_prevents_runtime_binding",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.709,
+          "completion_receipt": "2026-10-02T19:33:42.3146129Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_changed_encrypted_qualification_custody_prevents_runtime_binding in 0.709s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_custody_and_registry_recover_without_caller_qualification_map",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.163,
+          "completion_receipt": "2026-10-02T19:33:42.4771914Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_custody_and_registry_recover_without_caller_qualification_map in 0.163s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_immutable_receipt_and_artifact_identity_cannot_be_rebound",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.083,
+          "completion_receipt": "2026-10-02T19:33:42.5615156Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_immutable_receipt_and_artifact_identity_cannot_be_rebound in 0.083s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_invalid_or_denied_external_receipts_never_create_current_role",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.014,
+          "completion_receipt": "2026-10-02T19:33:42.5749606Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_invalid_or_denied_external_receipts_never_create_current_role in 0.014s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_racing_writers_cannot_both_activate_the_same_predecessor",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.283,
+          "completion_receipt": "2026-10-02T19:33:42.8596815Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_racing_writers_cannot_both_activate_the_same_predecessor in 0.283s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_runtime_rechecks_independent_qualification_and_missing_checkpoint",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.142,
+          "completion_receipt": "2026-10-02T19:33:43.0001463Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_runtime_rechecks_independent_qualification_and_missing_checkpoint in 0.142s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_scope_namespace_and_expected_contract_fail_closed",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.091,
+          "completion_receipt": "2026-10-02T19:33:43.0897091Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_scope_namespace_and_expected_contract_fail_closed in 0.091s]"
+        },
+        {
+          "case": "test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_second_generation_stale_cas_and_old_retry_preserve_current_head",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.163,
+          "completion_receipt": "2026-10-02T19:33:43.2538457Z [completed test_artifact_registry.ArtifactRegistrySelectedBackendTest.test_second_generation_stale_cas_and_old_retry_preserve_current_head in 0.163s]"
+        },
+        {
+          "case": "test_comparison_custody.SelectedComparisonCustodyIntegrationTest.test_recovery_failure_matrix_exact_sources_and_separate_review_authority",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 34.254,
+          "completion_receipt": "2026-10-02T19:34:17.5085297Z [completed test_comparison_custody.SelectedComparisonCustodyIntegrationTest.test_recovery_failure_matrix_exact_sources_and_separate_review_authority in 34.254s]"
+        },
+        {
+          "case": "test_formation_admission.FormationAdmissionIntegrationTest.test_real_atomic_authority_correction_idempotency_and_source_revocation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 11.664,
+          "completion_receipt": "2026-10-02T19:34:29.1718628Z [completed test_formation_admission.FormationAdmissionIntegrationTest.test_real_atomic_authority_correction_idempotency_and_source_revocation in 11.664s]"
+        },
+        {
+          "case": "test_selected_assessment_custody.SelectedAssessmentCustodyIntegrationTest.test_real_custody_recovery_signed_seal_and_current_key_release",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 625.797,
+          "completion_receipt": "2026-10-02T19:44:54.9691375Z [completed test_selected_assessment_custody.SelectedAssessmentCustodyIntegrationTest.test_real_custody_recovery_signed_seal_and_current_key_release in 625.797s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_decision_and_observed_outcome_keep_source_lineage",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.025,
+          "completion_receipt": "2026-10-02T19:44:54.9933781Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_decision_and_observed_outcome_keep_source_lineage in 0.025s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_fictional_pilot_has_separate_before_and_after_experience",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.249,
+          "completion_receipt": "2026-10-02T19:44:55.2424325Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_fictional_pilot_has_separate_before_and_after_experience in 0.249s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_kurrent_expected_revision_idempotency_and_replay",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.02,
+          "completion_receipt": "2026-10-02T19:44:55.2624332Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_kurrent_expected_revision_idempotency_and_replay in 0.020s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_nats_edge_intake_commits_only_to_kurrent_authority",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.02,
+          "completion_receipt": "2026-10-02T19:44:55.2826052Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_nats_edge_intake_commits_only_to_kurrent_authority in 0.020s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_raw_experience_replay_binds_mfm_input_without_granting_authority",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.008,
+          "completion_receipt": "2026-10-02T19:44:55.2907076Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_raw_experience_replay_binds_mfm_input_without_granting_authority in 0.008s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_registered_mfm_context_recovers_sources_and_original_closure",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 6.297,
+          "completion_receipt": "2026-10-02T19:45:01.5884401Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_registered_mfm_context_recovers_sources_and_original_closure in 6.297s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_xtdb_bitemporal_current_claim_and_host_isolation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 2.816,
+          "completion_receipt": "2026-10-02T19:45:04.4061474Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_xtdb_bitemporal_current_claim_and_host_isolation in 2.816s]"
+        },
+        {
+          "case": "test_selected_backends.SelectedBackendIntegrationTest.test_xtdb_immutable_relation_race_has_one_winner",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.037,
+          "completion_receipt": "2026-10-02T19:45:04.4423551Z [completed test_selected_backends.SelectedBackendIntegrationTest.test_xtdb_immutable_relation_race_has_one_winner in 0.037s]"
+        },
+        {
+          "case": "test_selected_bounded_xtdb_read_faults.SelectedBoundedXTDBFaultTest.test_real_select_blackhole_releases_cancelled_physical_reader_without_late_mutation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.826,
+          "completion_receipt": "2026-10-02T19:45:05.2674785Z [completed test_selected_bounded_xtdb_read_faults.SelectedBoundedXTDBFaultTest.test_real_select_blackhole_releases_cancelled_physical_reader_without_late_mutation in 0.826s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_missing_wrong_position_digest_and_time_fail_against_actual_records",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.065,
+          "completion_receipt": "2026-10-02T19:45:05.3334662Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_missing_wrong_position_digest_and_time_fail_against_actual_records in 0.065s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_persisted_locator_resolves_exact_source_after_unrelated_tail",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.09,
+          "completion_receipt": "2026-10-02T19:45:05.4226803Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_persisted_locator_resolves_exact_source_after_unrelated_tail in 0.090s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_selected_closure_rejects_actual_parent_revocation_during_physical_read",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.294,
+          "completion_receipt": "2026-10-02T19:45:05.7173630Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_selected_closure_rejects_actual_parent_revocation_during_physical_read in 0.294s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_selected_parent_closure_checks_actual_grants_and_later_withdrawal",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.325,
+          "completion_receipt": "2026-10-02T19:45:06.0425562Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_selected_parent_closure_checks_actual_grants_and_later_withdrawal in 0.325s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_soft_delete_and_reappend_reject_stale_position_and_commit_time",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.078,
+          "completion_receipt": "2026-10-02T19:45:06.1210025Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_soft_delete_and_reappend_reject_stale_position_and_commit_time in 0.078s]"
+        },
+        {
+          "case": "test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_well_formed_false_locator_still_needs_independent_physical_proof",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.038,
+          "completion_receipt": "2026-10-02T19:45:06.1590976Z [completed test_selected_exact_commitments.SelectedExactCommitmentIntegrationTest.test_well_formed_false_locator_still_needs_independent_physical_proof in 0.038s]"
+        },
+        {
+          "case": "test_selected_experiment_manifest_custody.SelectedExperimentManifestIntegrationTest.test_cross_host_metadata_permissions_private_recovery_and_no_auto_builder_case",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 27.437,
+          "completion_receipt": "2026-10-02T19:45:33.5954330Z [completed test_selected_experiment_manifest_custody.SelectedExperimentManifestIntegrationTest.test_cross_host_metadata_permissions_private_recovery_and_no_auto_builder_case in 27.437s]"
+        },
+        {
+          "case": "test_selected_governed_claim_quarantine.GovernedClaimQuarantineIntegrationTest.test_real_atomic_pending_barrier_recreation_and_temporal_derived_cleanup",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 7.085,
+          "completion_receipt": "2026-10-02T19:45:40.6797228Z [completed test_selected_governed_claim_quarantine.GovernedClaimQuarantineIntegrationTest.test_real_atomic_pending_barrier_recreation_and_temporal_derived_cleanup in 7.085s]"
+        },
+        {
+          "case": "test_selected_governed_development.GovernedDevelopmentSelectedBackendTest.test_registered_permissions_govern_activation_restore_and_restart",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 5.912,
+          "completion_receipt": "2026-10-02T19:45:46.5924994Z [completed test_selected_governed_development.GovernedDevelopmentSelectedBackendTest.test_registered_permissions_govern_activation_restore_and_restart in 5.912s]"
+        },
+        {
+          "case": "test_selected_governed_episodes.SelectedGovernedEpisodesTest.test_accepted_episode_and_state_recover_then_current_denial_blocks_private_reads",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 115.857,
+          "completion_receipt": "2026-10-02T19:47:42.4492253Z [completed test_selected_governed_episodes.SelectedGovernedEpisodesTest.test_accepted_episode_and_state_recover_then_current_denial_blocks_private_reads in 115.857s]"
+        },
+        {
+          "case": "test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_manifest_reconstruction_uses_only_bounded_metadata_reads",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 1.152,
+          "completion_receipt": "2026-10-02T19:47:43.6023254Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_manifest_reconstruction_uses_only_bounded_metadata_reads in 1.152s]"
+        },
+        {
+          "case": "test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_phase_membership_uses_original_ids_and_excludes_receipts",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.757,
+          "completion_receipt": "2026-10-02T19:47:44.3588374Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_phase_membership_uses_original_ids_and_excludes_receipts in 0.757s]"
+        },
+        {
+          "case": "test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_signed_late_revocation_is_rejected_by_shared_terminal_fence",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.869,
+          "completion_receipt": "2026-10-02T19:47:45.2279582Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_actual_signed_late_revocation_is_rejected_by_shared_terminal_fence in 0.869s]"
+        },
+        {
+          "case": "test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_explicit_selected_domain_does_not_claim_unrelated_stream_integrity",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.799,
+          "completion_receipt": "2026-10-02T19:47:46.0277432Z [completed test_selected_history_consumer.SelectedHistoryConsumerIntegrationTest.test_explicit_selected_domain_does_not_claim_unrelated_stream_integrity in 0.799s]"
+        },
+        {
+          "case": "test_selected_personal_artifact_custody.SelectedPersonalArtifactCustodyTest.test_state_approval_permission_and_rollback_recover_without_reference_or_proof_maps",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 6.317,
+          "completion_receipt": "2026-10-02T19:47:52.3436058Z [completed test_selected_personal_artifact_custody.SelectedPersonalArtifactCustodyTest.test_state_approval_permission_and_rollback_recover_without_reference_or_proof_maps in 6.317s]"
+        },
+        {
+          "case": "test_selected_phase_source_fence.SelectedPhaseSourceFenceIntegrationTest.test_actual_finite_source_action_head_claim_query_and_final_callback_withdrawal",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 2.213,
+          "completion_receipt": "2026-10-02T19:47:54.5564531Z [completed test_selected_phase_source_fence.SelectedPhaseSourceFenceIntegrationTest.test_actual_finite_source_action_head_claim_query_and_final_callback_withdrawal in 2.213s]"
+        },
+        {
+          "case": "test_selected_runtime_bridge.SelectedExperimentRuntimeIntegrationTest.test_actual_runtime_admission_governed_context_recovery_and_denial",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 60.851,
+          "completion_receipt": "2026-10-02T19:48:55.4076205Z [completed test_selected_runtime_bridge.SelectedExperimentRuntimeIntegrationTest.test_actual_runtime_admission_governed_context_recovery_and_denial in 60.851s]"
+        },
+        {
+          "case": "test_selected_runtime_custody_transactions.SelectedRuntimeCustodyTransactionIntegrationTest.test_actual_xtdb_dml_batch_and_owner_withdrawal_deny_continuation",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 0.346,
+          "completion_receipt": "2026-10-02T19:48:55.7537788Z [completed test_selected_runtime_custody_transactions.SelectedRuntimeCustodyTransactionIntegrationTest.test_actual_xtdb_dml_batch_and_owner_withdrawal_deny_continuation in 0.346s]"
+        }
+      ],
+      "case_passed": 38,
+      "case_failed": 0,
+      "case_incomplete": 0,
+      "suite_result_receipts": [
+        "2026-10-02T19:48:55.7539246Z Ran 38 tests in 914.148s",
+        "2026-10-02T19:48:55.7539496Z OK"
+      ],
+      "suite_fixture_elapsed_seconds": 914.148,
+      "restart_probe_steps": [
+        {
+          "name": "Start selected services and persistent Temporal",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Wait for persistent Temporal and namespace",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Write restart persistence probes",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify probes before restart",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Checkpoint a persistent Temporal workflow",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Restart Temporal persistence and server",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Wait after restart",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify persistence after restart",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Resume persistent Temporal workflow after server and database restart",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "job_id": 110996695385,
+      "name": "integration-native-pilot-outcome-audit",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695385",
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": "2026-10-02T19:52:57Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:37.1476342Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:38.0699193Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 1,
+      "cases": [
+        {
+          "case": "test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_native_outcome_audit_unknown_tail_and_permission_withdrawal",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 1156.567,
+          "completion_receipt": "2026-10-02T19:52:52.5688684Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_actual_native_outcome_audit_unknown_tail_and_permission_withdrawal in 1156.567s]"
+        }
+      ],
+      "case_passed": 1,
+      "case_failed": 0,
+      "case_incomplete": 0,
+      "suite_result_receipts": [
+        "2026-10-02T19:52:52.5689321Z Ran 1 test in 1156.567s",
+        "2026-10-02T19:52:52.5689457Z OK"
+      ],
+      "suite_fixture_elapsed_seconds": 1156.567
+    },
+    {
+      "job_id": 110996695418,
+      "name": "integration-native-pilot-withdrawal",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695418",
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": "2026-10-02T19:35:58Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:38.1627827Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:39.4455734Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 1,
+      "cases": [
+        {
+          "case": "test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_phase_withdrawal_at_native_cipher_read_blocks_later_private_reads",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 124.765,
+          "completion_receipt": "2026-10-02T19:35:51.8462207Z [completed test_selected_native_pilot_backend.SelectedNativePilotBackendTest.test_phase_withdrawal_at_native_cipher_read_blocks_later_private_reads in 124.765s]"
+        }
+      ],
+      "case_passed": 1,
+      "case_failed": 0,
+      "case_incomplete": 0,
+      "suite_result_receipts": [
+        "2026-10-02T19:35:51.8463981Z Ran 1 test in 124.766s",
+        "2026-10-02T19:35:51.8464320Z OK"
+      ],
+      "suite_fixture_elapsed_seconds": 124.766
+    },
+    {
+      "job_id": 110996695451,
+      "name": "integration-history-routes-retained",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695451",
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": "2026-10-02T20:32:57Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:37.9657631Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:39.1974730Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 1,
+      "cases": [
+        {
+          "case": "test_selected_phase_history_routes.SelectedPhaseHistoryRoutesTest.test_actual_claim_state_and_artifact_replacement_keeps_before_route_and_live_withdrawal",
+          "outcome": "incomplete",
+          "identity_evidence": "Pinned case-shard mapping names the sole selected test. The job discovered one case; no completed marker or final suite summary is present."
+        }
+      ],
+      "cancellation": {
+        "receipts": [
+          "2026-10-02T20:32:51.3679727Z ##[error]The operation was canceled."
+        ],
+        "configured_job_cap_minutes": 60,
+        "job_elapsed_seconds": 3623,
+        "timing_consistent_with_job_cap": true,
+        "decoded_log_explicit_reason": "The operation was canceled; the decoded log does not explicitly label a timeout."
+      },
+      "case_passed": 0,
+      "case_failed": 0,
+      "case_incomplete": 1,
+      "suite_result_receipts": []
+    },
+    {
+      "job_id": 110996695575,
+      "name": "integration-history-routes-native",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/NIne-WIngEd/FloRA/actions/runs/37054784829/job/110996695575",
+      "started_at_utc": "2026-10-02T19:32:34Z",
+      "completed_at_utc": "2026-10-02T20:16:59Z",
+      "checkout_commit": "2f166a9d745667b200302a404bd04f8def7a83d9",
+      "alice_contract_commit": "4f287a488bc908bd04f99255ee01b794bacba50b",
+      "checkout_receipts": [
+        "2026-10-02T19:32:38.1984360Z 2f166a9d745667b200302a404bd04f8def7a83d9",
+        "2026-10-02T19:32:39.1985763Z 4f287a488bc908bd04f99255ee01b794bacba50b"
+      ],
+      "python_version": "3.12.14",
+      "python_architecture": "x64",
+      "discovered_physical_case_total": 53,
+      "case_total": 1,
+      "cases": [
+        {
+          "case": "test_selected_phase_history_routes.SelectedPhaseHistoryRoutesTest.test_strict_router_recovers_distinct_actual_native_arm_invocations_on_all_phase_routes",
+          "outcome": "success",
+          "fixture_elapsed_seconds": 2586.121,
+          "completion_receipt": "2026-10-02T20:16:51.8209275Z [completed test_selected_phase_history_routes.SelectedPhaseHistoryRoutesTest.test_strict_router_recovers_distinct_actual_native_arm_invocations_on_all_phase_routes in 2586.121s]"
+        }
+      ],
+      "case_passed": 1,
+      "case_failed": 0,
+      "case_incomplete": 0,
+      "suite_result_receipts": [
+        "2026-10-02T20:16:51.8210914Z Ran 1 test in 2586.121s",
+        "2026-10-02T20:16:51.8211203Z OK"
+      ],
+      "suite_fixture_elapsed_seconds": 2586.121
+    }
+  ]
+}
