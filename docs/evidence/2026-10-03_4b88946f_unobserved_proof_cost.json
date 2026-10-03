@@ -1,0 +1,186 @@
+{
+  "recorded_at_utc": "2026-10-03T16:30:06.034066Z",
+  "runtime_source": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+  "diagnostic": "Controlled original-code timings without profile or trace hooks; separate one-call operation counts",
+  "environment": {
+    "python": "3.12.15",
+    "machine": "aarch64",
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-aarch64-with-glibc2.41"
+  },
+  "source_sha256": {
+    "src/flora/selected/selected_phase_authority.py": "6589bce9051bcc410282b5aba7fc3259bc0ef57105aeb98966e0fa50aaa9542a",
+    "src/flora/selected/selected_authority_frame.py": "599d996805c8c197a3bdd102df3fc5fb6d8500f12a613c81565c903ec76947d6",
+    "tests/test_selected_phase_authority.py": "fba8e8b69d9b05e858a0fbcf3d9ff8ad9769225149425e50acbad4d567b55e11"
+  },
+  "timings": {
+    "single_origin_seal": {
+      "samples": [
+        {
+          "iterations": 250,
+          "wall_seconds": 0.053493241,
+          "thread_cpu_seconds": 0.0534851
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.053641856,
+          "thread_cpu_seconds": 0.0536269
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.053402031,
+          "thread_cpu_seconds": 0.0534103
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.053365827,
+          "thread_cpu_seconds": 0.0533704
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.053085997,
+          "thread_cpu_seconds": 0.0530919
+        }
+      ],
+      "median_wall_seconds_per_call": 0.000213608124,
+      "median_thread_cpu_seconds_per_call": 0.0002136412
+    },
+    "single_origin_body": {
+      "samples": [
+        {
+          "iterations": 250,
+          "wall_seconds": 0.09778091,
+          "thread_cpu_seconds": 0.0977238
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.098510987,
+          "thread_cpu_seconds": 0.0984852
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.098804018,
+          "thread_cpu_seconds": 0.098021
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.096410166,
+          "thread_cpu_seconds": 0.0964113
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.09826256,
+          "thread_cpu_seconds": 0.0982619
+        }
+      ],
+      "median_wall_seconds_per_call": 0.00039305024,
+      "median_thread_cpu_seconds_per_call": 0.000392084
+    },
+    "plain_permission_event_pair": {
+      "samples": [
+        {
+          "iterations": 250,
+          "wall_seconds": 0.24354878,
+          "thread_cpu_seconds": 0.2435383
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.230089961,
+          "thread_cpu_seconds": 0.2300066
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.233925665,
+          "thread_cpu_seconds": 0.23391
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.240015507,
+          "thread_cpu_seconds": 0.240002
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.298511475,
+          "thread_cpu_seconds": 0.2984899
+        }
+      ],
+      "median_wall_seconds_per_call": 0.0009600620279999999,
+      "median_thread_cpu_seconds_per_call": 0.0009600079999999999
+    },
+    "inherited_permission_event_pair": {
+      "samples": [
+        {
+          "iterations": 250,
+          "wall_seconds": 0.289508526,
+          "thread_cpu_seconds": 0.2894893
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.339784827,
+          "thread_cpu_seconds": 0.3396544
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.309338917,
+          "thread_cpu_seconds": 0.3035312
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.296139325,
+          "thread_cpu_seconds": 0.2960859
+        },
+        {
+          "iterations": 250,
+          "wall_seconds": 0.286102967,
+          "thread_cpu_seconds": 0.2860384
+        }
+      ],
+      "median_wall_seconds_per_call": 0.0011845573,
+      "median_thread_cpu_seconds_per_call": 0.0011843436
+    }
+  },
+  "separate_observed_call_counts": {
+    "single_origin_seal": {
+      "origin_seal": 1,
+      "identity_materialization": 86,
+      "origin_body": 0,
+      "function_verify": 0,
+      "reader_verify": 0
+    },
+    "single_origin_body": {
+      "origin_seal": 0,
+      "identity_materialization": 0,
+      "origin_body": 1,
+      "function_verify": 6,
+      "reader_verify": 79
+    },
+    "plain_permission_event_pair": {
+      "origin_seal": 2,
+      "identity_materialization": 188,
+      "origin_body": 1,
+      "function_verify": 18,
+      "reader_verify": 81
+    },
+    "inherited_permission_event_pair": {
+      "origin_seal": 3,
+      "identity_materialization": 282,
+      "origin_body": 1,
+      "function_verify": 24,
+      "reader_verify": 82
+    }
+  },
+  "origin_reader_count": 79,
+  "top_level_origin_functions": 3,
+  "io_counters_unchanged": true,
+  "qualification": false,
+  "learned_behavior_run": false,
+  "limits": [
+    "Controlled native object fixture, not live engine serving or cloud hardware.",
+    "Timing hooks are absent; call counts are gathered separately and are not timed.",
+    "Original implementation only: no changed verifier, substituted authority or reused positive answer.",
+    "Do not extrapolate these local timings into the cloud profile or call them an end-to-end improvement.",
+    "A subcomponent timing cannot explain unmeasured physical, callback, reconstruction or setup work."
+  ],
+  "native_image_sha256": "bbb524290db6a69edc7479eec6ee6a2d2b9946d5c0be0af86eb948575b5379e2",
+  "source_blobs_verified": true,
+  "scratch_probe_sha256": "37f9100573469ee0428a616f62bb5ec9a74336fe543c231aa35895a4ab206bea"
+}

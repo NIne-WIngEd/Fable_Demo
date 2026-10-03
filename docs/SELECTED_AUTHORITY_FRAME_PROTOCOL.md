@@ -1,5 +1,12 @@
 # Selected authority frame protocol
 
+Latest October 3: both full `4b88946f` ordinary gates are complete and failed;
+each passes978 components. Current PR physical50/2/1, push49/2/2 and separate
+Temporal restart exit139 remain. Runtime is unchanged while one optional 50ms
+original-owned-stack diagnostic discriminates remaining costs. See the
+[latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md). Earlier pending
+notices below are historical; no new authority or permission cache is added.
+
 Latest result, October 3: the once-dispatched `4b88946f` native diagnostic is
 complete, with a failed fixture and qualification false. All 116 after/115 before
 source hashes match pinned blobs. Preparation still dominates; fewer tagged calls
