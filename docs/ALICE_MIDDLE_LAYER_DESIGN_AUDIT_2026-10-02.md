@@ -4,6 +4,15 @@ Source-grounded design review for the narrow prototype. This record changes no
 serving contract and qualifies no model, response latency or behavioral result.
 The source audit and independent proposal review are separate from test execution.
 
+October 3 continuation: ordinary da/d0 CI is recovered in the
+[latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md). The second conditional
+proposal below has an uncommitted source-hash-recorded candidate: shallow own
+checks inside the existing frame capture walk, retaining recursive phase checks.
+Seventy focused cases pass; fresh review finds no issues. The full local loop
+continues after a preserved unchanged worker failure and successful module repeat.
+Origin-seal representation remains deferred. No latency qualification follows.
+The proposal and CI status below retain the original October 2 snapshot.
+
 ## Refined observation completed
 
 The four-tag diagnostic completed with a failed fixture and qualification

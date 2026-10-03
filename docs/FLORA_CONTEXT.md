@@ -1,8 +1,29 @@
 # FloRA continuation context
 
-Updated: 2026-10-02, America/Chicago. Recovery baseline:
+Updated: 2026-10-03, America/Chicago. Recovery baseline:
 `main@885be57abb582510d27a98177facd2a358c11387`; recovery starting runtime
 `74f42417be37a2fbdc6c603a1ea657b040e0052e`.
+
+## Latest continuation: completed CI and one bounded dependency repair
+
+Read [the October 3 checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md) first.
+The d0 ordinary runs completed: all 973 component cases pass, but physical
+49/2/2 outcomes and response-budget failures remain. The four-tag profile still
+locates preparation cost. Source review discriminates a duplicate frame binding
+walk; the candidate gives each capture one own check in the existing traversal.
+Full phase verification remains recursive; origin/descriptor seals, readers,
+callbacks and all fences stay intact.
+
+The uncommitted candidate is based on development `976b847f`; exact tested hashes
+and a recoverable patch are linked in the checkpoint. All 70 focused cases pass
+and fresh review finds no issues. The full local loop initially failed an
+unchanged 120 ms worker PID-marker test. Its isolated case and one module repeat
+pass; remaining modules are running. Preserve that failure and warnings.
+No complete-suite or latency success is claimed. Recover the full result before
+runtime publication and physical dispatch.
+
+The context branch is documentation authority, not current runtime source.
+Older pending notices below are historical snapshots superseded by this section.
 
 ## Completed refined observation: independent seal traversal is costly
 

@@ -3,6 +3,12 @@
 Date: 2026-10-01 UTC; implementation update 2026-10-02
 Status: frame repair and measured-origin candidate published; current engine qualification pending
 
+October 3: [the latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md)
+records completed ordinary CI and the uncommitted fresh context-walk candidate.
+It changes only duplicate pure function verification, retaining the existing
+owned reader checks and all authority/callback/physical/terminal boundaries.
+Later sections preserve historical source and pending snapshots.
+
 Continuation scope, 2026-10-02: this composes checks already needed by FloRA's
 narrow prototype. It is not a mandate to implement Alice's full memory/mission
 platform. The [context record](FLORA_CONTEXT.md) and
