@@ -4,9 +4,11 @@ Date: 2026-10-01 UTC; implementation update 2026-10-02
 Status: frame repair and measured-origin candidate published; current engine qualification pending
 
 October 3: [the latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md)
-records completed ordinary CI and the uncommitted fresh context-walk candidate.
+records completed older CI and published fresh context-walk runtime `4b88946f`.
 It changes only duplicate pure function verification, retaining the existing
 owned reader checks and all authority/callback/physical/terminal boundaries.
+Its 978-case final-module component gate is complete after the retained worker
+fixture repeat; physical and latency verification remains pending.
 Later sections preserve historical source and pending snapshots.
 
 Continuation scope, 2026-10-02: this composes checks already needed by FloRA's

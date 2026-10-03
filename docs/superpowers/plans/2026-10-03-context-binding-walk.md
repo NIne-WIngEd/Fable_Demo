@@ -37,8 +37,8 @@
 - [x] Run `python -m unittest -v test_shared_context_bindings` in the pinned native Docker image. Expected: the one-walk test fails because leaf/middle checks repeat; mutation checks pass.
 - [x] Extract the unchanged own checks into `_verify_shallow`; recursive `verify()` calls it and visits nested captures. Frame `_verify_binding` calls the shallow method after its existing explicit nested/reader walk, and calls full reader verification in the reader branch.
 - [x] Verify fresh code/closure/global mutation rejection, replacement rejection before effects, recursive phase coverage and method code/identity pins. Run the new tests plus existing phase and focused frame tests. Expected: no failures.
-- [ ] Run the existing complete component command from CI and original frame suite on native ARM64; save complete logs privately and publish numeric/source-pinned receipts. Report any failures/warnings explicitly. Expected: component success; physical latency remains a separate gate.
-- [ ] Review the final bounded diff with a fresh reviewer, resolve material findings with tests, then commit/publish to the existing development branch. Record FBM procedure seed, latest context/checkpoint and draft PR; dispatch one source-pinned physical diagnostic. Stop when only outstanding runs remain.
+- [x] Run the existing complete component command from CI and original frame suite on native ARM64; save complete logs privately and publish numeric/source-pinned receipts. Report any failures/warnings explicitly. Expected: component success; physical latency remains a separate gate.
+- [x] Review the final bounded diff with a fresh reviewer, resolve material findings with tests, then commit/publish to the existing development branch. Record FBM procedure seed, latest context/checkpoint and draft PR; dispatch one source-pinned physical diagnostic. Stop when only outstanding runs remain.
 
 ## Execution rulings and evidence
 
@@ -47,4 +47,9 @@
 - Four-tag profile `37073820659` attributes 13.555 s exclusive / 30.056 s inclusive CPU to 245,532 frame context-binding calls. Nested inclusive values overlap and are not added to child costs.
 - Primary-source applicability was rechecked at the pinned Graphiti `search.py` and Graphify `cache.py` sources in `docs/LATENCY_RESEARCH_2026-10-02.md`: share compatible derived work while retaining separate consumers and freshness. This is an adaptation of that principle, not their authority design.
 
-- Fresh reviewer: no issues requested; full loop resumes after preserved original worker fixture failure and one successful module repeat. Runtime publication/physical dispatch remain pending.
+- Fresh reviewer: no issues requested. All 80 final module logs verify 978 cases,
+  zero skips/final failures and unchanged source. Preserve the first worker
+  PID-marker failure and eight warnings, plus 16 warning occurrences in its
+  successful 13-case repeat. Runtime `4b88946f` is published; PR/push CI and
+  once-dispatched native run 37109188927 are pending. No latency or cleanup
+  qualification follows from completing this implementation plan.

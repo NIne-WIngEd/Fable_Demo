@@ -3,7 +3,9 @@
 October 3: [the latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md)
 supersedes older pending ordinary-CI notices below. The completed four-tag
 profile supports a bounded context-binding candidate. Observer code, original
-targets and budgets remain unchanged; no new physical run is claimed yet.
+targets and budgets remain unchanged. Runtime `4b88946f` now publishes that
+repair after 978 final component cases. Once-dispatched native run 37109188927
+is pending; retain the exact artifact/source comparison before further work.
 
 The completed native comparison still exceeds its unchanged **60,000 ms** phase
 budget while preparation awaits owned context authorization. Existing transport

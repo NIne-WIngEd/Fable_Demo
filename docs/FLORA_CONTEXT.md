@@ -6,6 +6,15 @@ Updated: 2026-10-03, America/Chicago. Recovery baseline:
 
 ## Latest continuation: completed CI and one bounded dependency repair
 
+The full local continuation finished and runtime `4b88946f` is now published.
+Its complete native receipt verifies 978 final cases across 80 modules, including
+the original 20 frame cases. Preserve the initial worker fixture failure and
+16 warning occurrences in its successful repeat. Exact eight-file tested/published
+blob hashes match. PR CI 37109136216, push CI 37109132198 and once-dispatched
+native diagnostic 37109188927 are pending for this source. The checkpoint's
+published-continuation section supersedes the earlier uncommitted snapshot below.
+No end-to-end latency or learned result is qualified.
+
 Read [the October 3 checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md) first.
 The d0 ordinary runs completed: all 973 component cases pass, but physical
 49/2/2 outcomes and response-budget failures remain. The four-tag profile still
