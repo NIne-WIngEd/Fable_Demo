@@ -6,9 +6,10 @@ precedence over this handoff. Check current repository heads and completed CI
 before treating a pending or historical receipt as current.
 
 Latest continuation: `docs/VERIFICATION_CHECKPOINT_2026-10-03.md`. It separates
-completed ordinary CI from the uncommitted context-binding candidate and its
-source-hash receipt/patch. Recover the full component result before publication;
-retain the original local worker failure and source-identical module repeat.
+completed older CI from published runtime `4b88946f`, its 978-case final-module
+receipt, and new pending PR/push/native runs. The local component gate is done;
+retain its initial worker failure and source-identical repeat with warnings.
+Recover the three current physical/diagnostic results before another repair.
 
 FloRA is a narrow prototype for the frozen causal personal-judgment experiment.
 It does not require the full Alice/Fable memory, mission, experience or consumer

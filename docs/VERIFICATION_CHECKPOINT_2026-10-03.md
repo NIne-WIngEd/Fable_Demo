@@ -1,5 +1,41 @@
 # FloRA verification checkpoint — 2026-10-03
 
+## Published continuation after the full component loop
+
+Runtime **`4b88946f404d7359943b5edb2504a2f0c2e96320`**, tree
+`ab5cdfc37ef6a4187be62cad673e37d58a43e624`, publishes the single context
+binding-walk repair and five real capture/reader mutation tests. All eight named
+tested source files match their exact published blobs and current checkout.
+No runtime changes were made after the read-only review.
+The [publication and dispatch receipt](evidence/2026-10-03_4b88946f_runtime_publication.json)
+binds those exact blobs to the three follow-up runs.
+
+The [full native component receipt](evidence/2026-10-03_context_binding_walk_full_contracts.json)
+verifies all 80 final module logs: **978 cases, zero skips or final module failures**.
+The original frame's 20 cases pass in 885.554 s. The first loop's unchanged worker
+PID-marker failure remains preserved; its successful 13-case repeat has 16
+resource-warning occurrences, in addition to eight in the failed attempt.
+This is a completed component gate after one repeat, not a pristine initial
+run, cleanup qualification, speedup comparison or learned result.
+
+Source-pinned follow-up runs are now in progress:
+
+- [Ordinary PR CI 37109136216](https://github.com/NIne-WIngEd/FloRA/actions/runs/37109136216)
+- [Ordinary push CI 37109132198](https://github.com/NIne-WIngEd/FloRA/actions/runs/37109132198)
+- [Native diagnostic 37109188927](https://github.com/NIne-WIngEd/FloRA/actions/runs/37109188927),
+  job 111163631845, dispatched once for the same `4b88946f` source.
+
+Observer code, all fixed tags, workers-only mode, 180-second observation windows
+and the 10,000/60,000 ms response and 60-minute CI limits remain unchanged. Do not
+dispatch a duplicate or infer success from collection. Recover exact logs,
+source hashes and the diagnostic artifact before deciding any further repair.
+Origin-seal materialization remains a conditional question, not implemented work.
+
+The context branch is documentation authority; its runtime files remain historical.
+The construction state recorded below predates publication and is retained for
+failure/procedure provenance. Two further seeds now bring
+the validated public method corpus to 115; no FBM training has occurred.
+
 ## Completed ordinary CI
 
 The [source-pinned four-run receipt](evidence/2026-10-03_da370ebc_d0f90655_completed_ci_receipts.json)
@@ -80,6 +116,10 @@ result. The original 20-case frame suite is included. **Complete-suite success
 is not claimed**, and no physical diagnostic has been launched for this source.
 
 ## Resume
+
+Current next step: recover the three `4b88946f` run results above. The full local
+receipt is already recovered and runtime publication is complete. The older
+resume instructions below describe the previous pending state.
 
 Recover the full local receipt before runtime publication and physical dispatch.
 Keep the initial worker failure even if continuation succeeds. Check all source

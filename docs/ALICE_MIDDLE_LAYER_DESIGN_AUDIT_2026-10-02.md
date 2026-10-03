@@ -6,10 +6,11 @@ The source audit and independent proposal review are separate from test executio
 
 October 3 continuation: ordinary da/d0 CI is recovered in the
 [latest checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md). The second conditional
-proposal below has an uncommitted source-hash-recorded candidate: shallow own
-checks inside the existing frame capture walk, retaining recursive phase checks.
-Seventy focused cases pass; fresh review finds no issues. The full local loop
-continues after a preserved unchanged worker failure and successful module repeat.
+proposal below is published at `4b88946f`: shallow own checks inside the existing
+frame capture walk, retaining recursive phase checks. Seventy focused cases pass;
+fresh review finds no issues; all 80 final modules complete with 978 cases and no
+skips after the preserved unchanged worker failure and successful module repeat.
+Lifecycle warnings remain. Ordinary physical CI and one native diagnostic are pending.
 Origin-seal representation remains deferred. No latency qualification follows.
 The proposal and CI status below retain the original October 2 snapshot.
 
@@ -29,7 +30,8 @@ no further runtime rewrite or memory/mission plane is added.
 ### Conditional pure-proof follow-up after ordinary CI
 
 Read-only source review identifies two concrete representations to investigate.
-Neither is implemented or qualified here:
+The second representation is now implemented by `4b88946f`; the first remains
+conditional. Neither is qualified as an end-to-end latency improvement:
 
 - `_verify_origin_seal` may materialize typed current origin fields/readers/
   function seals once within one callback-free exact-origin pass. **Every
