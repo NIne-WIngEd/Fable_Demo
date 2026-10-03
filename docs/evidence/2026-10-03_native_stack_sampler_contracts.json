@@ -6,7 +6,7 @@
   "source_sha256": {
     "scripts/profile_selected_native_stacks.py": "72063e1bcf62008d4796f41a8b26a05a475bcd37f86f3b8af6369d9fdc1efeac",
     "tests/test_native_stack_sampler.py": "7f3c8bca865a34139fb570f52fdba86434a9e6fe084cafa8c92e9354fef765a1",
-    ".github/workflows/native-profile.yml": "a4293d0e81f5d256597be4707f8cd3958fccb0e9f43d43eebd6867333e11fba4"
+    ".github/workflows/native-profile.yml": "6bb8dc7fee4287044730a93bab2f51146242bcc0a0213771fa7aec0abd6f6a93"
   },
   "unchanged_tested_runtime_and_aggregate_sha256": {
     "src/flora/selected/selected_phase_authority.py": "6589bce9051bcc410282b5aba7fc3259bc0ef57105aeb98966e0fa50aaa9542a",
@@ -68,5 +68,17 @@
     "Point samples reflect approximate wall stack residency, not CPU or exact jobs/calls.",
     "Sampler error, partial/unobserved coverage and fixture outcome have separate fields.",
     "Only fixed numeric aggregates/source hashes leave the fixture; private logs/payloads do not."
-  ]
+  ],
+  "tested_worktree_sha256": {
+    "scripts/profile_selected_native_stacks.py": "72063e1bcf62008d4796f41a8b26a05a475bcd37f86f3b8af6369d9fdc1efeac",
+    "tests/test_native_stack_sampler.py": "7f3c8bca865a34139fb570f52fdba86434a9e6fe084cafa8c92e9354fef765a1",
+    ".github/workflows/native-profile.yml": "a4293d0e81f5d256597be4707f8cd3958fccb0e9f43d43eebd6867333e11fba4"
+  },
+  "publication_line_endings": {
+    "workflow_tested_worktree": "CRLF",
+    "published_workflow": "LF",
+    "only_difference": "line endings",
+    "published_source": "e1fd5662756f68706c6aded0550edb0b1530a96a",
+    "serving_runtime_unchanged": true
+  }
 }
