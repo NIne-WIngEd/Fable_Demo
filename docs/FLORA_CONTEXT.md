@@ -1,4 +1,46 @@
 # FloRA continuation context
+## Latest completed gates and next diagnostic — October 3
+
+Both `4b88946f` ordinary workflows have completed with failure. The
+[full 26-job receipt](evidence/2026-10-03_4b88946f_completed_ci_receipts.json)
+verifies all logged checkout trees and the Alice runtime pin. Each workflow's
+component job passes **978 cases / 80 modules**. PR physical cases are **50 passed /
+2 failed / 1 incomplete**; push is **49 / 2 / 2**, plus the separate restart-probe
+exit 139. Completed cases in cancelled jobs count; unfinished cases do not.
+Original response timings and failed/incomplete results remain unchanged.
+
+The passed PR and failed push core jobs install the same package versions.
+Temporal `1.33.0` upstream shutdown notes do not establish the segfault cause.
+The crash remains unresolved; a later exact process probe needs a crash trace,
+not a guessed SDK upgrade or blind rerun.
+
+The [controlled unobserved cost check](evidence/2026-10-03_4b88946f_unobserved_proof_cost.json)
+measures original-code operations without profile/trace hooks: median seal
+0.214 ms, origin body 0.392 ms, plain pair 0.960 ms, inherited pair 1.184 ms.
+Call counts are gathered separately, and no IO counters change. This local
+fixture does not establish cloud cost or an end-to-end saving.
+
+**Next: one optional original-code stack-sample diagnostic, with runtime unchanged.**
+Sample fixed-tag owned-reader stacks every 50 ms, retaining numeric counts and
+source hashes. There are no call hooks, delegate replacements, raw stack/locals
+records or worker interruption. Thread windows remain bounded at 180 s; response
+60,000 ms and CI 60 minutes stay unchanged. Short jobs may be missed; thread IDs
+can be reused; GIL/native-call bias and stale snapshots remain. These are wall
+residency samples, not CPU or call counts, and inclusive tag counts overlap.
+
+The existing aggregate mode stays the default. Twelve new sampler checks and all
+32 existing observer checks pass (44 total). Review caught and independently
+reproduced false diagnostic success when a sampler failed; separate fixture and
+observation statuses now preserve that boundary. Correction review is clear.
+The [construction receipt](evidence/2026-10-03_native_stack_sampler_contracts.json)
+binds the exact tested diagnostic files and unchanged runtime blobs. This diagnostic resolves whether further pure
+proof representation work is justified or the next design should target physical
+reads/reconstruction and H×C preparation. Origin-seal materialization remains
+deferred; no new memory/mission platform or personality/MFM implementation is added.
+
+The [FBM index](fbm-seeds/README.md) now links **118 validated procedure traces**.
+The sampler's source-pinned publication/dispatch is the next step; its physical
+result is unobserved. Older partial/pending snapshots below are superseded here.
 
 Updated: 2026-10-03, America/Chicago. Recovery baseline:
 `main@885be57abb582510d27a98177facd2a358c11387`; recovery starting runtime

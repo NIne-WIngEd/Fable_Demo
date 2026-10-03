@@ -1,5 +1,13 @@
 # Original native worker aggregate diagnostic
 
+Latest October 3: full ordinary CI at `4b88946f` is recovered; both runs fail.
+Each passes 978 component cases; PR physical 50/2/1, push 49/2/2, plus Temporal
+restart exit139. Further pure proof tuning is deferred while one optional 50ms
+original-owned-code stack sampler discriminates remaining work without call
+hooks. Runtime and existing aggregate observer are unchanged. See the
+[current checkpoint](VERIFICATION_CHECKPOINT_2026-10-03.md); older notices below
+are historical. No response or learned result is qualified.
+
 Latest result, October 3: the once-dispatched `4b88946f` native diagnostic is
 complete, with a failed fixture and qualification false. All 116 after/115 before
 source hashes match pinned blobs. Preparation still dominates; fewer tagged calls

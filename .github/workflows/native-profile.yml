@@ -2,6 +2,14 @@ name: FloRA optional native worker aggregate diagnostic
 
 on:
   workflow_dispatch:
+    inputs:
+      observer:
+        description: Optional original-code observation method
+        type: choice
+        default: aggregate
+        options:
+          - aggregate
+          - stack-samples
   push:
     paths:
       - scripts/profile_selected_native_boundaries.py
@@ -69,14 +77,26 @@ jobs:
       - name: Wait for persistent Temporal and namespace
         run: python scripts/temporal_restart_probe.py health --retry-seconds 120
       - name: Observe owned workers only with separate bounded observation windows
+        if: github.event_name != 'workflow_dispatch' || inputs.observer != 'stack-samples'
         continue-on-error: true
         run: python scripts/profile_selected_native_boundaries.py --workers-only --cap-seconds 180 --output selected-native-profile.json
+      - name: Sample original owned worker stacks with numeric fixed tags
+        if: github.event_name == 'workflow_dispatch' && inputs.observer == 'stack-samples'
+        continue-on-error: true
+        run: python scripts/profile_selected_native_stacks.py --cap-seconds 180 --interval-seconds 0.05 --output selected-native-stack-samples.json
       - name: Upload aggregate diagnostic only
-        if: always()
+        if: always() && (github.event_name != 'workflow_dispatch' || inputs.observer != 'stack-samples')
         uses: actions/upload-artifact@v4
         with:
           name: selected-native-worker-aggregate-diagnostic
           path: selected-native-profile.json
+          if-no-files-found: warn
+      - name: Upload numeric stack samples only
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.observer == 'stack-samples'
+        uses: actions/upload-artifact@v4
+        with:
+          name: selected-native-worker-stack-samples-diagnostic
+          path: selected-native-stack-samples.json
           if-no-files-found: warn
       - name: Tear down selected services
         if: always()

@@ -1,0 +1,72 @@
+{
+  "recorded_at_utc": "2026-10-03T16:56:09.430875Z",
+  "operation": "bounded_optional_original_owned_stack_diagnostic",
+  "base_head": "17f24e63fd91f5ba67221f2f012eecbcc2171068",
+  "runtime_source": "4b88946f404d7359943b5edb2504a2f0c2e96320",
+  "source_sha256": {
+    "scripts/profile_selected_native_stacks.py": "72063e1bcf62008d4796f41a8b26a05a475bcd37f86f3b8af6369d9fdc1efeac",
+    "tests/test_native_stack_sampler.py": "7f3c8bca865a34139fb570f52fdba86434a9e6fe084cafa8c92e9354fef765a1",
+    ".github/workflows/native-profile.yml": "a4293d0e81f5d256597be4707f8cd3958fccb0e9f43d43eebd6867333e11fba4"
+  },
+  "unchanged_tested_runtime_and_aggregate_sha256": {
+    "src/flora/selected/selected_phase_authority.py": "6589bce9051bcc410282b5aba7fc3259bc0ef57105aeb98966e0fa50aaa9542a",
+    "src/flora/selected/selected_authority_frame.py": "599d996805c8c197a3bdd102df3fc5fb6d8500f12a613c81565c903ec76947d6",
+    "tests/test_shared_context_bindings.py": "07c9b08ec27b745a74292226ce92fd694a213d05e21e69cc6a976820391bbea2",
+    "tests/test_selected_phase_authority.py": "fba8e8b69d9b05e858a0fbcf3d9ff8ad9769225149425e50acbad4d567b55e11",
+    "tests/test_shared_phase_authority.py": "f473f346e8bc5686d03da12bae4fc253a10feef05c9ee766978c2e02552d69b4",
+    "tests/test_shared_authority_frame.py": "6adaae62780b1fabda5e9e39c041d8849797206f4433822c807de57683300552",
+    "scripts/profile_selected_native_boundaries.py": "56e3000009353d1ca96e89a39a15a87bb5110ea757281cad49256cdf33ba31fe",
+    "tests/test_native_boundary_profiler.py": "131f3488c0164e771a8f2d24a33a2198695499f0c23efd69bd72765f7394797e"
+  },
+  "exact_unchanged_blobs_verified": 8,
+  "native_image_sha256": "bbb524290db6a69edc7479eec6ee6a2d2b9946d5c0be0af86eb948575b5379e2",
+  "red": {
+    "new_feature_tests": 9,
+    "failures_including_subtests": 13,
+    "reason": "missing fixed-tag sampler"
+  },
+  "initial_green": {
+    "tests": 41,
+    "seconds": 4.752,
+    "exit_code": 0
+  },
+  "review": {
+    "critical": 0,
+    "important_initial": 1,
+    "minor": 0,
+    "finding": "passing fixture could hide failed sampler",
+    "independent_red": {
+      "tests": 1,
+      "failures": 1,
+      "observed_exit": 0,
+      "expected_exit": 1
+    },
+    "correction": "Separate fixture and observation statuses; failed or live sampler cannot return successful diagnostic.",
+    "final_read_only_confirmation": "Important finding resolved; no remaining findings in correction"
+  },
+  "final_green": {
+    "command": "python -m unittest -q test_native_stack_sampler test_native_boundary_profiler",
+    "tests": 44,
+    "new_sampler_tests": 12,
+    "unchanged_observer_tests": 32,
+    "seconds": 4.183,
+    "exit_code": 0
+  },
+  "configuration": {
+    "sample_interval_seconds": 0.05,
+    "worker_observation_cap_seconds": 180,
+    "response_budget_ms": 60000,
+    "ci_timeout_minutes": 60,
+    "aggregate_default_unchanged": true
+  },
+  "qualification": false,
+  "learned_behavior_run": false,
+  "physical_result": "unobserved",
+  "limits": [
+    "This verifies only optional diagnostic construction; all serving runtime files stay unchanged.",
+    "Sampling avoids call hooks but no measured overhead reduction or performance benefit is claimed.",
+    "Point samples reflect approximate wall stack residency, not CPU or exact jobs/calls.",
+    "Sampler error, partial/unobserved coverage and fixture outcome have separate fields.",
+    "Only fixed numeric aggregates/source hashes leave the fixture; private logs/payloads do not."
+  ]
+}
